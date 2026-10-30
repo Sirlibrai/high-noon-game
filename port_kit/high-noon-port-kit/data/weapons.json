@@ -1,0 +1,295 @@
+[
+  {
+    "id": "peacemaker",
+    "name": "Peacemaker",
+    "desc": "A balanced six-shot revolver. Never lets you down.",
+    "cyl": 6,
+    "reload": 0.6,
+    "kick": 0.45,
+    "shape": {
+      "len": 32
+    },
+    "unlock": null,
+    "price": 0,
+    "fins": [
+      {
+        "name": "Weathered iron",
+        "p": {
+          "barrel": "#6E7480",
+          "hi": "#9AA3B2",
+          "frame": "#4A4F5A",
+          "grip": "#6E4526",
+          "gripHi": "#8A5A32"
+        },
+        "price": 0
+      },
+      {
+        "name": "Polished silver",
+        "p": {
+          "barrel": "#C9D0DA",
+          "hi": "#F4F7FA",
+          "frame": "#9AA3B2",
+          "grip": "#E8DCC4",
+          "gripHi": "#FFFFFF"
+        },
+        "price": 300
+      },
+      {
+        "name": "Gold plated",
+        "p": {
+          "barrel": "#E2B23C",
+          "hi": "#FFE9A0",
+          "frame": "#B8862A",
+          "grip": "#2A1A12",
+          "gripHi": "#5A3A24"
+        },
+        "price": 900
+      }
+    ]
+  },
+  {
+    "id": "quickdraw",
+    "name": "Quickdraw",
+    "desc": "A short barrel and a lightning reload. Kicks harder.",
+    "cyl": 6,
+    "reload": 0.38,
+    "kick": 0.65,
+    "shape": {
+      "len": 22
+    },
+    "unlock": 0,
+    "price": 500,
+    "fins": [
+      {
+        "name": "Blued steel",
+        "p": {
+          "barrel": "#4A5A7A",
+          "hi": "#7A8AAA",
+          "frame": "#3A4660",
+          "grip": "#4A2C16",
+          "gripHi": "#6E4526"
+        },
+        "price": 0
+      },
+      {
+        "name": "Engraved silver",
+        "p": {
+          "barrel": "#C9D0DA",
+          "hi": "#F4F7FA",
+          "frame": "#9AA3B2",
+          "grip": "#E8DCC4",
+          "gripHi": "#FFFFFF"
+        },
+        "price": 300
+      },
+      {
+        "name": "Gold plated",
+        "p": {
+          "barrel": "#E2B23C",
+          "hi": "#FFE9A0",
+          "frame": "#B8862A",
+          "grip": "#2A1A12",
+          "gripHi": "#5A3A24"
+        },
+        "price": 900
+      }
+    ]
+  },
+  {
+    "id": "longbarrel",
+    "name": "Long Barrel",
+    "desc": "A steady, precise revolver with a slow reload.",
+    "cyl": 6,
+    "reload": 0.75,
+    "kick": 0.3,
+    "shape": {
+      "len": 42
+    },
+    "unlock": 1,
+    "price": 800,
+    "fins": [
+      {
+        "name": "Gunmetal",
+        "p": {
+          "barrel": "#5E646E",
+          "hi": "#8A919C",
+          "frame": "#44484F",
+          "grip": "#7A4A26",
+          "gripHi": "#9A6438"
+        },
+        "price": 0
+      },
+      {
+        "name": "Polished silver",
+        "p": {
+          "barrel": "#C9D0DA",
+          "hi": "#F4F7FA",
+          "frame": "#9AA3B2",
+          "grip": "#E8DCC4",
+          "gripHi": "#FFFFFF"
+        },
+        "price": 300
+      },
+      {
+        "name": "Gold plated",
+        "p": {
+          "barrel": "#E2B23C",
+          "hi": "#FFE9A0",
+          "frame": "#B8862A",
+          "grip": "#2A1A12",
+          "gripHi": "#5A3A24"
+        },
+        "price": 900
+      }
+    ]
+  },
+  {
+    "id": "coach",
+    "name": "Coach Gun",
+    "desc": "Two heavy barrels and a slow reload.",
+    "pending": "Its wide spread shot arrives with Digger McCall’s bounty.",
+    "cyl": 2,
+    "reload": 0.7,
+    "kick": 0.85,
+    "shape": {
+      "len": 34,
+      "double": true
+    },
+    "unlock": 2,
+    "price": 1200,
+    "fins": [
+      {
+        "name": "Dark iron",
+        "p": {
+          "barrel": "#3E4148",
+          "hi": "#6A6E78",
+          "frame": "#2E3036",
+          "grip": "#6E4526",
+          "gripHi": "#8A5A32"
+        },
+        "price": 0
+      },
+      {
+        "name": "Etched silver",
+        "p": {
+          "barrel": "#C9D0DA",
+          "hi": "#F4F7FA",
+          "frame": "#9AA3B2",
+          "grip": "#E8DCC4",
+          "gripHi": "#FFFFFF"
+        },
+        "price": 300
+      },
+      {
+        "name": "Gold inlay",
+        "p": {
+          "barrel": "#E2B23C",
+          "hi": "#FFE9A0",
+          "frame": "#B8862A",
+          "grip": "#2A1A12",
+          "gripHi": "#5A3A24"
+        },
+        "price": 900
+      }
+    ]
+  },
+  {
+    "id": "repeater",
+    "name": "Repeater",
+    "desc": "Ten rounds before you reload.",
+    "pending": "Its rapid fire arrives with the Lantern Man’s bounty.",
+    "cyl": 10,
+    "reload": 0.95,
+    "kick": 0.4,
+    "shape": {
+      "len": 40,
+      "tube": true
+    },
+    "unlock": 3,
+    "price": 1500,
+    "fins": [
+      {
+        "name": "Brass frame",
+        "p": {
+          "barrel": "#5A5F6A",
+          "hi": "#8A919C",
+          "frame": "#C9A25A",
+          "grip": "#6E4526",
+          "gripHi": "#8A5A32"
+        },
+        "price": 0
+      },
+      {
+        "name": "Nickel",
+        "p": {
+          "barrel": "#C9D0DA",
+          "hi": "#F4F7FA",
+          "frame": "#9AA3B2",
+          "grip": "#E8DCC4",
+          "gripHi": "#FFFFFF"
+        },
+        "price": 300
+      },
+      {
+        "name": "Gold plated",
+        "p": {
+          "barrel": "#E2B23C",
+          "hi": "#FFE9A0",
+          "frame": "#B8862A",
+          "grip": "#2A1A12",
+          "gripHi": "#5A3A24"
+        },
+        "price": 900
+      }
+    ]
+  },
+  {
+    "id": "legend",
+    "name": "The Legend",
+    "desc": "The finest gun on the frontier. Fast, steady, unforgettable.",
+    "cyl": 6,
+    "reload": 0.32,
+    "kick": 0.4,
+    "shape": {
+      "len": 32,
+      "engraved": true
+    },
+    "unlock": 4,
+    "price": 3000,
+    "fins": [
+      {
+        "name": "Black and gold",
+        "p": {
+          "barrel": "#3A3A44",
+          "hi": "#C9A25A",
+          "frame": "#2A2A30",
+          "grip": "#F2EEE6",
+          "gripHi": "#FFFFFF"
+        },
+        "price": 0
+      },
+      {
+        "name": "Ivory",
+        "p": {
+          "barrel": "#C9D0DA",
+          "hi": "#F4F7FA",
+          "frame": "#9AA3B2",
+          "grip": "#F2EEE6",
+          "gripHi": "#FFFFFF"
+        },
+        "price": 600
+      },
+      {
+        "name": "Gilded legend",
+        "p": {
+          "barrel": "#E2B23C",
+          "hi": "#FFE9A0",
+          "frame": "#B8862A",
+          "grip": "#2A1A12",
+          "gripHi": "#5A3A24"
+        },
+        "price": 1500
+      }
+    ]
+  }
+]

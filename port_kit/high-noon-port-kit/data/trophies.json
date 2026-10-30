@@ -1,0 +1,44 @@
+[
+  {
+    "ch": 0,
+    "lv": 4,
+    "name": "Black Jack’s ace",
+    "art": "ace"
+  },
+  {
+    "ch": 0,
+    "lv": 9,
+    "name": "Iron Eli’s breastplate",
+    "art": "plate"
+  },
+  {
+    "ch": 1,
+    "lv": 4,
+    "name": "Smokey Pete’s pipe",
+    "art": "pipe"
+  },
+  {
+    "ch": 1,
+    "lv": 9,
+    "name": "Cole Haggerty’s lantern",
+    "art": "lantern"
+  },
+  {
+    "ch": 2
+  },
+  {
+    "ch": 2
+  },
+  {
+    "ch": 3
+  },
+  {
+    "ch": 3
+  },
+  {
+    "ch": 4
+  },
+  {
+    "ch": 4
+  }
+]

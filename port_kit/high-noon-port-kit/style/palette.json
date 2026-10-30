@@ -1,0 +1,184 @@
+{
+  "gameplay_street (Pixel_Western_Sunset_Shootout)": [
+    {
+      "hex": "#874426",
+      "share": 0.086
+    },
+    {
+      "hex": "#F28C3E",
+      "share": 0.081
+    },
+    {
+      "hex": "#692C1A",
+      "share": 0.081
+    },
+    {
+      "hex": "#562113",
+      "share": 0.08
+    },
+    {
+      "hex": "#9A4D2A",
+      "share": 0.072
+    },
+    {
+      "hex": "#5A2D1C",
+      "share": 0.068
+    },
+    {
+      "hex": "#B9562D",
+      "share": 0.066
+    },
+    {
+      "hex": "#E3773C",
+      "share": 0.065
+    },
+    {
+      "hex": "#3C1F14",
+      "share": 0.063
+    },
+    {
+      "hex": "#24100A",
+      "share": 0.061
+    },
+    {
+      "hex": "#3D150C",
+      "share": 0.055
+    },
+    {
+      "hex": "#B76F4B",
+      "share": 0.052
+    },
+    {
+      "hex": "#40291C",
+      "share": 0.05
+    },
+    {
+      "hex": "#FAB552",
+      "share": 0.045
+    },
+    {
+      "hex": "#634531",
+      "share": 0.038
+    },
+    {
+      "hex": "#832C19",
+      "share": 0.037
+    }
+  ],
+  "sheriffs_office (Pixel_Western_Bounty_Office_Menu)": [
+    {
+      "hex": "#CA7D3E",
+      "share": 0.078
+    },
+    {
+      "hex": "#713313",
+      "share": 0.076
+    },
+    {
+      "hex": "#481D0C",
+      "share": 0.071
+    },
+    {
+      "hex": "#3C1C13",
+      "share": 0.068
+    },
+    {
+      "hex": "#2A120C",
+      "share": 0.068
+    },
+    {
+      "hex": "#391407",
+      "share": 0.068
+    },
+    {
+      "hex": "#2D1A16",
+      "share": 0.064
+    },
+    {
+      "hex": "#8A522E",
+      "share": 0.063
+    },
+    {
+      "hex": "#260D05",
+      "share": 0.062
+    },
+    {
+      "hex": "#B65E26",
+      "share": 0.061
+    },
+    {
+      "hex": "#8B390F",
+      "share": 0.058
+    },
+    {
+      "hex": "#5B1F0A",
+      "share": 0.058
+    },
+    {
+      "hex": "#532716",
+      "share": 0.057
+    },
+    {
+      "hex": "#140805",
+      "share": 0.052
+    },
+    {
+      "hex": "#E9B064",
+      "share": 0.051
+    },
+    {
+      "hex": "#583321",
+      "share": 0.046
+    }
+  ],
+  "portraits (Wanted__Outlaws_of_the_Old_West)": [
+    {
+      "hex": "#572510",
+      "share": 0.117
+    },
+    {
+      "hex": "#250E06",
+      "share": 0.101
+    },
+    {
+      "hex": "#E4974C",
+      "share": 0.098
+    },
+    {
+      "hex": "#D78541",
+      "share": 0.092
+    },
+    {
+      "hex": "#69240D",
+      "share": 0.083
+    },
+    {
+      "hex": "#ECA75A",
+      "share": 0.082
+    },
+    {
+      "hex": "#9F5B2D",
+      "share": 0.082
+    },
+    {
+      "hex": "#3B1A0D",
+      "share": 0.081
+    },
+    {
+      "hex": "#CD7031",
+      "share": 0.074
+    },
+    {
+      "hex": "#863012",
+      "share": 0.068
+    },
+    {
+      "hex": "#412414",
+      "share": 0.063
+    },
+    {
+      "hex": "#F4B668",
+      "share": 0.059
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Greenhorn",
+    "requirement": "Start here"
+  },
+  {
+    "name": "Deputy",
+    "requirement": "Earn 10 stars"
+  },
+  {
+    "name": "Sheriff",
+    "requirement": "Capture 1 outlaw"
+  },
+  {
+    "name": "Marshal",
+    "requirement": "Capture 2 outlaws"
+  },
+  {
+    "name": "Ranger",
+    "requirement": "Capture 4 outlaws"
+  },
+  {
+    "name": "Legend of the West",
+    "requirement": "Capture all 5 outlaws"
+  }
+]

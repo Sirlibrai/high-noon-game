@@ -1,0 +1,5587 @@
+{
+ "splash": {
+  "bpm": 75,
+  "steps": 80,
+  "loop_from_step": 16,
+  "plays_once": false,
+  "events": [
+   {
+    "step": 0,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 4,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 8,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 12,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 16,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 20,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 24,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 28,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 32,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 36,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 40,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 44,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 48,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 52,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 56,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 60,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 64,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 68,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 72,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 76,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 0,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.012
+   },
+   {
+    "step": 1,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 2,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 3,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.024
+   },
+   {
+    "step": 4,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 5,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.032
+   },
+   {
+    "step": 6,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.036000000000000004
+   },
+   {
+    "step": 7,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 8,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.044
+   },
+   {
+    "step": 9,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.048
+   },
+   {
+    "step": 10,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.052000000000000005
+   },
+   {
+    "step": 11,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.055999999999999994
+   },
+   {
+    "step": 12,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.06
+   },
+   {
+    "step": 13,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.064
+   },
+   {
+    "step": 14,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.068
+   },
+   {
+    "step": 15,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.072
+   },
+   {
+    "step": 16,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 18,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 20,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 22,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 24,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 26,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 28,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 30,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 32,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 34,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 36,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 38,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 40,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 42,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 44,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 46,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 48,
+    "voice": "guitar",
+    "note": "G2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 50,
+    "voice": "guitar",
+    "note": "G2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 52,
+    "voice": "guitar",
+    "note": "G2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 54,
+    "voice": "guitar",
+    "note": "G2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 56,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 58,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 60,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 62,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 64,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 66,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 68,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 70,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 72,
+    "voice": "guitar",
+    "note": "E2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 74,
+    "voice": "guitar",
+    "note": "E2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 76,
+    "voice": "guitar",
+    "note": "E2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 78,
+    "voice": "guitar",
+    "note": "E2",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 12,
+    "voice": "whistle",
+    "note": "E4",
+    "length_steps": 2,
+    "velocity": 0.07
+   },
+   {
+    "step": 14,
+    "voice": "whistle",
+    "note": "A4",
+    "length_steps": 2,
+    "velocity": 0.07
+   },
+   {
+    "step": 16,
+    "voice": "whistle",
+    "note": "E5",
+    "length_steps": 8,
+    "velocity": 0.075
+   },
+   {
+    "step": 24,
+    "voice": "whistle",
+    "note": "D5",
+    "length_steps": 4,
+    "velocity": 0.075
+   },
+   {
+    "step": 28,
+    "voice": "whistle",
+    "note": "C5",
+    "length_steps": 2,
+    "velocity": 0.075
+   },
+   {
+    "step": 30,
+    "voice": "whistle",
+    "note": "B4",
+    "length_steps": 2,
+    "velocity": 0.075
+   },
+   {
+    "step": 32,
+    "voice": "whistle",
+    "note": "A4",
+    "length_steps": 12,
+    "velocity": 0.075
+   },
+   {
+    "step": 48,
+    "voice": "whistle",
+    "note": "G4",
+    "length_steps": 4,
+    "velocity": 0.075
+   },
+   {
+    "step": 52,
+    "voice": "whistle",
+    "note": "A4",
+    "length_steps": 4,
+    "velocity": 0.075
+   },
+   {
+    "step": 56,
+    "voice": "whistle",
+    "note": "C5",
+    "length_steps": 4,
+    "velocity": 0.075
+   },
+   {
+    "step": 60,
+    "voice": "whistle",
+    "note": "E5",
+    "length_steps": 4,
+    "velocity": 0.075
+   },
+   {
+    "step": 64,
+    "voice": "whistle",
+    "note": "D5",
+    "length_steps": 6,
+    "velocity": 0.075
+   },
+   {
+    "step": 70,
+    "voice": "whistle",
+    "note": "C5",
+    "length_steps": 2,
+    "velocity": 0.075
+   },
+   {
+    "step": 72,
+    "voice": "whistle",
+    "note": "B4",
+    "length_steps": 4,
+    "velocity": 0.075
+   },
+   {
+    "step": 76,
+    "voice": "whistle",
+    "note": "A4",
+    "length_steps": 4,
+    "velocity": 0.075
+   },
+   {
+    "step": 16,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 16,
+    "velocity": 0.07
+   },
+   {
+    "step": 32,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 16,
+    "velocity": 0.07
+   },
+   {
+    "step": 48,
+    "voice": "bass",
+    "note": "G1",
+    "length_steps": 16,
+    "velocity": 0.07
+   },
+   {
+    "step": 64,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 16,
+    "velocity": 0.07
+   }
+  ]
+ },
+ "office": {
+  "bpm": 96,
+  "steps": 128,
+  "loop_from_step": 0,
+  "plays_once": false,
+  "events": [
+   {
+    "step": 4,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 4.06,
+    "voice": "guitar",
+    "note": "B3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 4.12,
+    "voice": "guitar",
+    "note": "D4",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 12.06,
+    "voice": "guitar",
+    "note": "B3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 12.12,
+    "voice": "guitar",
+    "note": "D4",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 20,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 20.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 20.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 28,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 28.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 28.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 36,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 36.06,
+    "voice": "guitar",
+    "note": "B3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 36.12,
+    "voice": "guitar",
+    "note": "D4",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 44,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 44.06,
+    "voice": "guitar",
+    "note": "B3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 44.12,
+    "voice": "guitar",
+    "note": "D4",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 52,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 52.06,
+    "voice": "guitar",
+    "note": "F#3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 52.12,
+    "voice": "guitar",
+    "note": "A3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 60,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 60.06,
+    "voice": "guitar",
+    "note": "F#3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 60.12,
+    "voice": "guitar",
+    "note": "A3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 68,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 68.06,
+    "voice": "guitar",
+    "note": "B3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 68.12,
+    "voice": "guitar",
+    "note": "D4",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 76,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 76.06,
+    "voice": "guitar",
+    "note": "B3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 76.12,
+    "voice": "guitar",
+    "note": "D4",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 84,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 84.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 84.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 92,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 92.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 92.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 100,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 100.06,
+    "voice": "guitar",
+    "note": "F#3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 100.12,
+    "voice": "guitar",
+    "note": "A3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 108,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 108.06,
+    "voice": "guitar",
+    "note": "F#3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 108.12,
+    "voice": "guitar",
+    "note": "A3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 116,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 116.06,
+    "voice": "guitar",
+    "note": "B3",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 116.12,
+    "voice": "guitar",
+    "note": "D4",
+    "length_steps": 3,
+    "velocity": 0.028
+   },
+   {
+    "step": 124,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 124.06,
+    "voice": "guitar",
+    "note": "B3",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 124.12,
+    "voice": "guitar",
+    "note": "D4",
+    "length_steps": 3,
+    "velocity": 0.022400000000000003
+   },
+   {
+    "step": 0,
+    "voice": "bass",
+    "note": "G2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 8,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 16,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 24,
+    "voice": "bass",
+    "note": "G2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 32,
+    "voice": "bass",
+    "note": "G2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 40,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 48,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 56,
+    "voice": "bass",
+    "note": "A2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 64,
+    "voice": "bass",
+    "note": "G2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 72,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 80,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 88,
+    "voice": "bass",
+    "note": "G2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 96,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 104,
+    "voice": "bass",
+    "note": "A2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 112,
+    "voice": "bass",
+    "note": "G2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 120,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 8,
+    "velocity": 0.07
+   },
+   {
+    "step": 4,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 12,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 20,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 28,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 36,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 44,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 52,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 60,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 68,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 76,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 84,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 92,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 100,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 108,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 116,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 124,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 48,
+    "voice": "harmonica",
+    "note": "A4",
+    "length_steps": 4,
+    "velocity": 0.03
+   },
+   {
+    "step": 52,
+    "voice": "harmonica",
+    "note": "B4",
+    "length_steps": 2,
+    "velocity": 0.03
+   },
+   {
+    "step": 54,
+    "voice": "harmonica",
+    "note": "A4",
+    "length_steps": 2,
+    "velocity": 0.03
+   },
+   {
+    "step": 56,
+    "voice": "harmonica",
+    "note": "F#4",
+    "length_steps": 8,
+    "velocity": 0.03
+   },
+   {
+    "step": 64,
+    "voice": "harmonica",
+    "note": "G4",
+    "length_steps": 4,
+    "velocity": 0.03
+   },
+   {
+    "step": 68,
+    "voice": "harmonica",
+    "note": "B4",
+    "length_steps": 4,
+    "velocity": 0.03
+   },
+   {
+    "step": 72,
+    "voice": "harmonica",
+    "note": "D5",
+    "length_steps": 8,
+    "velocity": 0.03
+   },
+   {
+    "step": 80,
+    "voice": "harmonica",
+    "note": "E5",
+    "length_steps": 4,
+    "velocity": 0.03
+   },
+   {
+    "step": 84,
+    "voice": "harmonica",
+    "note": "D5",
+    "length_steps": 2,
+    "velocity": 0.03
+   },
+   {
+    "step": 86,
+    "voice": "harmonica",
+    "note": "C5",
+    "length_steps": 2,
+    "velocity": 0.03
+   },
+   {
+    "step": 88,
+    "voice": "harmonica",
+    "note": "B4",
+    "length_steps": 4,
+    "velocity": 0.03
+   },
+   {
+    "step": 92,
+    "voice": "harmonica",
+    "note": "G4",
+    "length_steps": 4,
+    "velocity": 0.03
+   },
+   {
+    "step": 96,
+    "voice": "harmonica",
+    "note": "A4",
+    "length_steps": 6,
+    "velocity": 0.03
+   },
+   {
+    "step": 102,
+    "voice": "harmonica",
+    "note": "B4",
+    "length_steps": 2,
+    "velocity": 0.03
+   },
+   {
+    "step": 104,
+    "voice": "harmonica",
+    "note": "A4",
+    "length_steps": 4,
+    "velocity": 0.03
+   },
+   {
+    "step": 108,
+    "voice": "harmonica",
+    "note": "F#4",
+    "length_steps": 4,
+    "velocity": 0.03
+   },
+   {
+    "step": 112,
+    "voice": "harmonica",
+    "note": "G4",
+    "length_steps": 12,
+    "velocity": 0.03
+   }
+  ]
+ },
+ "street": {
+  "bpm": 126,
+  "steps": 128,
+  "loop_from_step": 0,
+  "plays_once": false,
+  "events": [
+   {
+    "step": 0,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 16,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 2,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 18,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 3,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 19,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 4,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 20,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 6,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 22,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 7,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 23,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 8,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 24,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 10,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 26,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 11,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 27,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 12,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 28,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 14,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 30,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 15,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 31,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 32,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 48,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 34,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 50,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 35,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 51,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 36,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 52,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 38,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 54,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 39,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 55,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 40,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 56,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 42,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 58,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 43,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 59,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 44,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 60,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 46,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 62,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 47,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 63,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 64,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 80,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 66,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 82,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 67,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 83,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 68,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 84,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 70,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 86,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 71,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 87,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 72,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 88,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 74,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 90,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 75,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 91,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 76,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 92,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 78,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 94,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 79,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 95,
+    "voice": "bass",
+    "note": "Bb1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 96,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 112,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 98,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 114,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 99,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 115,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 100,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 116,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 102,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 118,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 103,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 119,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 104,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 120,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 106,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 122,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 107,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 123,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 108,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 124,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 2,
+    "velocity": 0.09
+   },
+   {
+    "step": 110,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 126,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 111,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 127,
+    "voice": "bass",
+    "note": "A1",
+    "length_steps": 1,
+    "velocity": 0.09
+   },
+   {
+    "step": 0,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 8,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 16,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 24,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 32,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 40,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 48,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 56,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 64,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 72,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 80,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 88,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 96,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 104,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 112,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 120,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 4,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 12,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 20,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 28,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 36,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 44,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 52,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 60,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 68,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 76,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 84,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 92,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 100,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 108,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 116,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 124,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 2,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 2.06,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 2.12,
+    "voice": "guitar",
+    "note": "A3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 6,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 6.06,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 6.12,
+    "voice": "guitar",
+    "note": "A3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 10,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 10.06,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 10.12,
+    "voice": "guitar",
+    "note": "A3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 14,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 14.06,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 14.12,
+    "voice": "guitar",
+    "note": "A3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 18,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 18.06,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 18.12,
+    "voice": "guitar",
+    "note": "A3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 22,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 22.06,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 22.12,
+    "voice": "guitar",
+    "note": "A3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 26,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 26.06,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 26.12,
+    "voice": "guitar",
+    "note": "A3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 30,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 30.06,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 30.12,
+    "voice": "guitar",
+    "note": "A3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 34,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 34.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 34.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 38,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 38.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 38.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 42,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 42.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 42.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 46,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 46.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 46.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 50,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 50.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 50.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 54,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 54.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 54.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 58,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 58.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 58.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 62,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 62.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 62.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 66,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 66.06,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 66.12,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 70,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 70.06,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 70.12,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 74,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 74.06,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 74.12,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 78,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 78.06,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 78.12,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 82,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 82.06,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 82.12,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 86,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 86.06,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 86.12,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 90,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 90.06,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 90.12,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 94,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 94.06,
+    "voice": "guitar",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 94.12,
+    "voice": "guitar",
+    "note": "F3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 98,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 98.06,
+    "voice": "guitar",
+    "note": "C#3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 98.12,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 102,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 102.06,
+    "voice": "guitar",
+    "note": "C#3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 102.12,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 106,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 106.06,
+    "voice": "guitar",
+    "note": "C#3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 106.12,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 110,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 110.06,
+    "voice": "guitar",
+    "note": "C#3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 110.12,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 114,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 114.06,
+    "voice": "guitar",
+    "note": "C#3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 114.12,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 118,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 118.06,
+    "voice": "guitar",
+    "note": "C#3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 118.12,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 122,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 122.06,
+    "voice": "guitar",
+    "note": "C#3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 122.12,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.02
+   },
+   {
+    "step": 126,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 126.06,
+    "voice": "guitar",
+    "note": "C#3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 126.12,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.016
+   },
+   {
+    "step": 0,
+    "voice": "trumpet",
+    "note": "D5",
+    "length_steps": 6,
+    "velocity": 0.032
+   },
+   {
+    "step": 6,
+    "voice": "trumpet",
+    "note": "A4",
+    "length_steps": 2,
+    "velocity": 0.032
+   },
+   {
+    "step": 8,
+    "voice": "trumpet",
+    "note": "D5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 12,
+    "voice": "trumpet",
+    "note": "F5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 16,
+    "voice": "trumpet",
+    "note": "E5",
+    "length_steps": 6,
+    "velocity": 0.032
+   },
+   {
+    "step": 22,
+    "voice": "trumpet",
+    "note": "D5",
+    "length_steps": 2,
+    "velocity": 0.032
+   },
+   {
+    "step": 24,
+    "voice": "trumpet",
+    "note": "C5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 28,
+    "voice": "trumpet",
+    "note": "A4",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 32,
+    "voice": "trumpet",
+    "note": "C5",
+    "length_steps": 6,
+    "velocity": 0.032
+   },
+   {
+    "step": 38,
+    "voice": "trumpet",
+    "note": "G4",
+    "length_steps": 2,
+    "velocity": 0.032
+   },
+   {
+    "step": 40,
+    "voice": "trumpet",
+    "note": "C5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 44,
+    "voice": "trumpet",
+    "note": "E5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 48,
+    "voice": "trumpet",
+    "note": "D5",
+    "length_steps": 8,
+    "velocity": 0.032
+   },
+   {
+    "step": 56,
+    "voice": "trumpet",
+    "note": "C5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 64,
+    "voice": "trumpet",
+    "note": "Bb4",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 68,
+    "voice": "trumpet",
+    "note": "D5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 72,
+    "voice": "trumpet",
+    "note": "F5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 76,
+    "voice": "trumpet",
+    "note": "D5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 80,
+    "voice": "trumpet",
+    "note": "G5",
+    "length_steps": 6,
+    "velocity": 0.032
+   },
+   {
+    "step": 86,
+    "voice": "trumpet",
+    "note": "F5",
+    "length_steps": 2,
+    "velocity": 0.032
+   },
+   {
+    "step": 88,
+    "voice": "trumpet",
+    "note": "E5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 92,
+    "voice": "trumpet",
+    "note": "D5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 96,
+    "voice": "trumpet",
+    "note": "E5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 100,
+    "voice": "trumpet",
+    "note": "C#5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 104,
+    "voice": "trumpet",
+    "note": "A4",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 108,
+    "voice": "trumpet",
+    "note": "C#5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 112,
+    "voice": "trumpet",
+    "note": "D5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 116,
+    "voice": "trumpet",
+    "note": "E5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 120,
+    "voice": "trumpet",
+    "note": "C#5",
+    "length_steps": 4,
+    "velocity": 0.032
+   },
+   {
+    "step": 124,
+    "voice": "trumpet",
+    "note": "A4",
+    "length_steps": 4,
+    "velocity": 0.032
+   }
+  ]
+ },
+ "train": {
+  "bpm": 144,
+  "steps": 128,
+  "loop_from_step": 0,
+  "plays_once": false,
+  "events": [
+   {
+    "step": 0,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 1,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 2,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 3,
+    "voice": "banjo",
+    "note": "B3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 4,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 5,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 6,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 7,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 8,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 9,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 10,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 11,
+    "voice": "banjo",
+    "note": "B3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 12,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 13,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 14,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 15,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 0,
+    "voice": "bass",
+    "note": "E2",
+    "length_steps": 4,
+    "velocity": 0.08
+   },
+   {
+    "step": 8,
+    "voice": "bass",
+    "note": "B2",
+    "length_steps": 4,
+    "velocity": 0.07
+   },
+   {
+    "step": 16,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 17,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 18,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 19,
+    "voice": "banjo",
+    "note": "B3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 20,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 21,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 22,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 23,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 24,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 25,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 26,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 27,
+    "voice": "banjo",
+    "note": "B3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 28,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 29,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 30,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 31,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 16,
+    "voice": "bass",
+    "note": "E2",
+    "length_steps": 4,
+    "velocity": 0.08
+   },
+   {
+    "step": 24,
+    "voice": "bass",
+    "note": "B2",
+    "length_steps": 4,
+    "velocity": 0.07
+   },
+   {
+    "step": 32,
+    "voice": "banjo",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 33,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 34,
+    "voice": "banjo",
+    "note": "B4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 35,
+    "voice": "banjo",
+    "note": "D4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 36,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 37,
+    "voice": "banjo",
+    "note": "B4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 38,
+    "voice": "banjo",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 39,
+    "voice": "banjo",
+    "note": "B4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 40,
+    "voice": "banjo",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 41,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 42,
+    "voice": "banjo",
+    "note": "B4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 43,
+    "voice": "banjo",
+    "note": "D4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 44,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 45,
+    "voice": "banjo",
+    "note": "B4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 46,
+    "voice": "banjo",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 47,
+    "voice": "banjo",
+    "note": "B4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 32,
+    "voice": "bass",
+    "note": "G2",
+    "length_steps": 4,
+    "velocity": 0.08
+   },
+   {
+    "step": 40,
+    "voice": "bass",
+    "note": "D3",
+    "length_steps": 4,
+    "velocity": 0.07
+   },
+   {
+    "step": 48,
+    "voice": "banjo",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 49,
+    "voice": "banjo",
+    "note": "D4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 50,
+    "voice": "banjo",
+    "note": "F#4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 51,
+    "voice": "banjo",
+    "note": "A3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 52,
+    "voice": "banjo",
+    "note": "D4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 53,
+    "voice": "banjo",
+    "note": "F#4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 54,
+    "voice": "banjo",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 55,
+    "voice": "banjo",
+    "note": "F#4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 56,
+    "voice": "banjo",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 57,
+    "voice": "banjo",
+    "note": "D4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 58,
+    "voice": "banjo",
+    "note": "F#4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 59,
+    "voice": "banjo",
+    "note": "A3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 60,
+    "voice": "banjo",
+    "note": "D4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 61,
+    "voice": "banjo",
+    "note": "F#4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 62,
+    "voice": "banjo",
+    "note": "D3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 63,
+    "voice": "banjo",
+    "note": "F#4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 48,
+    "voice": "bass",
+    "note": "D2",
+    "length_steps": 4,
+    "velocity": 0.08
+   },
+   {
+    "step": 56,
+    "voice": "bass",
+    "note": "A2",
+    "length_steps": 4,
+    "velocity": 0.07
+   },
+   {
+    "step": 64,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 65,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 66,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 67,
+    "voice": "banjo",
+    "note": "B3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 68,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 69,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 70,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 71,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 72,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 73,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 74,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 75,
+    "voice": "banjo",
+    "note": "B3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 76,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 77,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 78,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 79,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 64,
+    "voice": "bass",
+    "note": "E2",
+    "length_steps": 4,
+    "velocity": 0.08
+   },
+   {
+    "step": 72,
+    "voice": "bass",
+    "note": "B2",
+    "length_steps": 4,
+    "velocity": 0.07
+   },
+   {
+    "step": 80,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 81,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 82,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 83,
+    "voice": "banjo",
+    "note": "B3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 84,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 85,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 86,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 87,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 88,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 89,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 90,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 91,
+    "voice": "banjo",
+    "note": "B3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 92,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 93,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 94,
+    "voice": "banjo",
+    "note": "E3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 95,
+    "voice": "banjo",
+    "note": "G4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 80,
+    "voice": "bass",
+    "note": "E2",
+    "length_steps": 4,
+    "velocity": 0.08
+   },
+   {
+    "step": 88,
+    "voice": "bass",
+    "note": "B2",
+    "length_steps": 4,
+    "velocity": 0.07
+   },
+   {
+    "step": 96,
+    "voice": "banjo",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 97,
+    "voice": "banjo",
+    "note": "C4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 98,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 99,
+    "voice": "banjo",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 100,
+    "voice": "banjo",
+    "note": "C4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 101,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 102,
+    "voice": "banjo",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 103,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 104,
+    "voice": "banjo",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 105,
+    "voice": "banjo",
+    "note": "C4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 106,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 107,
+    "voice": "banjo",
+    "note": "G3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 108,
+    "voice": "banjo",
+    "note": "C4",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 109,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 110,
+    "voice": "banjo",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 111,
+    "voice": "banjo",
+    "note": "E4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 96,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 4,
+    "velocity": 0.08
+   },
+   {
+    "step": 104,
+    "voice": "bass",
+    "note": "G2",
+    "length_steps": 4,
+    "velocity": 0.07
+   },
+   {
+    "step": 112,
+    "voice": "banjo",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 113,
+    "voice": "banjo",
+    "note": "B3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 114,
+    "voice": "banjo",
+    "note": "D#4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 115,
+    "voice": "banjo",
+    "note": "F#3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 116,
+    "voice": "banjo",
+    "note": "B3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 117,
+    "voice": "banjo",
+    "note": "D#4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 118,
+    "voice": "banjo",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 119,
+    "voice": "banjo",
+    "note": "D#4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 120,
+    "voice": "banjo",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 121,
+    "voice": "banjo",
+    "note": "B3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 122,
+    "voice": "banjo",
+    "note": "D#4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 123,
+    "voice": "banjo",
+    "note": "F#3",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 124,
+    "voice": "banjo",
+    "note": "B3",
+    "length_steps": 1,
+    "velocity": 0.04
+   },
+   {
+    "step": 125,
+    "voice": "banjo",
+    "note": "D#4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 126,
+    "voice": "banjo",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 127,
+    "voice": "banjo",
+    "note": "D#4",
+    "length_steps": 1,
+    "velocity": 0.026
+   },
+   {
+    "step": 112,
+    "voice": "bass",
+    "note": "B1",
+    "length_steps": 4,
+    "velocity": 0.08
+   },
+   {
+    "step": 120,
+    "voice": "bass",
+    "note": "F#2",
+    "length_steps": 4,
+    "velocity": 0.07
+   },
+   {
+    "step": 0,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 2,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 4,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 6,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 8,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 10,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 12,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 14,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 16,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 18,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 20,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 22,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 24,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 26,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 28,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 30,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 32,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 34,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 36,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 38,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 40,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 42,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 44,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 46,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 48,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 50,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 52,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 54,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 56,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 58,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 60,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 62,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 64,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 66,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 68,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 70,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 72,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 74,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 76,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 78,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 80,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 82,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 84,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 86,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 88,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 90,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 92,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 94,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 96,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 98,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 100,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 102,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 104,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 106,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 108,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 110,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 112,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 114,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 116,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 118,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 120,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 122,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 124,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.05
+   },
+   {
+    "step": 126,
+    "voice": "chuff",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.027500000000000004
+   },
+   {
+    "step": 0,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 8,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 16,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 24,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 32,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 40,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 48,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 56,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 64,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 72,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 80,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 88,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 96,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 104,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 112,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 120,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.1
+   },
+   {
+    "step": 0,
+    "voice": "whistle",
+    "note": "A4",
+    "length_steps": 6,
+    "velocity": 0.035
+   },
+   {
+    "step": 0,
+    "voice": "whistle",
+    "note": "C#5",
+    "length_steps": 6,
+    "velocity": 0.035
+   }
+  ]
+ },
+ "boss": {
+  "bpm": 68,
+  "steps": 64,
+  "loop_from_step": 0,
+  "plays_once": false,
+  "events": [
+   {
+    "step": 0,
+    "voice": "drone",
+    "note": "A1",
+    "length_steps": 16,
+    "velocity": 0.035
+   },
+   {
+    "step": 16,
+    "voice": "drone",
+    "note": "A1",
+    "length_steps": 16,
+    "velocity": 0.035
+   },
+   {
+    "step": 32,
+    "voice": "drone",
+    "note": "A1",
+    "length_steps": 16,
+    "velocity": 0.035
+   },
+   {
+    "step": 48,
+    "voice": "drone",
+    "note": "A1",
+    "length_steps": 16,
+    "velocity": 0.035
+   },
+   {
+    "step": 0,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 3,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.066
+   },
+   {
+    "step": 16,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 19,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.066
+   },
+   {
+    "step": 32,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 35,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.066
+   },
+   {
+    "step": 48,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.12
+   },
+   {
+    "step": 51,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.066
+   },
+   {
+    "step": 0,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 4,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.019250000000000003
+   },
+   {
+    "step": 8,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 12,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.019250000000000003
+   },
+   {
+    "step": 16,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 20,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.019250000000000003
+   },
+   {
+    "step": 24,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 28,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.019250000000000003
+   },
+   {
+    "step": 32,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 36,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.019250000000000003
+   },
+   {
+    "step": 40,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 44,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.019250000000000003
+   },
+   {
+    "step": 48,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 52,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.019250000000000003
+   },
+   {
+    "step": 56,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 60,
+    "voice": "tick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.019250000000000003
+   },
+   {
+    "step": 0,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 1,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 2,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 3,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 4,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 5,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 6,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 7,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 8,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 9,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 10,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 11,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 12,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 13,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 14,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 15,
+    "voice": "guitar",
+    "note": "A2",
+    "length_steps": 1,
+    "velocity": 0.014
+   },
+   {
+    "step": 16,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 17,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 18,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 19,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 20,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 21,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 22,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 23,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 24,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 25,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 26,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 27,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 28,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 29,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 30,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 31,
+    "voice": "guitar",
+    "note": "Bb2",
+    "length_steps": 1,
+    "velocity": 0.021
+   },
+   {
+    "step": 32,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 33,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 34,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 35,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 36,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 37,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 38,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 39,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 40,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 41,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 42,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 43,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 44,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 45,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 46,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 47,
+    "voice": "guitar",
+    "note": "B2",
+    "length_steps": 1,
+    "velocity": 0.028
+   },
+   {
+    "step": 48,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 49,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 50,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 51,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 52,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 53,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 54,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 55,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 56,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 57,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 58,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 59,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 60,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 61,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 62,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 63,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 1,
+    "velocity": 0.035
+   },
+   {
+    "step": 0,
+    "voice": "whistle",
+    "note": "E5",
+    "length_steps": 16,
+    "velocity": 0.045
+   },
+   {
+    "step": 16,
+    "voice": "whistle",
+    "note": "F5",
+    "length_steps": 16,
+    "velocity": 0.045
+   },
+   {
+    "step": 32,
+    "voice": "whistle",
+    "note": "F#5",
+    "length_steps": 16,
+    "velocity": 0.045
+   },
+   {
+    "step": 48,
+    "voice": "whistle",
+    "note": "G5",
+    "length_steps": 8,
+    "velocity": 0.045
+   },
+   {
+    "step": 56,
+    "voice": "whistle",
+    "note": "G#5",
+    "length_steps": 8,
+    "velocity": 0.045
+   }
+  ]
+ },
+ "victory": {
+  "bpm": 140,
+  "steps": 32,
+  "loop_from_step": 0,
+  "plays_once": true,
+  "events": [
+   {
+    "step": 0,
+    "voice": "trumpet",
+    "note": "G4",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 2,
+    "voice": "trumpet",
+    "note": "C5",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 4,
+    "voice": "trumpet",
+    "note": "E5",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 6,
+    "voice": "trumpet",
+    "note": "G5",
+    "length_steps": 6,
+    "velocity": 0.05
+   },
+   {
+    "step": 12,
+    "voice": "trumpet",
+    "note": "E5",
+    "length_steps": 2,
+    "velocity": 0.05
+   },
+   {
+    "step": 14,
+    "voice": "trumpet",
+    "note": "G5",
+    "length_steps": 8,
+    "velocity": 0.05
+   },
+   {
+    "step": 0,
+    "voice": "whistle",
+    "note": "G4",
+    "length_steps": 2,
+    "velocity": 0.03
+   },
+   {
+    "step": 2,
+    "voice": "whistle",
+    "note": "C5",
+    "length_steps": 2,
+    "velocity": 0.03
+   },
+   {
+    "step": 4,
+    "voice": "whistle",
+    "note": "E5",
+    "length_steps": 2,
+    "velocity": 0.03
+   },
+   {
+    "step": 6,
+    "voice": "whistle",
+    "note": "G5",
+    "length_steps": 6,
+    "velocity": 0.03
+   },
+   {
+    "step": 12,
+    "voice": "whistle",
+    "note": "E5",
+    "length_steps": 2,
+    "velocity": 0.03
+   },
+   {
+    "step": 14,
+    "voice": "whistle",
+    "note": "G5",
+    "length_steps": 8,
+    "velocity": 0.03
+   },
+   {
+    "step": 0,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.0165
+   },
+   {
+    "step": 1,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.0165
+   },
+   {
+    "step": 2,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.0165
+   },
+   {
+    "step": 3,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.0165
+   },
+   {
+    "step": 4,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.0165
+   },
+   {
+    "step": 5,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.0165
+   },
+   {
+    "step": 6,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.0165
+   },
+   {
+    "step": 7,
+    "voice": "brush",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.0165
+   },
+   {
+    "step": 14,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.14
+   },
+   {
+    "step": 22,
+    "voice": "kick",
+    "note": 0,
+    "length_steps": 1,
+    "velocity": 0.14
+   },
+   {
+    "step": 6,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 4,
+    "velocity": 0.05
+   },
+   {
+    "step": 6.06,
+    "voice": "guitar",
+    "note": "E3",
+    "length_steps": 4,
+    "velocity": 0.05
+   },
+   {
+    "step": 6.12,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 4,
+    "velocity": 0.05
+   },
+   {
+    "step": 6.18,
+    "voice": "guitar",
+    "note": "C4",
+    "length_steps": 4,
+    "velocity": 0.05
+   },
+   {
+    "step": 22,
+    "voice": "guitar",
+    "note": "C3",
+    "length_steps": 8,
+    "velocity": 0.05
+   },
+   {
+    "step": 22,
+    "voice": "guitar",
+    "note": "G3",
+    "length_steps": 8,
+    "velocity": 0.04
+   },
+   {
+    "step": 22,
+    "voice": "guitar",
+    "note": "E4",
+    "length_steps": 8,
+    "velocity": 0.04
+   },
+   {
+    "step": 22,
+    "voice": "bass",
+    "note": "C2",
+    "length_steps": 8,
+    "velocity": 0.1
+   }
+  ]
+ }
+}

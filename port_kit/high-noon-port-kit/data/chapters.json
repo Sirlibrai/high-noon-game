@@ -1,0 +1,52 @@
+[
+  {
+    "index": 0,
+    "name": "Main Street",
+    "who": "Iron Eli",
+    "crime": "Wanted for holding up the Main Street bank",
+    "reward": "$1,000",
+    "bounty": 1000,
+    "scene": "street",
+    "playable": true
+  },
+  {
+    "index": 1,
+    "name": "The train",
+    "who": "The Coal Gang",
+    "crime": "Wanted for robbing the 3:15 express",
+    "reward": "$1,500",
+    "bounty": 1500,
+    "scene": "train",
+    "playable": true
+  },
+  {
+    "index": 2,
+    "name": "The gold mine",
+    "who": "Digger McCall",
+    "crime": "Wanted for claim jumping and stolen dynamite",
+    "reward": "$2,000",
+    "bounty": null,
+    "scene": null,
+    "playable": false
+  },
+  {
+    "index": 3,
+    "name": "The ghost town",
+    "who": "The Lantern Man",
+    "crime": "Wanted for haunting the Silver Creek road",
+    "reward": "$2,500",
+    "bounty": null,
+    "scene": null,
+    "playable": false
+  },
+  {
+    "index": 4,
+    "name": "The hideout",
+    "who": "Name unknown",
+    "crime": "Known only by the initials J.R.",
+    "reward": "$5,000",
+    "bounty": null,
+    "scene": null,
+    "playable": false
+  }
+]

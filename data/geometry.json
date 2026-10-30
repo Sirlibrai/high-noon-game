@@ -1,0 +1,96 @@
+{
+  "_about": [
+    "Gameplay geometry, in the same units as levels.json and rules.md (the prototype's 320x180 stage).",
+    "These numbers decide what a tap hits. They never come from sprite sizes, so art can be replaced freely.",
+    "Cover sizes (hitbox width, and the height an outlaw hides behind) stay in the kit's data/cover_sizes.json.",
+    "pad values grow a hitbox on each side: 'touch' for fingers, 'mouse' for desktop testing."
+  ],
+  "pixels_per_unit": 2,
+  "stage": {"width": 320, "height": 180},
+
+  "outlaw": {
+    "hitbox": [14, 19],
+    "hide_gap": 2,
+    "peek_up": 12,
+    "peek_side_extra": 5,
+    "rise_time": 0.16,
+    "drop_time": 0.16,
+    "hit_pad": {"touch": 6, "mouse": 3},
+    "fall_time": 1.2,
+    "fall_drop": 10,
+    "fall_spin": 4,
+    "fall_max_angle": 1.5,
+    "hit_flash_time": 0.08
+  },
+  "window_outlaw": {"hidden_below_sill": 1, "exposed_from_top": 3},
+  "runner": {"run_time": 1.5, "dash_chance": 0.55, "hit_pad": {"touch": 6, "mouse": 3}},
+  "hostage": {
+    "lean": 13,
+    "captor_top_above_ground": 21,
+    "body": [14, 15],
+    "body_top_above_ground": 17,
+    "body_pad": {"touch": -2, "mouse": 0},
+    "exposed_min": 0.5,
+    "aim_multiplier": 1.3
+  },
+  "bottle": {"hitbox": [4, 9], "rail_y": 118, "hit_pad": {"touch": 6, "mouse": 3}},
+  "sign": {
+    "board": [22, 12],
+    "hang_y": 104,
+    "rope_top": 99,
+    "rope_width": 2,
+    "rope_pad": {"touch": 7, "mouse": 4},
+    "beam_overhang": 4,
+    "fallen_beam_y": 97,
+    "gravity": 0.35,
+    "crush_margin": 14
+  },
+  "tnt": {"kill_radius": 38, "hostage_radius": 38, "cover_radius": 34, "bottle_radius": 40, "chain_delay": 0.15},
+  "duel": {
+    "zone": [56, 62],
+    "zone_below_ground": 4,
+    "zone_pad": {"touch": 6, "mouse": 0},
+    "aim_bonus": {"touch": 0.16, "mouse": 0.1},
+    "card_box_from_boss": 27,
+    "card_above_ground": 19,
+    "pips_above_ground": 50,
+    "pip_spacing": 10,
+    "twitch_spark": [15, -15]
+  },
+  "gun": {
+    "pivot_from_corner": [20, 2],
+    "kick_offset": [10, 6],
+    "reload_drop": 10,
+    "rest_angle": 0.35,
+    "reload_angle": -0.5,
+    "angle_range": [0.05, 0.8],
+    "brass_from_pivot": [-10, -12]
+  },
+  "dynamite": {
+    "flight_time": 1.7,
+    "target": [160, 150],
+    "arc_height": 45,
+    "grow": 1.8,
+    "spin": 12,
+    "hit_radius_per_scale": 3,
+    "hit_pad": {"touch": 8, "mouse": 5},
+    "lands_at": [160, 168]
+  },
+  "iron_eli": {
+    "_about": "rules.md section 8. Spots are where he appears in stage 2: a window index (w) or a cover index (c).",
+    "first_wait": 1.4,
+    "chase_spots": [{"w": 0}, {"c": 3}, {"w": 3}, {"c": 0}],
+    "spot_wait": 0.5,
+    "reinforcements": [{"w": 1}, {"c": 4}],
+    "wait_after_first_hit": 1.4,
+    "wait_after_second_hit": 0.8,
+    "reinforcement_wait": [0.8, 1.8],
+    "chase_bullets": 16,
+    "chase_aim": {"hp3": 0.85, "hp2": 0.85, "hp1": 0.7},
+    "tool_reset_time": 3,
+    "armour_off_delay": 1.1,
+    "final_draw_delay": 1.4,
+    "duel": {"boss": "BOSS_B", "hp": 2, "react": [0.6, 0.55, 0.5], "fakes": true, "lastStand": true}
+  },
+  "tumbleweed": {"speed": 0.7, "above_ground": -14, "bounce": 4}
+}

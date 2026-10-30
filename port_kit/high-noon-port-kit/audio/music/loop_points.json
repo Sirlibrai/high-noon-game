@@ -1,0 +1,32 @@
+{
+  "splash": {
+    "seconds": 16,
+    "loop_start_seconds": 3.22,
+    "plays_once": false
+  },
+  "office": {
+    "seconds": 20,
+    "loop_start_seconds": 0.02,
+    "plays_once": false
+  },
+  "street": {
+    "seconds": 15.24,
+    "loop_start_seconds": 0.02,
+    "plays_once": false
+  },
+  "train": {
+    "seconds": 13.33,
+    "loop_start_seconds": 0.02,
+    "plays_once": false
+  },
+  "boss": {
+    "seconds": 14.12,
+    "loop_start_seconds": 0.02,
+    "plays_once": false
+  },
+  "victory": {
+    "seconds": 4.93,
+    "loop_start_seconds": 0.02,
+    "plays_once": true
+  }
+}

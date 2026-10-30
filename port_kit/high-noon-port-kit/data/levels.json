@@ -1,0 +1,749 @@
+{
+  "main_street": [
+    {
+      "name": "Target practice",
+      "tutorial": true,
+      "bullets": 6,
+      "par": 5,
+      "aim": 2.6,
+      "pace": 1.3,
+      "covers": [
+        [
+          "barrel",
+          150
+        ]
+      ],
+      "enemies": [
+        {
+          "c": 0,
+          "side": "up"
+        }
+      ],
+      "bottles": [
+        40,
+        64,
+        240,
+        262
+      ],
+      "tip": "Bottles first, then the outlaw."
+    },
+    {
+      "name": "Powder keg",
+      "bullets": 1,
+      "par": 1,
+      "aim": 1.6,
+      "pace": 1.2,
+      "covers": [
+        [
+          "crate",
+          106
+        ],
+        [
+          "tnt",
+          128
+        ],
+        [
+          "crate",
+          146
+        ]
+      ],
+      "enemies": [
+        {
+          "c": 0,
+          "side": "hide"
+        },
+        {
+          "c": 1,
+          "side": "hide"
+        },
+        {
+          "c": 2,
+          "side": "hide"
+        }
+      ],
+      "tip": "Three outlaws. One bullet.",
+      "puzzle": true,
+      "hint": "The red barrel with the lit fuse is more than cover.",
+      "hintTarget": {
+        "cover": 1
+      }
+    },
+    {
+      "name": "Crossfire",
+      "bullets": 6,
+      "par": 4,
+      "aim": 1.6,
+      "pace": 1.05,
+      "covers": [
+        [
+          "barrel",
+          30
+        ],
+        [
+          "wagon",
+          96
+        ],
+        [
+          "crate",
+          186
+        ],
+        [
+          "barrel",
+          252
+        ]
+      ],
+      "enemies": [
+        {
+          "c": 0,
+          "side": "up"
+        },
+        {
+          "c": 1,
+          "side": "right"
+        },
+        {
+          "w": 0
+        },
+        {
+          "run": [
+            3,
+            2
+          ]
+        }
+      ],
+      "tip": "Catch the runner in the open."
+    },
+    {
+      "name": "Chain reaction",
+      "bullets": 3,
+      "par": 3,
+      "aim": 1.5,
+      "pace": 1.1,
+      "covers": [
+        [
+          "crate",
+          34
+        ],
+        [
+          "tnt",
+          58
+        ],
+        [
+          "tnt",
+          88
+        ],
+        [
+          "crate",
+          110
+        ],
+        [
+          "barrel",
+          232
+        ]
+      ],
+      "enemies": [
+        {
+          "c": 0,
+          "side": "hide"
+        },
+        {
+          "c": 3,
+          "side": "hide"
+        },
+        {
+          "c": 4,
+          "side": "up"
+        },
+        {
+          "w": 2
+        }
+      ],
+      "tip": "One spark can do a lot.",
+      "puzzle": true,
+      "hint": "Powder sets off powder. Count what one blast can reach.",
+      "hintTarget": {
+        "cover": 1
+      }
+    },
+    {
+      "name": "Black Jack",
+      "duel": true,
+      "boss": "BOSS",
+      "hp": 3,
+      "react": [
+        0.75,
+        0.65,
+        0.56
+      ],
+      "fakes": false,
+      "cards": true,
+      "tip": "Draw only on the ace."
+    },
+    {
+      "name": "Hostage",
+      "bullets": 4,
+      "par": 3,
+      "aim": 1.5,
+      "pace": 1.1,
+      "covers": [
+        [
+          "barrel",
+          40
+        ],
+        [
+          "barrel",
+          250
+        ]
+      ],
+      "enemies": [
+        {
+          "c": 0,
+          "side": "up"
+        },
+        {
+          "c": 1,
+          "side": "up"
+        },
+        {
+          "hostage": 153
+        }
+      ],
+      "tip": "Shoot when he leans out."
+    },
+    {
+      "name": "Hang ’em high",
+      "bullets": 4,
+      "par": 3,
+      "aim": 1.35,
+      "pace": 1,
+      "covers": [
+        [
+          "barrel",
+          40
+        ],
+        [
+          "wagon",
+          182
+        ]
+      ],
+      "enemies": [
+        {
+          "c": 1,
+          "side": "hide"
+        },
+        {
+          "c": 0,
+          "side": "up"
+        },
+        {
+          "w": 0
+        }
+      ],
+      "sign": 196,
+      "tip": "That sign looks heavy.",
+      "puzzle": true,
+      "hint": "Follow the rope above the wagon.",
+      "hintTarget": {
+        "sign": true
+      }
+    },
+    {
+      "name": "Ambush",
+      "bullets": 8,
+      "par": 6,
+      "aim": 1.05,
+      "pace": 0.8,
+      "covers": [
+        [
+          "barrel",
+          18
+        ],
+        [
+          "crate",
+          80
+        ],
+        [
+          "trough",
+          132
+        ],
+        [
+          "barrel",
+          206
+        ],
+        [
+          "crate",
+          250
+        ]
+      ],
+      "enemies": [
+        {
+          "c": 0,
+          "side": "up"
+        },
+        {
+          "c": 1,
+          "side": "left"
+        },
+        {
+          "c": 2,
+          "side": "up"
+        },
+        {
+          "c": 3,
+          "side": "up"
+        },
+        {
+          "w": 1
+        },
+        {
+          "w": 3
+        }
+      ],
+      "tip": "Six of them. Faster now."
+    },
+    {
+      "name": "Bank job",
+      "bullets": 5,
+      "par": 4,
+      "aim": 1.2,
+      "pace": 1,
+      "covers": [
+        [
+          "tnt",
+          96
+        ],
+        [
+          "barrel",
+          238
+        ]
+      ],
+      "enemies": [
+        {
+          "hostage": 124
+        },
+        {
+          "c": 1,
+          "side": "hide"
+        },
+        {
+          "w": 2
+        },
+        {
+          "w": 3
+        }
+      ],
+      "sign": 234,
+      "tip": "Mind the powder.",
+      "puzzle": true,
+      "hint": "Not every barrel should be shot. Look up instead.",
+      "hintTarget": {
+        "sign": true
+      }
+    },
+    {
+      "name": "Iron Eli",
+      "eli": true,
+      "bullets": 12,
+      "par": 9,
+      "aim": 1.35,
+      "pace": 1,
+      "covers": [
+        [
+          "barrel",
+          36
+        ],
+        [
+          "tnt",
+          112
+        ],
+        [
+          "crate",
+          146
+        ],
+        [
+          "wagon",
+          182
+        ],
+        [
+          "barrel",
+          250
+        ]
+      ],
+      "enemies": [
+        {
+          "c": 0,
+          "side": "up"
+        },
+        {
+          "c": 4,
+          "side": "up"
+        },
+        {
+          "eli": true,
+          "from": 2,
+          "to": 3
+        }
+      ],
+      "sign": 196,
+      "tip": "Crack the armour twice, run him down, then win the draw."
+    }
+  ],
+  "train": [
+    {
+      "name": "All aboard",
+      "bullets": 6,
+      "par": 4,
+      "aim": 1.7,
+      "pace": 1.15,
+      "covers": [
+        [
+          "crate",
+          186
+        ],
+        [
+          "barrel",
+          236
+        ]
+      ],
+      "enemies": [
+        {
+          "w": 0
+        },
+        {
+          "w": 2
+        },
+        {
+          "c": 0,
+          "side": "up"
+        },
+        {
+          "c": 1,
+          "side": "up"
+        }
+      ],
+      "tip": "They never slow down."
+    },
+    {
+      "name": "Roof riders",
+      "bullets": 6,
+      "par": 4,
+      "aim": 1.55,
+      "pace": 1.1,
+      "covers": [
+        [
+          "barrel",
+          214
+        ]
+      ],
+      "enemies": [
+        {
+          "w": 3
+        },
+        {
+          "w": 4
+        },
+        {
+          "w": 1
+        },
+        {
+          "c": 0,
+          "side": "up"
+        }
+      ],
+      "tip": "Watch the roof hatches."
+    },
+    {
+      "name": "Cut loose",
+      "pin": true,
+      "bullets": 2,
+      "par": 2,
+      "aim": 1.6,
+      "pace": 1.2,
+      "covers": [
+        [
+          "crate",
+          176
+        ],
+        [
+          "crate",
+          208
+        ],
+        [
+          "barrel",
+          240
+        ]
+      ],
+      "enemies": [
+        {
+          "c": 0,
+          "side": "hide"
+        },
+        {
+          "c": 1,
+          "side": "hide"
+        },
+        {
+          "c": 2,
+          "side": "hide"
+        },
+        {
+          "w": 1
+        }
+      ],
+      "tip": "What holds that car on?",
+      "puzzle": true,
+      "hint": "Look at what joins the two cars.",
+      "hintTarget": {
+        "pin": true
+      }
+    },
+    {
+      "name": "Into the dark",
+      "tunnel": {
+        "every": 5.5,
+        "dark": 2.4
+      },
+      "bullets": 7,
+      "par": 5,
+      "aim": 1.6,
+      "pace": 1.05,
+      "covers": [
+        [
+          "crate",
+          186
+        ],
+        [
+          "barrel",
+          234
+        ]
+      ],
+      "enemies": [
+        {
+          "w": 0
+        },
+        {
+          "w": 2
+        },
+        {
+          "w": 4
+        },
+        {
+          "c": 0,
+          "side": "up"
+        },
+        {
+          "c": 1,
+          "side": "up"
+        }
+      ],
+      "tip": "In tunnels, aim at the glow."
+    },
+    {
+      "name": "Smokey Pete",
+      "duel": true,
+      "boss": "SMOKEY",
+      "hp": 3,
+      "react": [
+        0.72,
+        0.62,
+        0.55
+      ],
+      "fakes": false,
+      "smoke": true,
+      "tip": "Ignore the smoke."
+    },
+    {
+      "name": "Mail car",
+      "bullets": 5,
+      "par": 4,
+      "aim": 1.45,
+      "pace": 1.05,
+      "covers": [
+        [
+          "barrel",
+          240
+        ]
+      ],
+      "enemies": [
+        {
+          "hostage": 200
+        },
+        {
+          "w": 3
+        },
+        {
+          "w": 1
+        },
+        {
+          "c": 0,
+          "side": "up"
+        }
+      ],
+      "tip": "Wait for the lean."
+    },
+    {
+      "name": "Dynamite express",
+      "bullets": 5,
+      "par": 4,
+      "aim": 1.4,
+      "pace": 1,
+      "covers": [
+        [
+          "crate",
+          170
+        ],
+        [
+          "tnt",
+          192
+        ],
+        [
+          "crate",
+          212
+        ],
+        [
+          "barrel",
+          240
+        ]
+      ],
+      "enemies": [
+        {
+          "c": 0,
+          "side": "hide"
+        },
+        {
+          "c": 2,
+          "side": "hide"
+        },
+        {
+          "c": 3,
+          "side": "up"
+        },
+        {
+          "w": 0
+        },
+        {
+          "w": 4
+        }
+      ],
+      "tip": "Somebody packed powder.",
+      "puzzle": true,
+      "hint": "One crate on that flatcar is not like the others.",
+      "hintTarget": {
+        "cover": 1
+      }
+    },
+    {
+      "name": "Dark run",
+      "tunnel": {
+        "every": 4.5,
+        "dark": 2.6
+      },
+      "bullets": 9,
+      "par": 7,
+      "aim": 1.15,
+      "pace": 0.8,
+      "covers": [
+        [
+          "crate",
+          168
+        ],
+        [
+          "trough",
+          192
+        ],
+        [
+          "barrel",
+          236
+        ]
+      ],
+      "enemies": [
+        {
+          "w": 0
+        },
+        {
+          "w": 1
+        },
+        {
+          "w": 2
+        },
+        {
+          "w": 3
+        },
+        {
+          "w": 4
+        },
+        {
+          "c": 0,
+          "side": "up"
+        },
+        {
+          "c": 2,
+          "side": "up"
+        }
+      ],
+      "tip": "Seven outlaws. Long tunnels."
+    },
+    {
+      "name": "End of the line",
+      "pin": true,
+      "bullets": 5,
+      "par": 4,
+      "aim": 1.3,
+      "pace": 1,
+      "covers": [
+        [
+          "crate",
+          206
+        ],
+        [
+          "tnt",
+          226
+        ],
+        [
+          "barrel",
+          242
+        ]
+      ],
+      "enemies": [
+        {
+          "hostage": 176
+        },
+        {
+          "c": 0,
+          "side": "hide"
+        },
+        {
+          "c": 2,
+          "side": "hide"
+        },
+        {
+          "w": 2
+        },
+        {
+          "w": 3
+        }
+      ],
+      "tip": "Cutting loose is too easy.",
+      "puzzle": true,
+      "hint": "Keep the car. Use the powder on it instead.",
+      "hintTarget": {
+        "cover": 1
+      }
+    },
+    {
+      "name": "Cole Haggerty",
+      "duel": true,
+      "boss": "COLE",
+      "hp": 4,
+      "react": [
+        0.62,
+        0.56,
+        0.5,
+        0.48
+      ],
+      "fakes": true,
+      "tunnelDuel": true,
+      "tip": "In the dark, listen for the bell."
+    }
+  ]
+}

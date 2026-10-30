@@ -1,0 +1,170 @@
+[gd_resource type="Theme" load_steps=13 format=3]
+
+[sub_resource type="SystemFont" id="font"]
+font_names = PackedStringArray("Pixelify Sans", "Menlo", "Courier New", "monospace")
+font_weight = 700
+
+[sub_resource type="StyleBoxTexture" id="button"]
+content_margin_left = 20.0
+content_margin_top = 7.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+texture_margin_left = 10.0
+texture_margin_top = 10.0
+texture_margin_right = 10.0
+texture_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxTexture" id="button_pressed"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 7.0
+texture_margin_left = 10.0
+texture_margin_top = 10.0
+texture_margin_right = 10.0
+texture_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxTexture" id="ghost"]
+content_margin_left = 20.0
+content_margin_top = 7.0
+content_margin_right = 20.0
+content_margin_bottom = 7.0
+texture_margin_left = 10.0
+texture_margin_top = 10.0
+texture_margin_right = 10.0
+texture_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxTexture" id="ghost_pressed"]
+content_margin_left = 20.0
+content_margin_top = 7.0
+content_margin_right = 20.0
+content_margin_bottom = 7.0
+texture_margin_left = 10.0
+texture_margin_top = 10.0
+texture_margin_right = 10.0
+texture_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxTexture" id="icon_button"]
+content_margin_left = 3.0
+content_margin_top = 3.0
+content_margin_right = 3.0
+content_margin_bottom = 3.0
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="icon_button_pressed"]
+content_margin_left = 3.0
+content_margin_top = 3.0
+content_margin_right = 3.0
+content_margin_bottom = 3.0
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="pill"]
+content_margin_left = 12.0
+content_margin_top = 3.0
+content_margin_right = 12.0
+content_margin_bottom = 5.0
+texture_margin_left = 13.0
+texture_margin_top = 13.0
+texture_margin_right = 13.0
+texture_margin_bottom = 13.0
+
+[sub_resource type="StyleBoxTexture" id="shade"]
+texture_margin_left = 1.0
+texture_margin_top = 1.0
+texture_margin_right = 1.0
+texture_margin_bottom = 1.0
+
+[sub_resource type="StyleBoxTexture" id="bar_back"]
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxTexture" id="bar_fill"]
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxEmpty" id="empty"]
+
+[resource]
+default_font = SubResource("font")
+default_font_size = 15
+Button/colors/font_color = Color(0.164706, 0.101961, 0.0627451, 1)
+Button/colors/font_hover_color = Color(0.164706, 0.101961, 0.0627451, 1)
+Button/colors/font_pressed_color = Color(0.164706, 0.101961, 0.0627451, 1)
+Button/colors/font_focus_color = Color(0.164706, 0.101961, 0.0627451, 1)
+Button/colors/font_disabled_color = Color(0.164706, 0.101961, 0.0627451, 0.5)
+Button/font_sizes/font_size = 17
+Button/styles/disabled = SubResource("button")
+Button/styles/focus = SubResource("empty")
+Button/styles/hover = SubResource("button")
+Button/styles/normal = SubResource("button")
+Button/styles/pressed = SubResource("button_pressed")
+GhostButton/base_type = &"Button"
+GhostButton/colors/font_color = Color(1, 1, 1, 1)
+GhostButton/colors/font_hover_color = Color(1, 1, 1, 1)
+GhostButton/colors/font_pressed_color = Color(1, 1, 1, 1)
+GhostButton/colors/font_focus_color = Color(1, 1, 1, 1)
+GhostButton/styles/disabled = SubResource("ghost")
+GhostButton/styles/hover = SubResource("ghost")
+GhostButton/styles/normal = SubResource("ghost")
+GhostButton/styles/pressed = SubResource("ghost_pressed")
+SmallGhostButton/base_type = &"GhostButton"
+SmallGhostButton/font_sizes/font_size = 14
+IconButton/base_type = &"Button"
+IconButton/styles/hover = SubResource("icon_button")
+IconButton/styles/normal = SubResource("icon_button")
+IconButton/styles/pressed = SubResource("icon_button_pressed")
+Label/colors/font_color = Color(1, 1, 1, 1)
+Label/font_sizes/font_size = 15
+Heading/base_type = &"Label"
+Heading/colors/font_color = Color(0.94902, 0.709804, 0.266667, 1)
+Heading/colors/font_shadow_color = Color(0.658824, 0.270588, 0.164706, 1)
+Heading/constants/shadow_offset_x = 0
+Heading/constants/shadow_offset_y = 3
+Heading/font_sizes/font_size = 34
+Title/base_type = &"Heading"
+Title/font_sizes/font_size = 56
+Tip/base_type = &"Label"
+Tip/colors/font_color = Color(1, 1, 1, 0.9)
+Tip/font_sizes/font_size = 16
+Hint/base_type = &"Label"
+Hint/colors/font_color = Color(1, 1, 1, 0.85)
+Hint/font_sizes/font_size = 13
+Pay/base_type = &"Label"
+Pay/colors/font_color = Color(0.94902, 0.709804, 0.266667, 1)
+Pay/font_sizes/font_size = 18
+AdTag/base_type = &"Label"
+AdTag/colors/font_color = Color(0.94902, 0.709804, 0.266667, 1)
+AdTag/font_sizes/font_size = 12
+PillLabel/base_type = &"Label"
+PillLabel/colors/font_color = Color(0.164706, 0.101961, 0.0627451, 1)
+PillLabel/font_sizes/font_size = 15
+Pill/base_type = &"PanelContainer"
+Pill/styles/panel = SubResource("pill")
+Shade/base_type = &"Panel"
+Shade/styles/panel = SubResource("shade")
+HudLabel/base_type = &"Label"
+HudLabel/colors/font_shadow_color = Color(0.164706, 0.101961, 0.0627451, 0.6)
+HudLabel/constants/shadow_offset_x = 0
+HudLabel/constants/shadow_offset_y = 2
+HudLabel/font_sizes/font_size = 17
+Callout/base_type = &"Label"
+Callout/colors/font_shadow_color = Color(0.658824, 0.270588, 0.164706, 1)
+Callout/constants/shadow_offset_x = 0
+Callout/constants/shadow_offset_y = 4
+Callout/font_sizes/font_size = 50
+CalloutSmall/base_type = &"Callout"
+CalloutSmall/font_sizes/font_size = 28
+ProgressBar/styles/background = SubResource("bar_back")
+ProgressBar/styles/fill = SubResource("bar_fill")
+VBoxContainer/constants/separation = 8
+HBoxContainer/constants/separation = 10

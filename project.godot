@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 SaveManager="*res://autoload/save_manager.gd"
+CloudSync="*res://autoload/cloud_sync.gd"
 GameState="*res://autoload/game_state.gd"
 Assets="*res://autoload/assets.gd"
 AudioManager="*res://autoload/audio_manager.gd"

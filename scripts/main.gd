@@ -1,7 +1,9 @@
 extends Node
-## Screens and HUD around a Level: the level picker, intro card, win and fail
-## cards with the Second Chance offer, and pause. The look comes from the
-## shared theme (ui/theme.tres) and the asset manifest; nothing is drawn here.
+## The game's flow, as in the prototype: the splash standoff, the sheriff's
+## office (home), the Bounty board, each bounty's level grid, the coming-soon
+## cards, and around a Level its HUD, intro card, win and fail cards with the
+## Second Chance offer, and pause. The look comes from the shared theme
+## (ui/theme.tres) and the asset manifest; nothing is drawn here.
 ##
 ## The game fills the screen: the 640×360 stage is centred and wide phones see
 ## more of the street's background layers at the sides. HUD controls follow the
@@ -14,7 +16,12 @@ var ci := 0
 var li := 0
 
 var _world: Node2D
-var _backdrop: Node2D
+var _screen: Node2D  # the splash or the office, when no level is running
+var _fresh_capture: Variant = null
+var _home_bar: CanvasLayer
+var _home_box: MarginContainer
+var _music_btn: Button
+var _wallet: Button
 var _hud: CanvasLayer
 var _hud_box: MarginContainer
 var _hearts: Array[TextureRect] = []
@@ -33,22 +40,44 @@ var _overlay: Control
 func _ready() -> void:
 	_world = Node2D.new()
 	add_child(_world)
-	_backdrop = Node2D.new()
-	_world.add_child(_backdrop)
-	var art: Dictionary = Assets.scenes["main_street"]
-	for layer in art.layers:
-		AssetSprite.make(layer, _backdrop)
-	var windows: Array = GameState.scenes.street.windows
-	var ppu: float = GameState.geometry.pixels_per_unit
-	for i in windows.size():
-		AssetSprite.make(art.window_frames[i], _backdrop).position = Vector2(windows[i].x, windows[i].y) * ppu
 	_build_hud()
+	_build_home_bar()
 	_overlay_layer = CanvasLayer.new()
 	_overlay_layer.layer = 10
 	add_child(_overlay_layer)
 	get_viewport().size_changed.connect(_layout)
+	CloudSync.merged.connect(func():
+		if _screen is Office and _overlay == null:
+			show_home())  # another device's progress arrived: refresh the office
 	_layout()
-	show_menu()
+	show_splash()
+
+
+## The office's top bar: the High Noon logo, the music switch and the wallet.
+func _build_home_bar() -> void:
+	_home_bar = CanvasLayer.new()
+	_home_bar.layer = 5
+	add_child(_home_bar)
+	_home_box = MarginContainer.new()
+	_home_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	_home_box.add_theme_constant_override("margin_top", 8)
+	_home_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_home_bar.add_child(_home_box)
+	var bar := HBoxContainer.new()
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_home_box.add_child(bar)
+	UiKit.text(bar, "High Noon", &"Logo")
+	_music_btn = UiKit.icon_button(bar, "ui/icon_music")
+	_music_btn.pressed.connect(func():
+		AudioManager.set_music(not AudioManager.music_on)
+		_refresh_home_bar())
+	_wallet = _wallet_button(bar)
+	_home_bar.visible = false
+
+
+func _refresh_home_bar() -> void:
+	_music_btn.icon = Assets.texture("ui/icon_music" if AudioManager.music_on else "ui/icon_music_off")
+	_wallet.text = "$%s  ›" % _money(int(GameState.progress.bucks))
 
 
 ## Centres the stage and keeps the HUD inside the safe area (notch, Dynamic Island).
@@ -65,8 +94,9 @@ func _layout() -> void:
 	var k := vis / win if win.x > 0 and win.y > 0 else Vector2.ONE
 	var left := maxf(0, safe.position.x) * k.x if safe.size.x > 0 else 0.0
 	var right := maxf(0, win.x - safe.end.x) * k.x if safe.size.x > 0 else 0.0
-	_hud_box.add_theme_constant_override("margin_left", int(12 + left))
-	_hud_box.add_theme_constant_override("margin_right", int(12 + right))
+	for box in [_hud_box, _home_box]:
+		box.add_theme_constant_override("margin_left", int(12 + left))
+		box.add_theme_constant_override("margin_right", int(12 + right))
 
 
 # ---------- input ----------
@@ -78,6 +108,11 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _screen is Splash:
+		if (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) \
+				or (event is InputEventKey and event.pressed and event.keycode in [KEY_SPACE, KEY_ENTER]):
+			(_screen as Splash).tap()
+		return
 	if level == null:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -112,17 +147,158 @@ func _notification(what: int) -> void:
 
 # ---------- flow ----------
 
-func show_menu() -> void:
+func _set_screen(node: Node2D) -> void:
+	if is_instance_valid(_screen):
+		_screen.queue_free()
+	_screen = node
+	if node != null:
+		_world.add_child(node)
+
+
+## The splash standoff; its second tap fades to the office.
+func show_splash() -> void:
 	_end_level()
+	_home_bar.visible = false
+	var s := Splash.new()
+	_set_screen(s)
+	s.finished.connect(func(): show_home())
+
+
+## The sheriff's office (the prototype's home()).
+func show_home() -> void:
+	_end_level()
+	var o := Office.new()  # rebuilt each visit, so posters, rack and cabinet show the latest progress
+	o.fresh_capture = _fresh_capture
+	_fresh_capture = null
+	_set_screen(o)
+	o.act.connect(_on_office_act)
+	AudioManager.duck(1.0)
 	AudioManager.play("office")
+	_home_bar.visible = true
+	_refresh_home_bar()
+
+
+func _office_backdrop() -> void:
+	_end_level()
+	if not _screen is Office:
+		_set_screen(Office.new())
+		(_screen as Office).act.connect(_on_office_act)
+	AudioManager.play("office")
+	_home_bar.visible = false
+
+
+func _on_office_act(name: String) -> void:
+	match name:
+		"board":
+			AudioManager.sfx("rustle")
+			show_board()
+		"hunt":
+			AudioManager.sfx("rustle")
+			hunt()
+		"profile":
+			AudioManager.sfx("tick2")
+			_not_yet("Profile", "Your own wanted poster, rank, trophy shelf and ledger arrive with the next build.")
+		"gunsmith":
+			_not_yet("Gunsmith", "Buying guns and finishes with Bounty Dollars arrives with the next build.")
+		"daily":
+			AudioManager.sfx("flip")
+			soon(name)
+		"survival":
+			AudioManager.sfx("tick2")
+			soon(name)
+		"duelsoon":
+			AudioManager.sfx("bell")
+			soon(name)
+
+
+## Continue the hunt: the next uncaptured bounty, at its furthest unlocked level.
+func hunt() -> void:
+	var st := GameState.desk_status(GameState.progress, GameState.playtest())
+	if not st.hunting:
+		return
+	if not GameState.is_built(st.ch, st.level):
+		_not_yet(GameState.chapters[st.ch].name, "%s’s levels arrive with the next build." % GameState.chapters[st.ch].who)
+		return
+	show_intro(st.ch, st.level)
+
+
+## The Bounty board: all five posters, open, captured, locked or coming soon.
+func show_board() -> void:
+	_office_backdrop()
 	var card := _open_overlay()
-	var ch: Dictionary = GameState.chapters[0]
+	var top := UiKit.row(card)
+	UiKit.button(top, "‹ Home", &"SmallGhostButton").pressed.connect(show_home)
+	_wallet_button(top)
+	UiKit.text(card, "Bounty board", &"Heading")
+	UiKit.text(card, "Pick a poster and go after the outlaw.", &"Hint")
+	var posters := UiKit.row(card)
+	var pg: Dictionary = GameState.progress
+	var pt := GameState.playtest()
+	var tilt := [-2.0, 1.5, -1.0, 2.0, -1.5]
+	for i in GameState.chapters.size():
+		var ch: Dictionary = GameState.chapters[i]
+		var state := GameState.poster_state(pg, i, pt)
+		var open := state == "open" or state == "captured"
+		var b := Button.new()
+		b.theme_type_variation = &"Poster"
+		b.focus_mode = Control.FOCUS_NONE
+		b.custom_minimum_size = Vector2(112, 0)
+		b.disabled = not open
+		b.tooltip_text = "%s: %s, %s%s" % [ch.name, ch.who, ch.reward, ", captured" if state == "captured" else ""]
+		b.pressed.connect(show_chapter.bind(i))
+		posters.add_child(b)
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 1)
+		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(v)
+		UiKit.text(v, "WANTED", &"PosterWanted")
+		var pic := UiKit.image(v, "portrait/ch%d" % i, Vector2(54, 50))
+		if not open:
+			pic.modulate = Color(0, 0, 0, 0.75)
+		UiKit.text(v, ch.who, &"PosterName", 100)
+		UiKit.text(v, ch.crime, &"PosterCrime", 104)
+		UiKit.text(v, ch.reward, &"PosterReward")
+		if open:
+			var lvls: Array = GameState.levels_for(i)
+			UiKit.text(v, "★ %d/%d" % [GameState.chapter_stars(pg, i), lvls.size() * 3], &"PosterCrime")
+		else:
+			UiKit.text(v, ch.name, &"PosterCrime")
+		for c in v.get_children():
+			c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		v.offset_top = 8
+		b.custom_minimum_size.y = v.get_combined_minimum_size().y + 16
+		if state != "open":
+			var stamp := PanelContainer.new()
+			stamp.theme_type_variation = &"Stamp"
+			stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			UiKit.text(stamp, {"captured": "CAPTURED", "locked": "LOCKED", "soon": "COMING SOON"}[state], &"StampLabel")
+			b.add_child(stamp)
+			var sz := stamp.get_combined_minimum_size()
+			stamp.size = sz
+			stamp.position = Vector2((112 - sz.x) / 2, 58)
+			stamp.pivot_offset = sz / 2
+			stamp.rotation = deg_to_rad(-14)
+		b.pivot_offset = Vector2(56, b.custom_minimum_size.y / 2)
+		b.rotation = deg_to_rad(tilt[i])
+
+
+## One bounty's levels (the prototype's menu(c)).
+func show_chapter(c: int) -> void:
+	_office_backdrop()
+	ci = c
+	var card := _open_overlay()
+	var top := UiKit.row(card)
+	UiKit.button(top, "‹ Bounty board", &"SmallGhostButton").pressed.connect(show_board)
+	_wallet_button(top)
+	var ch: Dictionary = GameState.chapters[c]
 	UiKit.text(card, ch.name, &"Heading")
-	UiKit.text(card, "%s, %s. Gold levels are duels." % [ch.who, ch.reward], &"Hint")
+	var built := GameState.is_built(c, 0)
+	UiKit.text(card, ("%s, %s. Gold levels are duels." % [ch.who, ch.reward]) if built else "%s’s levels arrive with the next build." % ch.who, &"Hint")
 	var grid := GridContainer.new()
 	grid.columns = 5
 	card.add_child(grid)
-	var lvls: Array = GameState.levels_for(0)
+	var lvls: Array = GameState.levels_for(c)
 	for i in lvls.size():
 		var lv: Dictionary = lvls[i]
 		var cell := VBoxContainer.new()
@@ -132,22 +308,66 @@ func show_menu() -> void:
 		var b := UiKit.button(cell, str(i + 1), &"" if duel_level else &"GhostButton")
 		b.custom_minimum_size = Vector2(88, 0)
 		b.tooltip_text = lv.name
-		b.disabled = not GameState.level_open(0, i)
-		b.pressed.connect(show_intro.bind(0, i))
-		UiKit.stars(cell, GameState.stars_in(GameState.progress, 0, i), 16)
+		b.disabled = not GameState.level_open(c, i)
+		b.pressed.connect(show_intro.bind(c, i))
+		UiKit.stars(cell, GameState.stars_in(GameState.progress, c, i), 16)
 	var settings := UiKit.row(card)
 	var pt := UiKit.button(settings, "All levels open: " + ("on" if GameState.playtest() else "off"), &"SmallGhostButton")
 	pt.pressed.connect(func():
 		SaveManager.set_setting("playtest", not GameState.playtest())
-		show_menu())
+		show_chapter(c))
 	var snd := UiKit.button(settings, "Sound: " + ("on" if AudioManager.sound_on else "off"), &"SmallGhostButton")
 	snd.pressed.connect(func():
 		AudioManager.set_sound(not AudioManager.sound_on)
-		show_menu())
-	var mus := UiKit.button(settings, "Music: " + ("on" if AudioManager.music_on else "off"), &"SmallGhostButton")
-	mus.pressed.connect(func():
-		AudioManager.set_music(not AudioManager.music_on)
-		show_menu())
+		show_chapter(c))
+
+
+const SOON := {
+	"daily": ["Daily Bounty", "One hand-picked challenge every day, the same for every bounty hunter. Keep your streak going and share your results."],
+	"survival": ["Survival", "Endless waves of outlaws that keep getting faster. Chain your hits for combos and chase your best score."],
+	"duelsoon": ["Duel at High Noon", "Think you’re the fastest gun in the West? Soon you’ll be able to challenge your friends to real-time quickdraw duels."],
+}
+
+
+## Daily Bounty, Survival and the Duel teaser: marked as coming soon, like the prototype.
+func soon(kind: String) -> void:
+	_office_backdrop()
+	var card := _open_overlay()
+	UiKit.button(UiKit.row(card), "‹ Home", &"SmallGhostButton").pressed.connect(show_home)
+	UiKit.text(card, SOON[kind][0], &"Heading")
+	UiKit.text(card, SOON[kind][1], &"", 420)
+	var stamp := PanelContainer.new()
+	stamp.theme_type_variation = &"Stamp"
+	UiKit.text(stamp, "COMING SOON", &"StampLabel")
+	var holder := CenterContainer.new()
+	holder.add_child(stamp)
+	card.add_child(holder)
+	UiKit.button(card, "Back").pressed.connect(show_home)
+
+
+## The Gunsmith and Profile screens are not part of this build yet.
+func _not_yet(title: String, body: String) -> void:
+	_office_backdrop()
+	var card := _open_overlay()
+	UiKit.text(card, title, &"Heading")
+	UiKit.text(card, body, &"", 420)
+	UiKit.button(card, "Back").pressed.connect(show_home)
+
+
+func _wallet_button(parent: Node) -> Button:
+	var b := UiKit.button(parent, "$%s  ›" % _money(int(GameState.progress.bucks)), &"Wallet")
+	b.tooltip_text = "Bounty Dollars. Spend them at the Gunsmith."
+	b.pressed.connect(_on_office_act.bind("gunsmith"))
+	return b
+
+
+static func _money(n: int) -> String:
+	var s := str(n)
+	var out := ""
+	while s.length() > 3:
+		out = "," + s.substr(s.length() - 3) + out
+		s = s.substr(0, s.length() - 3)
+	return s + out
 
 
 func show_intro(chapter: int, index: int) -> void:
@@ -176,7 +396,7 @@ func show_intro(chapter: int, index: int) -> void:
 		UiKit.text(card, L.tip, &"Tip", 420)
 	var buttons := UiKit.row(card)
 	UiKit.button(buttons, "Face him" if L.get("duel", false) else "Draw").pressed.connect(_go)
-	UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_menu)
+	UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
 
 
 func _go() -> void:
@@ -191,7 +411,8 @@ func restart() -> void:
 
 func _start_level() -> void:
 	_end_level()
-	_backdrop.visible = false
+	_set_screen(null)
+	_home_bar.visible = false
 	level = Level.new()
 	_world.add_child(level)
 	level.setup(ci, li)
@@ -211,7 +432,6 @@ func _end_level() -> void:
 	if level != null:
 		level.queue_free()
 		level = null
-	_backdrop.visible = true
 	_hud.visible = false
 
 
@@ -230,7 +450,8 @@ func _toggle_pause() -> void:
 		mus.pressed.connect(func():
 			AudioManager.set_music(not AudioManager.music_on)
 			mus.text = "Music: " + ("on" if AudioManager.music_on else "off"))
-		UiKit.button(card, "Levels", &"GhostButton").pressed.connect(show_menu)
+		UiKit.button(card, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
+		UiKit.button(card, "Home", &"GhostButton").pressed.connect(show_home)
 
 
 func _on_won(res: Dictionary) -> void:
@@ -253,12 +474,16 @@ func _on_won(res: Dictionary) -> void:
 		UiKit.text(card, "+$%d" % res.pay, &"Pay")
 	var buttons := UiKit.row(card)
 	if res.last:
-		UiKit.button(buttons, "Back to the levels").pressed.connect(show_menu)
+		# The stamp lands on the poster when the office next opens (officeFresh).
+		if res.get("captured", false):
+			_fresh_capture = ci
+		UiKit.button(buttons, "See the bounty board").pressed.connect(show_board)
+		UiKit.button(buttons, "Home", &"GhostButton").pressed.connect(show_home)
 		return
 	if GameState.level_open(ci, li + 1):
 		UiKit.button(buttons, "Next showdown").pressed.connect(show_intro.bind(ci, li + 1))
 	UiKit.button(buttons, "Retry", &"GhostButton").pressed.connect(restart)
-	UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_menu)
+	UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
 
 
 func _offer_text(offer: String) -> Array:
@@ -308,7 +533,7 @@ func _show_fail(reason: String, offer: Variant) -> void:
 	if offer != null:
 		retry_label = "Start over, free" if L.get("eli", false) else "Retry level, free"
 	UiKit.button(buttons, retry_label, &"GhostButton" if offer != null else &"").pressed.connect(restart)
-	UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_menu)
+	UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
 
 
 func _use_offer(offer: String, reason: String) -> void:

@@ -55,7 +55,7 @@ func _ready() -> void:
 		print("%s %s: %s, %d shots, %d hearts, events %s" % [tag, lvls[i].name, lv.state, lv.used, lv.hearts, lv.events])
 		bot = null
 	await _wait(0.3)
-	main.show_menu()
+	main.show_home()
 	await _wait(0.3)
 	await _shot("11_menu_after")
 	get_tree().quit()

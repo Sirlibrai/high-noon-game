@@ -1,0 +1,17 @@
+[config]
+
+name="HighNoonCloud"
+binary="HighNoonCloud.a"
+initialization="highnoon_cloud_init"
+deinitialization="highnoon_cloud_deinit"
+
+[dependencies]
+
+linked=[]
+embedded=[]
+system=["Foundation.framework", "UIKit.framework"]
+capabilities=[]
+files=[]
+linker_flags=[]
+
+[plist]

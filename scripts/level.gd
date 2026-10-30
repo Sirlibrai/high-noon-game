@@ -520,7 +520,7 @@ func win() -> void:
 	var res := GameState.apply_win(GameState.progress, ci, li, stars, {"boss": L.get("duel", false) or L.get("eli", false),
 		"last": last, "bounty": GameState.chapters[ci].bounty, "count": lvls.size()})
 	GameState.save()
-	won.emit({"stars": stars, "pay": res.pay, "hearts": hearts, "used": used, "damaged": damaged, "assisted": assisted_win, "last": last})
+	won.emit({"stars": stars, "pay": res.pay, "captured": res.capture_now, "hearts": hearts, "used": used, "damaged": damaged, "assisted": assisted_win, "last": last})
 
 
 func fail(reason: String, kind := "shot") -> void:

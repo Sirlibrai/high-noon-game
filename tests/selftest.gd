@@ -152,6 +152,9 @@ func _ready() -> void:
 				drawing.append(f)
 	ok("No game script draws in code", drawing.is_empty(), ", ".join(drawing))
 
+	_campaign_status()
+	_saves()
+
 	# Playthrough checks (expected_results.md), with the scripted player on a fresh, unsaved progress.
 	SaveManager.persist = false
 	SaveManager.data.progress = fresh()
@@ -257,6 +260,135 @@ func _iron_eli_rules() -> void:
 		resumed.merge({"stage": l2.eli_ck, "hearts": l2.hearts}, true))
 	ok("Iron Eli checkpoint resumes the stage reached with full hearts", resumed.get("stage") == 2 and resumed.get("hearts") == 3, str(resumed))
 	ok("Iron Eli checkpoint clear is capped at two stars", r.state == "won" and r.stars <= 2, "%s, %d stars" % [r.state, r.stars])
+
+
+## The desk ledger, the posters and the office board (rules.md §9).
+func _campaign_status() -> void:
+	var G := GameState
+	var states := func(pg, pt): return range(5).map(func(i): return G.poster_state(pg, i, pt))
+	var pg := fresh()
+	var d: Dictionary = G.desk_status(pg, false)
+	ok("Desk, new save: Continue hunt, Level 1: Target practice, 0 of 5, $1,000",
+		d.hunting and d.ch == 0 and d.subtitle == "Level 1: Target practice" and d.caught == 0 and d.reward == "$1,000", str(d))
+	ok("Posters, new save: Iron Eli open, the train locked, three coming soon",
+		states.call(pg, false) == ["open", "locked", "soon", "soon", "soon"], str(states.call(pg, false)))
+	ok("Office board, new save: Iron Eli's poster is in the middle", G.current_hunt(pg, false) == 0)
+	for l in 3:
+		G.apply_win(pg, 0, l, 3, o10(1000))
+	d = G.desk_status(pg, false)
+	ok("Desk continues at the furthest unlocked level (Level 4: Chain reaction)", d.subtitle == "Level 4: Chain reaction", str(d))
+	G.apply_win(pg, 0, 9, 2, o10(1000, true, true))
+	d = G.desk_status(pg, false)
+	ok("Desk, Iron Eli captured: Continue hunt goes to the train, 1 of 5, $1,500",
+		d.hunting and d.ch == 1 and d.subtitle == "Level 1: All aboard" and d.caught == 1 and d.reward == "$1,500", str(d))
+	ok("Posters, Iron Eli captured: his poster stamped, the train open",
+		states.call(pg, false) == ["captured", "open", "soon", "soon", "soon"], str(states.call(pg, false)))
+	ok("Office board, Iron Eli captured: the train's poster moves to the middle", G.current_hunt(pg, false) == 1)
+	G.apply_win(pg, 1, 9, 1, o10(1500, true, true))
+	d = G.desk_status(pg, false)
+	ok("Desk, both captured: all available bounties captured, Digger McCall arrives soon, 2 of 5",
+		not d.hunting and d.title == "All available bounties captured" and d.subtitle == "Digger McCall arrives soon" and d.caught == 2, str(d))
+	ok("Desk never falls back to the first bounty once it is captured", d.ch != 0)
+	ok("Posters, both captured: two stamped, three coming soon",
+		states.call(pg, false) == ["captured", "captured", "soon", "soon", "soon"], str(states.call(pg, false)))
+	ok("Office board, both captured: the next outlaw's poster is in the middle", G.current_hunt(pg, false) == 2)
+	var pt := fresh()
+	G.apply_win(pt, 1, 9, 1, o10(1500, true, true))
+	d = G.desk_status(pt, true)
+	ok("Playtest: train captured first, the desk still sends you to Iron Eli", d.hunting and d.ch == 0, str(d))
+	ok("Playtest: every bounty with levels is open on the board", states.call(fresh(), true) == ["open", "open", "soon", "soon", "soon"])
+	ok("Trophy cabinet: one trophy per captured bounty", range(5).filter(func(i): return G.collected_in(pg, i)) == [0, 1])
+
+
+## Saving and restoring: restarts, damaged files, older saves, and iCloud merges.
+func _saves() -> void:
+	var dir := "user://selftest_saves"
+	DirAccess.make_dir_recursive_absolute(dir)
+	for f in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir.path_join(f))
+	var SM: GDScript = load("res://autoload/save_manager.gd")
+	var a: Node = SM.new()
+	a.path = dir.path_join("save.json")
+	a.load_game()
+	var p: Dictionary = a.data.progress
+	GameState.apply_win(p, 0, 0, 3, o10(1000))
+	GameState.apply_win(p, 0, 9, 2, o10(1000, true, true))
+	p.inv.guns.quickdraw = true
+	p.inv.fins["quickdraw:0"] = true
+	p.inv.equip = {"gun": "quickdraw", "fin": 0}
+	p.bucks -= 500
+	p.avatar = {"name": "Dusty", "hat": 2, "hatCol": 3, "skin": 1, "bandana": 0, "coat": 4, "face": 2}
+	p.avOwned = {"hat:2": true}
+	p.hints = {"0:1": 2}
+	p.seenOffice = true
+	a.data.settings.music = false
+	a._notification(NOTIFICATION_APPLICATION_PAUSED)  # going to the background saves
+	var expected: Dictionary = SM.normalised(JSON.parse_string(JSON.stringify(a.data)))
+	var b: Node = SM.new()  # a fresh start of the app
+	b.path = a.path
+	b.load_game()
+	var q: Dictionary = b.data.progress
+	ok("Save survives a restart: stars and unlocks", GameState.stars_in(q, 0, 0) == 3 and GameState.stars_in(q, 0, 9) == 2 and int(q.ch[0].unlocked) == 10)
+	ok("Save survives a restart: Bounty Dollars", int(q.bucks) == int(p.bucks) and int(q.bucks) == 60 + 1080 - 500, str(q.bucks))
+	ok("Save survives a restart: guns, finishes and the equipped gun", q.inv.guns.quickdraw and q.inv.fins["quickdraw:0"] and q.inv.equip.gun == "quickdraw")
+	ok("Save survives a restart: avatar, bought parts, clues and the office telegram",
+		q.avatar.name == "Dusty" and int(q.avatar.hat) == 2 and q.avOwned["hat:2"] and int(q.hints["0:1"]) == 2 and q.seenOffice)
+	ok("Save survives a restart: settings", b.data.settings.music == false)
+	ok("Save survives a restart: everything matches", JSON.stringify(b.data.progress) == JSON.stringify(expected.progress))
+	a.save_game()  # a later save keeps the previous one as the backup
+	FileAccess.open(a.path, FileAccess.WRITE).store_string("{\"progress\": {\"bucks\": 12")  # torn mid-write
+	a.data.progress.bucks = 999
+	var c: Node = SM.new()
+	c.path = a.path
+	c.load_game()
+	ok("A damaged save falls back to the previous one", GameState.stars_in(c.data.progress, 0, 9) == 2, str(c.data.progress.bucks))
+	FileAccess.open(a.path, FileAccess.WRITE).store_string(JSON.stringify({"progress": {"bucks": 40, "ch": [{"unlocked": 2, "stars": {"0": 2}}]}}))
+	c.load_game()
+	ok("An older save without newer fields loads, filling in defaults",
+		int(c.data.progress.bucks) == 40 and c.data.progress.avatar.name == "The Stranger" and c.data.progress.inv.guns.peacemaker, str(c.data.progress))
+	for n in [a, b, c]:
+		n.free()
+
+	# iCloud merges: nothing earned on either device is lost.
+	var phone := fresh()
+	GameState.apply_win(phone, 0, 0, 3, o10(1000))
+	GameState.apply_win(phone, 0, 1, 1, o10(1000))
+	phone.inv.guns.quickdraw = true
+	phone.bucks -= 50
+	phone.avatar.name = "Phone"
+	var ipad := fresh()
+	GameState.apply_win(ipad, 0, 0, 1, o10(1000))
+	GameState.apply_win(ipad, 0, 1, 3, o10(1000))
+	GameState.apply_win(ipad, 0, 2, 2, o10(1000))
+	ipad.inv.guns.longbarrel = true
+	ipad.hints = {"0:3": 1}
+	ipad.avatar.name = "iPad"
+	var m: Dictionary = SaveManager.merge_progress(phone, 100.0, ipad, 200.0)
+	ok("iCloud merge keeps the best stars and furthest unlock from each device",
+		GameState.stars_in(m, 0, 0) == 3 and GameState.stars_in(m, 0, 1) == 3 and GameState.stars_in(m, 0, 2) == 2 and int(m.ch[0].unlocked) == 4)
+	ok("iCloud merge keeps every purchase and clue", m.inv.guns.quickdraw and m.inv.guns.longbarrel and int(m.hints["0:3"]) == 1)
+	ok("iCloud merge takes the avatar from the newer save", m.avatar.name == "iPad")
+	ok("iCloud merge keeps the wallet honest: earned minus spent", int(m.bucks) == int(m.stats.earned) - 50 and int(m.bucks) >= 0, "%s of %s" % [m.bucks, m.stats.earned])
+	var again: Dictionary = SaveManager.merge_progress(m, 300.0, m.duplicate(true), 300.0)
+	ok("iCloud merge of a save with itself changes nothing", JSON.stringify(again) == JSON.stringify(SaveManager.merge_progress(m, 300.0, m, 300.0)) and int(again.bucks) == int(m.bucks))
+
+	# The iCloud file bridge the iOS plugin uses (cloud_out.json up, cloud_in.json down).
+	var keep: Dictionary = SaveManager.data
+	SaveManager.persist = false
+	SaveManager.data = SaveManager.fresh_data()
+	SaveManager.data.saved_at = 100.0
+	var cs: Node = load("res://autoload/cloud_sync.gd").new()
+	cs.dir = ProjectSettings.globalize_path(dir)
+	ok("iCloud sync stays off until the plugin is running", not cs.available())
+	FileAccess.open(dir.path_join("cloud_status.json"), FileAccess.WRITE).store_string("{\"running\": true}")
+	cs.push(SaveManager.data)
+	ok("iCloud sync hands each save to the plugin", FileAccess.file_exists(dir.path_join("cloud_out.json")))
+	FileAccess.open(dir.path_join("cloud_in.json"), FileAccess.WRITE).store_string(JSON.stringify({"version": 1, "saved_at": 200.0, "progress": ipad}))
+	var pulled: bool = cs.pull()
+	ok("iCloud sync merges in another device's progress", pulled and GameState.stars_in(SaveManager.data.progress, 0, 1) == 3 and SaveManager.data.progress.inv.guns.longbarrel)
+	ok("iCloud sync ignores a copy it has already merged", not cs.pull())
+	cs.free()
+	SaveManager.data = keep
 
 
 func o10(bounty: int, boss := false, last := false) -> Dictionary:

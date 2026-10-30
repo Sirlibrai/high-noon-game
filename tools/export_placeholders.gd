@@ -29,6 +29,10 @@ func _init() -> void:
 	_fx()
 	_duel()
 	_ui()
+	_splash()
+	_office()
+	_posters()
+	_home_ui()
 	print("Exported %d placeholder images to %s" % [written, OUT])
 	quit()
 
@@ -503,3 +507,469 @@ func _rounded(w: int, h: int, r: float, body: Color, lip_col: Color, lip: int, b
 				col = border
 			im.set_pixel(x, y, col)
 	return im
+
+
+# ================= home flow (drawStandoff, buildOffice, drawOffice, posterCanvas) =================
+
+func poly(im: Image, pts: Array, col: Color) -> void:
+	var p := PackedVector2Array(pts)
+	var box := Rect2(p[0], Vector2.ZERO)
+	for v in p:
+		box = box.expand(v)
+	for y in range(maxi(0, floori(box.position.y)), mini(im.get_height(), ceili(box.end.y))):
+		for x in range(maxi(0, floori(box.position.x)), mini(im.get_width(), ceili(box.end.x))):
+			if Geometry2D.is_point_in_polygon(Vector2(x + 0.5, y + 0.5), p):
+				im.set_pixel(x, y, im.get_pixel(x, y).blend(col))
+
+
+## A soft radial light, like the prototype's createRadialGradient fills.
+func radial(im: Image, cx: float, cy: float, r0: float, r1: float, col: Color) -> void:
+	for y in range(maxi(0, floori(cy - r1)), mini(im.get_height(), ceili(cy + r1))):
+		for x in range(maxi(0, floori(cx - r1)), mini(im.get_width(), ceili(cx + r1))):
+			var d := Vector2(x + 0.5, y + 0.5).distance_to(Vector2(cx, cy))
+			if d < r1:
+				var k := clampf((d - r0) / (r1 - r0), 0, 1)
+				im.set_pixel(x, y, im.get_pixel(x, y).blend(Color(col, col.a * (1 - k))))
+
+
+func vgrad(im: Image, x: int, y: int, w: int, h: int, top: String, bottom: String, y0: float, y1: float) -> void:
+	for yy in range(y, y + h):
+		rect(im, x, yy, w, 1, Color(top).lerp(Color(bottom), clampf((yy + 0.5 - y0) / (y1 - y0), 0, 1)))
+
+
+func silhouette_of(im: Image, col: String) -> Image:
+	var out := im.duplicate()
+	for y in out.get_height():
+		for x in out.get_width():
+			if out.get_pixel(x, y).a > 0:
+				out.set_pixel(x, y, Color(col))
+	return out
+
+
+func scaled(im: Image, k: int) -> Image:
+	var out := im.duplicate()
+	out.resize(im.get_width() * k, im.get_height() * k, Image.INTERPOLATE_NEAREST)
+	return out
+
+
+## The default bounty hunter (avatarSprite with the prototype's default avatar).
+func avatar_image() -> Image:
+	var pal := {"k": "#1E1A16", "h": "#4A3426", "b": "#2B1E14", "s": "#A0663F", "e": "#1E1A16", "d": "#B8323E", "c": "#5B4636", "v": "#7A5A3A", "p": "#3A3F5A"}
+	return rows(["...hhhhhhhh...", "...hhhhhhhh...", ".hhhbbbbbbhhh.", "hhhhhhhhhhhhhh", "....ssssss....", "....sesses....",
+		"....dddddd....", "...dddddddd...", "..cccvvvvccc..", ".ccccvvvvcccc.", ".cc.cvvvvc.cc.", ".cc.cvvvvc.cc.", ".ss.cvvvvc.ss.",
+		"....cccccc....", "....pppppp....", "....pp..pp....", "....pp..pp....", "....pp..pp....", "...kkk..kkk..."], pal)
+
+
+func _splash() -> void:
+	var ox := -BG_LEFT
+	var sky := img(BG_W, H)
+	vgrad(sky, 0, 0, BG_W, 112, "#F6EBC8", "#EBC489", 0, 112)
+	disc(sky, 250 + ox, 18, 6, "#FFF8E0")
+	save(sky, "splash/sky.png")
+	var far := img(BG_W, H)
+	for m in [[-80, 88, 80], [0, 86, 70], [54, 92, 50], [220, 84, 100], [330, 90, 70]]:
+		rect(far, m[0] + ox, m[1], m[2], 26, "#DDB07E")
+		rect(far, m[0] + 6 + ox, m[1] - 4, m[2] - 12, 4, "#DDB07E")
+	for m in [[-60, 80, 26, 32], [6, 76, 30, 36], [40, 84, 22, 28], [252, 78, 34, 34], [288, 86, 30, 26], [340, 80, 30, 32]]:
+		rect(far, m[0] + ox, m[1], m[2], m[3], "#B98457")
+		rect(far, m[0] + 3 + ox, m[1] - 4, m[2] - 6, 4, "#B98457")
+	save(far, "splash/far.png")
+	# The clock tower and its face; the minute hand and the bell move, so they are separate.
+	var tower := img(28, 92)  # world x 146..174, y 20..112
+	rect(tower, 2, 16, 24, 76, "#8E5E3A")
+	rect(tower, 0, 14, 28, 4, "#6E4526")
+	for i in 14:
+		rect(tower, 14 - i, i, i * 2, 1, "#5A3A24")
+	disc(tower, 14, 34, 10, "#2E1C10")
+	disc(tower, 14, 34, 8, "#F6EBC8")
+	for k in 12:
+		var a := k / 12.0 * TAU
+		rect(tower, roundf(14 + cos(a) * 7), roundf(34 + sin(a) * 7), 1, 1, "#2E1C10")
+	for r in 5:
+		rect(tower, 14, 34 - r, 1, 1, "#1E120A")
+	save(tower, "splash/tower.png")
+	var hand := img(8, 1)
+	rect(hand, 0, 0, 8, 1, "#1E120A")
+	save(hand, "splash/minute_hand.png")
+	var bell := img(6, 5)
+	rect(bell, 0, 0, 6, 5, "#C9A25A")
+	save(bell, "splash/bell.png")
+	var street := img(BG_W, H)
+	rect(street, 0, 112, BG_W, H - 112, "#D9A86C")
+	for i in 9:
+		rect(street, 0, roundf(118 + i * i * 0.8), BG_W, 1, "#C9965A")
+	save(street, "splash/street.png")
+	for f in 12:  # heat haze, one cycle
+		var haze := img(BG_W, 12)
+		var t := f / 12.0 * TAU / 4.0
+		for i in 6:
+			for x in range(0, BG_W, 2):
+				if sin((x - ox) * 0.12 + t * 4 + i) > 0.6:
+					rect(haze, x, i * 2, 2, 1, Color(1, 248 / 255.0, 224 / 255.0, 0.35))
+		save(haze, "splash/haze_%02d.png" % f)
+	# The two figures, as dark silhouettes three times the street size (drawn 42×57).
+	save(scaled(silhouette_of(avatar_image(), "#1E120A"), 3), "splash/hero.png")
+	var rival := silhouette_of(kit_image("art/sprites/iron_eli_idle.png"), "#1E120A")
+	rival.flip_x()
+	save(scaled(rival, 3), "splash/rival.png")
+	var shadow := img(34, 3)
+	rect(shadow, 0, 0, 34, 3, Color(30 / 255.0, 18 / 255.0, 10 / 255.0, 0.25))
+	save(shadow, "splash/shadow.png")
+	var flash := img(12, 14)
+	rect(flash, 0, 4, 12, 6, "#FFE9B0")
+	rect(flash, 4, 0, 4, 14, "#FFE9B0")
+	save(flash, "splash/muzzle_flash.png")
+	for kind in {"white": Color.WHITE, "black": Color.BLACK}:
+		var s := img(4, 4)
+		rect(s, 0, 0, 4, 4, {"white": Color.WHITE, "black": Color.BLACK}[kind])
+		save(s, "fx/screen_%s.png" % kind, 1)
+
+
+func _office() -> void:
+	var ox := -BG_LEFT
+	var o := img(BG_W, H)
+	var R := func(col: Variant, a: float, b: float, w: float, h: float): rect(o, a + ox, b, w, h, col)
+	# Walls, wainscot and floor, wider than the prototype's room so wide phones see more of it.
+	rect(o, 0, 0, BG_W, 140, "#5A3A22")
+	for i in range(0, BG_W, 12):
+		rect(o, i, 0, 1, 140, "#4A2E1A")
+	for i in 180:
+		var hh := hash32(i * 11 + 5)
+		rect(o, hh % BG_W, (hh >> 8) % 104, 2, 1, "#4E321C" if hh % 2 else "#64432A")
+	rect(o, 0, 104, BG_W, 36, "#3E2716")
+	rect(o, 0, 104, BG_W, 2, "#2E1C10")
+	for i in range(6 - 78, 250 + 160, 26):
+		if i < 96 or i > 230:  # the desk hides the middle panels
+			R.call("#35210F", i, 110, 20, 24)
+	rect(o, 0, 140, BG_W, 40, "#3A2414")
+	for y in range(146, 180, 8):
+		rect(o, 0, y, BG_W, 1, "#2E1C10")
+	# Window onto Main Street (the duel teaser).
+	R.call("#2E1C10", 8, 22, 64, 72)
+	for y in range(26, 72):
+		R.call(Color("#F6E3B4").lerp(Color("#E8A86A"), clampf((y - 26) / 44.0, 0, 1)), 12, y, 56, 1)
+	R.call("#DDB07E", 12, 60, 18, 10)
+	R.call("#C99868", 50, 58, 18, 12)
+	R.call("#9C6A43", 38, 42, 6, 28)
+	R.call("#6E4526", 37, 40, 8, 2)
+	R.call("#C9A25A", 40, 44, 2, 2)
+	R.call("#F6EBC8", 39, 50, 4, 4)
+	R.call("#2E1C10", 41, 50, 1, 2)
+	R.call("#D9A86C", 12, 70, 56, 20)
+	R.call("#C9965A", 12, 78, 56, 1)
+	R.call("#C9965A", 12, 84, 56, 1)
+	for f in [[22, false], [58, true]]:
+		var fx: int = f[0]
+		for r in [[fx - 2, 64, 6, 1], [fx - 1, 62, 4, 2], [fx, 65, 2, 2], [fx - 1, 67, 4, 6], [fx - 1, 73, 1, 4], [fx + 2, 73, 1, 4], [fx + (-2 if f[1] else 3), 68, 1, 3]]:
+			R.call("#1E120A", r[0], r[1], r[2], r[3])
+	R.call("#6E4526", 6, 92, 68, 4)
+	# Calendar (Daily Bounty) and the shooting target (Survival).
+	R.call("#2E1C10", 77, 19, 24, 31)
+	R.call("#F6E7CC", 78, 20, 22, 29)
+	R.call("#B8323E", 78, 20, 22, 6)
+	R.call("#5A3A24", 88, 18, 2, 3)
+	for r in 4:
+		for k in 5:
+			R.call("#B8323E" if r == 2 and k == 3 else "#8A6A4A", 80 + k * 4, 29 + r * 4, 2, 2)
+	for rr in [11, 8, 5, 2]:
+		disc(o, 89 + ox, 79, rr, "#E8DCC4" if (rr / 3) % 2 else "#B8323E")
+	R.call("#1E120A", 86, 76, 2, 2)
+	R.call("#1E120A", 92, 81, 2, 2)
+	R.call("#5A3A24", 88, 66, 2, 2)
+	# The bounty board (posters are separate sprites).
+	R.call(Color(0, 0, 0, 0.25), 108, 16, 108, 88)
+	R.call("#2E1C10", 106, 12, 108, 88)
+	R.call("#B88A5A", 109, 15, 102, 82)
+	for i in 200:
+		var hh := hash32(i * 7 + 3)
+		R.call("#A0754A" if hh % 3 else "#C9A070", 109 + hh % 102, 15 + (hh >> 8) % 82, 1, 1)
+	R.call("#EFE2C2", 140, 80, 40, 14)
+	R.call("#B8A07A", 143, 84, 30, 1)
+	R.call("#B8A07A", 143, 88, 24, 1)
+	R.call("#8E2A1E", 159, 79, 2, 2)
+	# The portrait frame (the bounty hunter is a separate sprite).
+	R.call("#3A2414", 221, 17, 32, 60)
+	R.call("#C9A25A", 222, 18, 30, 58)
+	R.call("#8A6A2E", 224, 20, 26, 54)
+	for y in range(21, 73):
+		R.call(Color("#4A5A60").lerp(Color("#26302F"), (y - 21) / 52.0), 225, y, 24, 1)
+	for c in [[222, 18], [248, 18], [222, 72], [248, 72]]:
+		R.call("#F2D27A", c[0], c[1], 4, 4)
+		R.call("#8A6A2E", c[0] + 1, c[1] + 1, 2, 2)
+	# The gunsmith's doorway, sign and rack (guns on the rack are separate sprites).
+	R.call(Color(0, 0, 0, 0.25), 258, 18, 60, 124)
+	R.call("#2E1C10", 256, 16, 60, 126)
+	R.call("#6E4526", 258, 18, 56, 4)
+	R.call("#6E4526", 258, 18, 4, 122)
+	R.call("#6E4526", 310, 18, 4, 122)
+	for y in range(22, 140):
+		R.call(Color("#3A2414").lerp(Color("#5A3A22"), (y - 22) / 118.0), 262, y, 48, 1)
+	R.call("#4A2C16", 268, 34, 38, 64)
+	R.call("#6E4526", 270, 36, 34, 60)
+	R.call("#4A2C16", 270, 56, 34, 2)
+	R.call("#4A2C16", 270, 80, 34, 2)
+	R.call("#7A5232", 262, 122, 48, 18)
+	for y in range(126, 140, 4):
+		R.call("#6A4428", 262, y, 48, 1)
+	poly(o, [Vector2(262 + ox, 140), Vector2(310 + ox, 140), Vector2(300 + ox, 180), Vector2(232 + ox, 180)], Color(1, 196 / 255.0, 110 / 255.0, 0.16))
+	R.call("#4A2C16", 260, 4, 2, 14)
+	R.call("#4A2C16", 310, 4, 2, 14)
+	R.call("#2E1C10", 262, 5, 48, 12)
+	R.call("#8A5A32", 263, 6, 46, 10)
+	R.call("#6E4526", 263, 11, 46, 1)
+	text(o, "GUNSMITH", 270 + ox, 8, "#F6E7CC")
+	for r in [["#3A3F4A", 264, 8, 5, 2], ["#3A3F4A", 267, 10, 2, 4], ["#6E4526", 268, 11, 2, 4], ["#3A3F4A", 303, 8, 5, 2], ["#3A3F4A", 303, 10, 2, 4], ["#6E4526", 302, 11, 2, 4]]:
+		R.call(r[0], r[1], r[2], r[3], r[4])
+	R.call("#5A3A22", 280, 100, 28, 4)
+	R.call("#3A2414", 282, 104, 2, 18)
+	R.call("#3A2414", 304, 104, 2, 18)
+	# The trophy cabinet (trophies are separate sprites, one per bounty).
+	R.call("#2E1C10", 14, 108, 70, 36)
+	R.call("#6E4526", 16, 110, 66, 32)
+	R.call("#3A2414", 18, 112, 62, 13)
+	R.call("#3A2414", 18, 128, 62, 12)
+	R.call("#8A5A32", 18, 125, 62, 2)
+	R.call("#2E1C10", 16, 144, 4, 6)
+	R.call("#2E1C10", 78, 144, 4, 6)
+	# The sheriff's desk and what's on it.
+	R.call(Color(0, 0, 0, 0.28), 96, 146, 134, 4)
+	R.call("#2E1C10", 94, 104, 134, 6)
+	R.call("#7A4E2A", 96, 105, 130, 4)
+	R.call("#4A2C16", 98, 110, 126, 36)
+	R.call("#3A2414", 102, 114, 54, 28)
+	R.call("#3A2414", 166, 114, 54, 28)
+	R.call("#C9A25A", 127, 126, 6, 2)
+	R.call("#C9A25A", 191, 126, 6, 2)
+	for r in [["#C9A25A", 107, 93, 2, 11], ["#2E6A4A", 101, 86, 14, 7], ["#1E4A32", 101, 92, 14, 1], ["#8A6A2E", 104, 103, 8, 2],
+			["#E8E2D2", 119, 97, 7, 8], ["#5A3A24", 120, 98, 5, 1], ["#E8E2D2", 126, 99, 2, 3], ["#EFE2C2", 132, 101, 18, 4],
+			["#E3D2AA", 133, 99, 16, 2], ["#D2BC92", 134, 97, 14, 2], ["#EDDDB4", 154, 96, 18, 9], ["#8E2A1E", 156, 97, 14, 1],
+			["#2E1C10", 160, 99, 6, 4], ["#1E1A16", 176, 101, 18, 3], ["#5A5F6A", 177, 101, 16, 1], ["#4A4F5A", 188, 99, 6, 5],
+			["#6E4526", 193, 101, 5, 5], ["#EFE2C2", 212, 98, 12, 6], ["#8E2A1E", 217, 98, 1, 6]]:
+		R.call(r[0], r[1], r[2], r[3], r[4])
+	for pt in [[4, 0], [3, 1], [4, 1], [5, 1], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2], [8, 2], [1, 3], [2, 3], [3, 3],
+			[4, 3], [5, 3], [6, 3], [7, 3], [2, 4], [3, 4], [4, 4], [5, 4], [6, 4], [1, 5], [2, 5], [6, 5], [7, 5]]:
+		R.call("#E2B23C", 202 + pt[0], 98 + pt[1], 1, 1)
+	R.call("#FFF3C4", 206, 100, 1, 1)
+	save(o, "office/room.png")
+
+	# Drawn over the window's street life: the mullions and the DUEL SOON notice.
+	var wf := img(56, 64)  # world x 12..68, y 26..90
+	rect(wf, 27, 0, 2, 64, "#2E1C10")
+	rect(wf, 0, 22, 56, 2, "#2E1C10")
+	rect(wf, 4, 3, 22, 15, "#EFE2C2")
+	rect(wf, 4, 17, 22, 1, "#E3D2AA")
+	text(wf, "DUEL", 7, 5, "#8E2A1E")
+	text(wf, "SOON", 7, 11, "#2E1C10")
+	save(wf, "office/window_front.png")
+	# Warm light: sun rays from the window, the desk lamp, the doorway glow.
+	var light := img(BG_W, H)
+	poly(light, [Vector2(12 + ox, 28), Vector2(40 + ox, 28), Vector2(140 + ox, 180), Vector2(60 + ox, 180)], Color(1, 228 / 255.0, 165 / 255.0, 0.07))
+	poly(light, [Vector2(42 + ox, 28), Vector2(68 + ox, 28), Vector2(190 + ox, 180), Vector2(148 + ox, 180)], Color(1, 228 / 255.0, 165 / 255.0, 0.056))
+	radial(light, 108 + ox, 96, 2, 56, Color(1, 214 / 255.0, 140 / 255.0, 0.15))
+	radial(light, 286 + ox, 70, 4, 44, Color(1, 200 / 255.0, 120 / 255.0, 0.12))
+	radial(light, 286 + ox, 120, 4, 60, Color(1, 200 / 255.0, 120 / 255.0, 0.10))
+	save(light, "office/light.png")
+	# Street life through the window: a dog, a walker, a horse (two frames each).
+	for f in 2:
+		var dog := img(6, 4)
+		rect(dog, 1, 0, 4, 1, "#8A6A44")
+		rect(dog, 0, 1, 6, 2, "#8A6A44")
+		rect(dog, 1, 3, 4, 1, "#8A6A44")
+		save(dog, "office/dog_%d.png" % f)
+		var walker := img(4, 11)
+		var bob := f
+		rect(walker, 0, 1 + bob, 4, 1, "#2E1C10")
+		rect(walker, 1, bob, 2, 1, "#2E1C10")
+		rect(walker, 1, 2 + bob, 2, 5, "#2E1C10")
+		rect(walker, 1 + f, 7, 1, 3, "#2E1C10")
+		save(walker, "office/walker_%d.png" % f)
+		var horse := img(11, 11)
+		rect(horse, 2, 5, 9, 3, "#2E1C10")
+		rect(horse, 0, 3, 3, 3, "#2E1C10")
+		rect(horse, 5, 0, 3, 5, "#2E1C10")
+		rect(horse, 2 + f, 8, 1, 3, "#2E1C10")
+		rect(horse, 9 - f, 8, 1, 3, "#2E1C10")
+		save(horse, "office/horse_%d.png" % f)
+	var mote := img(1, 1)
+	rect(mote, 0, 0, 1, 1, Color(1, 240 / 255.0, 200 / 255.0, 0.55))
+	save(mote, "office/mote.png")
+	var flap := img(4, 4)
+	rect(flap, 0, 0, 4, 4, "#E3D2AA")
+	save(flap, "office/paper_flap.png")
+	# The gunsmith at work: hammer raised, then the strike with sparks.
+	for hit in [false, true]:
+		var s := img(14, 14)  # world x 288..302, y 86..100
+		rect(s, 0, 2, 7, 2, "#2E1C10")
+		rect(s, 1, 0, 5, 2, "#2E1C10")
+		rect(s, 2, 4, 3, 3, "#A0663F")
+		rect(s, 1, 7, 6, 7, "#5B4636")
+		rect(s, 2, 8, 4, 6, "#8A6A4A")
+		rect(s, 6, 10 if hit else 6, 2, 4 if hit else 5, "#5B4636")
+		rect(s, 7, 12 if hit else 4, 3, 2, "#3A3F4A")
+		if hit:
+			for sp in [[10, 12], [12, 10], [9, 9]]:
+				rect(s, sp[0], sp[1], 1, 1, "#FFD45E")
+		save(s, "office/smith_%s.png" % ("hit" if hit else "up"))
+	var door := img(16, 118)
+	rect(door, 0, 0, 16, 118, "#4A2C16")
+	rect(door, 1, 2, 14, 114, "#5A3A22")
+	rect(door, 13, 60, 2, 3, "#C9A25A")
+	save(door, "office/door.png")
+	var dglow := img(48, 118)
+	rect(dglow, 0, 0, 48, 118, Color(1, 214 / 255.0, 140 / 255.0, 0.25))
+	save(dglow, "office/door_glow.png")
+	var glint := img(6, 6)
+	rect(glint, 0, 0, 6, 6, "#FFD45E")
+	glint.fill_rect(Rect2i(2, 2, 2, 2), Color(0, 0, 0, 0))
+	save(glint, "office/glint.png", 1)
+	# The gun rack: each gun on its peg, owned or still an empty outline, and the equipped marker.
+	for w in _json("data/weapons.json"):
+		for own in [true, false]:
+			var g := img(4, 51)
+			rect(g, 1, 0, 2, 40, "#5A5F6A" if own else Color(0, 0, 0, 0.28))
+			rect(g, 0, 35, 4, 16, "#8A5A32" if own else Color(0, 0, 0, 0.2))
+			save(g, "office/rack_%s%s.png" % [w.id, "" if own else "_empty"])
+	var mark := img(2, 2)
+	rect(mark, 0, 0, 2, 2, "#F2B544")
+	save(mark, "office/rack_equipped.png")
+	# Trophies in the cabinet, one per captured bounty (TROPHY_OFFICE).
+	var tro := [
+		[["#8A6A2E", 2, 2, 6, 9], ["#F2C14E", 3, 3, 4, 7], ["#C9C9C9", 3, 0, 4, 3], ["#FFF3C4", 4, 4, 1, 4]],
+		[["#8A6A2E", 1, 6, 9, 3], ["#E2B23C", 2, 2, 3, 7], ["#E2B23C", 6, 4, 3, 5], ["#FFF3C4", 2, 2, 1, 6], ["#5A3A24", 3, 0, 1, 2]],
+		[["#B8862A", 2, 5, 6, 5], ["#F2C14E", 3, 4, 4, 4], ["#FFF3C4", 4, 5, 1, 1]],
+		[["#2E1C10", 3, 0, 4, 2], ["#2E1C10", 2, 2, 6, 8], ["#8FD0C8", 3, 3, 4, 6], ["#E8FFF8", 4, 5, 2, 2]],
+		[]]
+	for k in 5:
+		var t := img(11, 11)
+		for r in tro[k]:
+			rect(t, r[1], r[2], r[3], r[4], r[0])
+		if k == 4:
+			for pt in [[4, 0], [3, 1], [5, 1], [0, 3], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3], [6, 3], [7, 3], [8, 3], [2, 4], [3, 4], [4, 4],
+					[5, 4], [6, 4], [3, 5], [4, 5], [5, 5], [2, 6], [3, 6], [5, 6], [6, 6], [1, 7], [7, 7]]:
+				rect(t, 1 + pt[0], 2 + pt[1], 1, 1, "#F2C14E")
+		save(t, "office/trophy_%d.png" % k)
+	var empty_t := img(11, 11)
+	rect(empty_t, 2, 3, 7, 8, Color(1, 1, 1, 0.07))
+	save(empty_t, "office/trophy_empty.png")
+	var glass := img(62, 28)
+	rect(glass, 0, 0, 62, 28, Color(200 / 255.0, 230 / 255.0, 240 / 255.0, 0.12))
+	rect(glass, 2, 1, 1, 10, Color(1, 1, 1, 0.18))
+	save(glass, "office/cabinet_glass.png")
+	# The bounty hunter's portrait (the default avatar, at the portrait's size).
+	save(scaled(avatar_image(), 2), "office/portrait.png")
+
+
+## One wanted poster (posterCanvas), in each state: open, locked (has levels, not reached), soon (no levels yet).
+func _poster(c: int, ch: Dictionary, state: String, w: int, h: int, big: bool) -> Image:
+	var has_lv := state != "soon"
+	var open := state == "open"
+	var x := img(w, h)
+	rect(x, 0, 0, w, h, ("#EDDDB4" if open else "#B8A47E") if has_lv else "#D2BC92")
+	for i in w * h / 9:
+		var hh := hash32(i * 13 + c * 97)
+		rect(x, hh % w, (hh >> 8) % h, 1, 1, Color(120 / 255.0, 80 / 255.0, 40 / 255.0, 0.10) if hh % 3 else Color(1, 1, 1, 0.18))
+	var edge := Color(90 / 255.0, 58 / 255.0, 36 / 255.0, 0.35)
+	rect(x, 0, 0, w, 1, edge)
+	rect(x, 0, h - 1, w, 1, edge)
+	rect(x, 0, 0, 1, h, edge)
+	rect(x, w - 1, 0, 1, h, edge)
+	if big:
+		text(x, "WANTED", floori((w - 23) / 2.0), 3, "#8E2A1E")
+	else:
+		rect(x, 3, 2, w - 6, 2, "#8E2A1E")
+	var s2 := maxi(1, floori((w - 8) / 14.0))
+	var pw := 14 * s2
+	var ph := 13 * s2
+	var px := floori((w - pw) / 2.0)
+	var py := 10 if big else 6
+	rect(x, px, py, pw, ph, "#D9C08C" if has_lv else "#B79E74")
+	var face := kit_image("art/sprites/%s_idle.png" % ("iron_eli" if c == 0 else "outlaw")).get_region(Rect2i(0, 0, 14, 13))
+	if not open:
+		face = silhouette_of(face, "#2E1C10" if has_lv else "#5A4632")
+	face.resize(pw, ph, Image.INTERPOLATE_NEAREST)
+	x.blend_rect(face, Rect2i(0, 0, pw, ph), Vector2i(px, py))
+	var frame := Color(46 / 255.0, 28 / 255.0, 16 / 255.0, 0.55)
+	rect(x, px - 1, py - 1, pw + 2, 1, frame)
+	rect(x, px - 1, py + ph, pw + 2, 1, frame)
+	rect(x, 4, py + ph + 3, w - 8, 1, "#6B2A1A")
+	rect(x, 6, py + ph + 6, w - 12, 1, "#6B2A1A")
+	if big:
+		rect(x, 5, py + ph + 9, w - 10, 1, "#6B2A1A")
+	if not open:
+		rect(x, 0, 0, w, h, Color(30 / 255.0, 18 / 255.0, 10 / 255.0, 0.32))
+		var lx := floori(w / 2.0) - 3
+		var ly := h - (13 if big else 10)
+		rect(x, lx + 1, ly, 4, 1, "#5A4632")
+		rect(x, lx, ly + 1, 1, 3, "#5A4632")
+		rect(x, lx + 5, ly + 1, 1, 3, "#5A4632")
+		rect(x, lx - 1, ly + 3, 8, 6, "#8A6A3A")
+		rect(x, lx + 2, ly + 5, 2, 2, "#3A2A1A")
+	return x
+
+
+func _posters() -> void:
+	var chapters: Array = _json("data/chapters.json")
+	for c in chapters.size():
+		for state in ["open", "locked", "soon"]:
+			save(_poster(c, chapters[c], state, 38, 52, true), "posters/ch%d_%s_big.png" % [c, state])
+			save(_poster(c, chapters[c], state, 22, 30, false), "posters/ch%d_%s_small.png" % [c, state])
+		# The portrait used on the Bounty board screen's paper posters.
+		var face := kit_image("art/sprites/%s_idle.png" % ("iron_eli" if c == 0 else "outlaw")).get_region(Rect2i(0, 0, 14, 13))
+		save(face, "posters/portrait_ch%d.png" % c, 6)
+	for big in [true, false]:
+		var sw := 36 if big else 24
+		var sh := 12 if big else 10
+		var t := 1 if big else 2
+		var st := img(sw, sh)
+		var col := Color(184 / 255.0, 50 / 255.0, 62 / 255.0, 0.92)
+		rect(st, 0, 0, sw, t, col)
+		rect(st, 0, sh - t, sw, t, col)
+		rect(st, 0, 0, t, sh, col)
+		rect(st, sw - t, 0, t, sh, col)
+		if big:
+			text(st, "CAPTURED", 2, 4, "#B8323E")
+		else:
+			rect(st, 4, 4, 16, 2, col)
+		save(st, "posters/stamp_%s.png" % ("big" if big else "small"))
+		var shadow := img(38 if big else 22, 52 if big else 30)
+		rect(shadow, 0, 0, shadow.get_width(), shadow.get_height(), Color(30 / 255.0, 18 / 255.0, 10 / 255.0, 0.35))
+		save(shadow, "posters/shadow_%s.png" % ("big" if big else "small"))
+	var pin := img(3, 3)
+	rect(pin, 1, 0, 2, 2, "#C9A25A")
+	rect(pin, 0, 2, 3, 1, "#2E1C10")
+	save(pin, "posters/pin.png")
+
+
+## Home-screen UI boxes and icons for the theme (drawn at UI pixel size).
+func _home_ui() -> void:
+	# Brass plaques on the office hotspots; greyed ones for "coming soon".
+	for kind in {"plaque": ["#D9B866", "#C29A48", "#5A3A1A"], "plaque_soon": ["#C7B796", "#AE9E7C", "#4A3A26"],
+			"plaque_pressed": ["#C29A48", "#B08A3A", "#5A3A1A"]}.keys():
+		var c: Array = {"plaque": ["#D9B866", "#C29A48", "#5A3A1A"], "plaque_soon": ["#C7B796", "#AE9E7C", "#4A3A26"],
+			"plaque_pressed": ["#C29A48", "#B08A3A", "#5A3A1A"]}[kind]
+		var p := img(16, 18)
+		for y in 15:
+			rect(p, 0, y, 16, 1, Color(c[0]).lerp(Color(c[1]), y / 14.0))
+		rect(p, 0, 15, 16, 3, c[2])
+		rect(p, 0, 0, 1, 1, Color(0, 0, 0, 0))
+		rect(p, 15, 0, 1, 1, Color(0, 0, 0, 0))
+		save(p, "ui/%s.png" % kind, 1)
+	save(_rounded(24, 24, 11, Color("#2A1A10"), Color(), 0, Color("#F2B544")), "ui/wallet.png", 1)
+	save(_rounded(24, 26, 6, Color("#EFE2C2"), Color("#6E4526"), 3), "ui/desk_plaque.png", 1)
+	save(_rounded(24, 26, 6, Color("#E3D2AA"), Color("#6E4526"), 3), "ui/desk_plaque_pressed.png", 1)
+	save(_rounded(16, 16, 2, Color("#EBD9B0"), Color("#C9B486"), 2), "ui/poster_paper.png", 1)
+	save(_rounded(16, 16, 2, Color("#C9B88E"), Color("#A8976E"), 2), "ui/poster_paper_locked.png", 1)
+	save(_rounded(16, 16, 1, Color("#EFE2C2"), Color("#D2BC92"), 2), "ui/telegram.png", 1)
+	var stamp := img(16, 16)
+	for i in 16:
+		for j in 2:
+			stamp.set_pixel(i, j, Color("#B8323E"))
+			stamp.set_pixel(i, 15 - j, Color("#B8323E"))
+			stamp.set_pixel(j, i, Color("#B8323E"))
+			stamp.set_pixel(15 - j, i, Color("#B8323E"))
+	save(stamp, "ui/stamp_box.png", 1)
+	save(rows(["..xxxx..", ".x....x.", ".x....x.", "xxxxxxxx", "xxxxxxxx", "xxxx.xxx", "xxxx.xxx", "xxxxxxxx", "xxxxxxxx"], {"x": "#2A1A10"}), "ui/icon_lock.png")
+	save(rows(["....xxxxx", "....x...x", "....x...x", "....x...x", "....xxxxx", "..xxx..xx", ".xxxx.xxx", ".xxx..xx.", "..x......"], {"x": "#FFFFFF"}), "ui/icon_music.png")
+	var off := rows(["....xxxxx", "....x...x", "....x...x", "....x...x", "....xxxxx", "..xxx..xx", ".xxxx.xxx", ".xxx..xx.", "..x......"], {"x": "#FFFFFF"})
+	_fade(off, 0.4)
+	save(off, "ui/icon_music_off.png")

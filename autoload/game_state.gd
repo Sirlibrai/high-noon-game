@@ -188,6 +188,53 @@ func chapter_open_for(pg: Dictionary, i: int, playtest: bool) -> bool:
 	return levels_for(i) != null and (playtest or i == 0 or collected_in(pg, i - 1))
 
 
+func caught_count(pg: Dictionary) -> int:
+	return range(chapters.size()).filter(func(i): return collected_in(pg, i)).size()
+
+
+func chapter_stars(pg: Dictionary, i: int) -> int:
+	var lvls: Variant = levels_for(i)
+	if lvls == null:
+		return 0
+	var total := 0
+	for k in lvls.size():
+		total += stars_in(pg, i, k)
+	return total
+
+
+## The poster the office board shows in the middle (currentHunt): the hunt, or the next bounty coming.
+func current_hunt(pg: Dictionary, playtest: bool) -> int:
+	var h := hunt_status_for(pg, playtest)
+	if h.ch != null:
+		return h.ch
+	return h.next if h.next != null else chapters.size() - 1
+
+
+## A wanted poster's state: "captured", "open" (can be hunted), "locked" (has levels, not reached yet)
+## or "soon" (no levels yet).
+func poster_state(pg: Dictionary, i: int, playtest: bool) -> String:
+	if levels_for(i) == null:
+		return "soon"
+	if not chapter_open_for(pg, i, playtest):
+		return "locked"
+	return "captured" if collected_in(pg, i) else "open"
+
+
+## What the desk ledger shows (rules.md §9): continue the next uncaptured bounty, or everything
+## available is captured and the next outlaw is coming soon. Never falls back to the first bounty.
+func desk_status(pg: Dictionary, playtest: bool) -> Dictionary:
+	var st := hunt_status_for(pg, playtest)
+	var caught := caught_count(pg)
+	if st.ch != null:
+		var lvls: Array = levels_for(st.ch)
+		var li := mini(int(chapter_progress(pg.duplicate(true), st.ch).unlocked), lvls.size()) - 1
+		return {"hunting": true, "ch": st.ch, "level": li, "title": "Continue hunt", "subtitle": "Level %d: %s" % [li + 1, lvls[li].name],
+			"caught": caught, "reward": chapters[st.ch].reward}
+	var next: Variant = st.next
+	return {"hunting": false, "ch": null, "level": null, "title": "All available bounties captured",
+		"subtitle": ("%s arrives soon" % chapters[next].who) if next != null else "The frontier is yours", "caught": caught, "reward": null}
+
+
 func hunt_status_for(pg: Dictionary, playtest: bool) -> Dictionary:
 	for i in chapters.size():
 		if levels_for(i) == null:

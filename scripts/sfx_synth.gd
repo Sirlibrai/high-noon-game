@@ -7,7 +7,7 @@ const RATE := 22050
 
 
 const NAMES := ["shot", "enemy_shot", "thunk", "glass", "down", "boom", "crash", "miss", "ping",
-	"card", "tick", "cock", "clank", "twitch", "bell", "win", "lose"]
+	"card", "tick", "cock", "clank", "twitch", "bell", "win", "lose", "thump", "rustle", "creak", "tick2", "flip"]
 
 
 static func build_all() -> Dictionary:
@@ -67,6 +67,20 @@ static func _render(key: String) -> PackedFloat32Array:
 			b = _whistle(b, [[587, .18], [784, .18], [880, .36], [784, .18], [988, .5]])
 		"lose":
 			b = _whistle(b, [[523, .25], [466, .25], [392, .6]])
+		"thump":
+			b = _tone(b, 120, 60, 0.15, "triangle", 0.12)
+			b = _noise(b, 0.08, 900, 200, 0.12)
+		"rustle":
+			b = _noise(b, 0.18, 3500, 1200, 0.12)
+			b = _noise(b, 0.12, 2500, 900, 0.08, 0.08)
+		"creak":
+			b = _tone(b, 160, 110, 0.32, "sawtooth", 0.03, 0, 18)
+			b = _tone(b, 240, 180, 0.2, "triangle", 0.025, 0.05, 10)
+		"tick2":
+			b = _tone(b, 2600, 2400, 0.05, "square", 0.03)
+		"flip":
+			b = _noise(b, 0.07, 5000, 2000, 0.09)
+			b = _noise(b, 0.06, 4500, 1800, 0.06, 0.07)
 	return b
 
 

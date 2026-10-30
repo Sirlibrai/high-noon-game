@@ -111,8 +111,9 @@ func frames_for(set_name: String) -> SpriteFrames:
 		sf.add_animation(anim)
 		sf.set_animation_speed(anim, e.fps)
 		sf.set_animation_loop(anim, e.loop)
-		for t in e.frames:
-			sf.add_frame(anim, t)
+		var durations: Array = e.raw.get("durations", [])
+		for i in e.frames.size():
+			sf.add_frame(anim, e.frames[i], float(durations[i]) if i < durations.size() else 1.0)
 	_sets[set_name] = sf
 	return sf
 

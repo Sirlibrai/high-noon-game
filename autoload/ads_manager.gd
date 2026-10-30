@@ -23,9 +23,9 @@ func show_rewarded(type: String, on_done: Callable) -> void:
 	var card := UiKit.card(ui)
 	UiKit.text(card, "SIMULATED AD", &"AdTag")
 	UiKit.text(card, "Your reward is on its way", &"Heading")
-	UiKit.text(card, "This stands in for a rewarded video (%s). No real advert is shown." % type, &"Hint", 420)
+	UiKit.text(card, "This stands in for a rewarded video (%s). No real advert is shown." % type, &"Hint", 840)
 	var bar := ProgressBar.new()
-	bar.custom_minimum_size = Vector2(260, 10)
+	bar.custom_minimum_size = Vector2(520, 20)
 	bar.show_percentage = false
 	bar.max_value = AD_SECONDS
 	card.add_child(bar)

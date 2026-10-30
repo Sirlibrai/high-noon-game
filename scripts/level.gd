@@ -153,7 +153,7 @@ func setup(chapter: int, index: int) -> void:
 
 
 func _start_duel() -> void:
-	boss_set = GameState.BOSS_SPRITES[L.boss] + "_duel"
+	boss_set = GameState.BOSS_SPRITES[L.boss]  # the boss's cut-out rig
 	duel = {"hp": int(L.hp), "round": 0, "phase": "intro", "t": 0.0, "wait": 0.0, "fake_at": [], "twitch": 0.0,
 		"pose": "idle", "fall": 0.0, "smoke": [], "card": null, "card_t": 0.0, "bell1": false}
 	tumble = {"x": -20.0, "on": true}
@@ -364,6 +364,7 @@ func eli_hit(e: Dictionary, how: String) -> void:
 			callout.emit("Powder won’t finish it. Try the sign." if how == "tnt" else "Try the powder this time.", true, 1400)
 			return
 		e.cracks.append(how)
+		e.flinch = 0.25
 		events.append("crack:" + how)
 		AudioManager.sfx("clank")
 		Haptics.hit()
@@ -382,6 +383,7 @@ func eli_hit(e: Dictionary, how: String) -> void:
 		eli_pend_t = float(G.iron_eli.armour_off_delay)
 		return
 	e.hp -= 1
+	e.flinch = 0.25
 	events.append("eli_hit")
 	hit_stop = 5
 	AudioManager.sfx("down")
@@ -769,6 +771,8 @@ func _step(dt: float) -> void:
 
 	var O: Dictionary = G.outlaw
 	for e in enemies:
+		if e.get("flinch", 0.0) > 0:  # Iron Eli reels when hit
+			e.flinch -= dt
 		if e.state == "dead":
 			e.fall += dt
 			continue
@@ -991,7 +995,7 @@ func _gun_pivot() -> Vector2:
 
 ## Where the muzzle is, from the gun art's "muzzle" point in the manifest.
 func _muzzle() -> Vector2:
-	return _gun_pivot() + (Assets.point(gun_asset + "/idle", "muzzle") / PPU).rotated(gun_ang + kick)
+	return _gun_pivot() + (Assets.point(gun_asset + "/idle", "muzzle") * float(G.gun.scale) / PPU).rotated(gun_ang + kick)
 
 
 func _muzzle_smoke() -> void:
@@ -1095,7 +1099,8 @@ func _build_view() -> void:
 	if duel != null:
 		_duel_layer = _layer()
 		var dn := {}
-		dn.boss = AssetSprite.make(boss_set + "/idle", _duel_layer)
+		dn.boss = CutoutRig.make(boss_set, _duel_layer)
+		dn.boss.scale = Vector2.ONE * float(G.duel.boss_scale)  # duel bosses stand closer
 		dn.twitch = AssetSprite.make("duel/twitch", _duel_layer)
 		if L.get("cards", false):
 			dn.box = AssetSprite.make("duel/card_box", _duel_layer)
@@ -1172,6 +1177,7 @@ func _sync_view() -> void:
 	_gun.show_asset(gun_asset + ("/reload" if reload_t > 0 else "/idle"))
 	_place(_gun, _gun_pivot().round())
 	_gun.rotation = gun_ang + kick
+	_gun.scale = Vector2.ONE * float(G.gun.scale)
 	_muzzle_flash.visible = flash > 0
 	if flash:
 		_place(_muzzle_flash, _muzzle().round())
@@ -1196,7 +1202,7 @@ func _sync_sign() -> void:
 	_place(_sign_nodes.board, Vector2(s.x + roundf(sin(frame * 0.2) * s.swing * 2), roundf(s.y)))
 
 
-## The sprite set an enemy is drawn with, and the layer that clips him.
+## The layer that holds (and clips) an enemy.
 func _enemy_parent(e: Dictionary) -> Node:
 	if e.kind == "window":
 		return _window_clips[e.w]
@@ -1206,31 +1212,26 @@ func _enemy_parent(e: Dictionary) -> Node:
 
 
 func _ensure_enemy_nodes(e: Dictionary) -> void:
-	var set_name := "iron_eli" if e.get("eli", false) else "outlaw"
+	var rig := "iron_eli" if e.get("eli", false) else "outlaw"
 	if not e.has("node"):
-		e.node = AssetSprite.make(set_name + "/idle", _enemy_parent(e))
+		e.node = CutoutRig.make(rig, _enemy_parent(e))
 		if e.kind == "hostage":
 			e.hostage_node = AssetSprite.make("hostage/idle", _hostage_layer)
-		if e.kind == "runner":
-			e.run_node = AssetSprite.make(set_name + "/run", _front)
-		if e.get("eli", false):
-			e.armour_node = AssetSprite.make("iron_eli_armour/intact", e.node.get_parent())
-			e.run_armour_node = AssetSprite.make("iron_eli_armour/intact", _front)
+		if e.kind == "runner":  # in the open he is drawn in front of the cover
+			e.run_node = CutoutRig.make(rig, _front)
+			e.run_node.pose("run")
 	var parent := _enemy_parent(e)
 	if e.node.get_parent() != parent:  # Iron Eli moves between windows and cover in the chase
 		e.node.reparent(parent, false)
-		if e.has("armour_node"):
-			e.armour_node.reparent(parent, false)
 
 
+## Picks each outlaw's clip from the gameplay state, and places him at his feet.
 func _sync_enemy(e: Dictionary) -> void:
 	_ensure_enemy_nodes(e)
 	var O: Dictionary = G.outlaw
-	var is_eli: bool = e.get("eli", false)
-	var set_name := "iron_eli/" if is_eli else "outlaw/"
 	var gm := geo(e)
 	var feet := Vector2(gm.x + _hitbox.x / 2, gm.y + _hitbox.y)
-	var n: AssetSprite = e.node
+	var n: CutoutRig = e.node
 	var running: bool = gm.get("running", false)
 	if e.has("run_node"):
 		e.run_node.visible = running
@@ -1239,29 +1240,28 @@ func _sync_enemy(e: Dictionary) -> void:
 	n.visible = not running
 	n.rotation = 0.0
 	n.modulate.a = 1.0
-	if is_eli:
-		n.show_asset(set_name + ("aim" if e.state == "aim" else "idle"))
-		_place(n, feet)
-		var plate := "iron_eli_armour/" + ("cracked" if not e.cracks.is_empty() else "intact")
-		for a in [e.armour_node, e.run_armour_node]:
-			a.show_asset(plate)
-			_place(a, feet)
-		e.armour_node.visible = e.armor and not running
-		e.run_armour_node.visible = e.armor and running
-		return
+	if e.get("eli", false):
+		var plate := "iron_eli_parts/armour" + ("_cracked" if not e.cracks.is_empty() else "")
+		for rig in [n, e.run_node]:
+			rig.set_part_visible("armour", e.armor)
+			rig.set_part_asset("armour", plate)
 	if e.state == "dead":
+		n.pose("fall")
 		if e.fall > O.fall_time:
 			n.visible = false
-		elif e.fall < O.hit_flash_time:
-			n.show_asset("outlaw/hit")  # the white hit flash
 		else:
-			n.show_asset("outlaw/dead")
 			n.modulate.a = maxf(0, 1 - e.fall / O.fall_time)
 			feet.y += e.fall * O.fall_drop
 			if e.kind != "window":
 				n.rotation = minf(O.fall_max_angle, e.fall * O.fall_spin)
+	elif e.get("flinch", 0.0) > 0:
+		n.pose("flinch")
+	elif e.state == "aim":
+		n.pose("aim")
+	elif e.state == "rise":
+		n.pose("pop_up")
 	else:
-		n.show_asset("outlaw/aim" if e.state == "aim" else "outlaw/idle")
+		n.pose("idle")
 	_place(n, feet)
 	if e.has("hostage_node"):
 		var body := hostage_rect(e)
@@ -1338,8 +1338,8 @@ func _sync_duel() -> void:
 	var D: Dictionary = G.duel
 	var DX: float = SC.duelX
 	var dx := (1 if (frame >> 1) % 2 else -1) if d.twitch > 0 else 0
-	var boss: AssetSprite = dn.boss
-	boss.show_asset(boss_set + "/" + ("aim" if d.pose == "aim" else ("hit" if d.pose == "hit" else "idle")))
+	var boss: CutoutRig = dn.boss
+	boss.pose("fall" if d.fall else ("aim" if d.pose == "aim" else ("flinch" if d.pose == "hit" else "idle")))
 	var jitter := float(frame % 4 - 2) if d.pose == "hit" and not d.fall else 0.0
 	_place(boss, Vector2(DX + dx + jitter, GY))
 	boss.rotation = minf(1.4, d.fall * 2.5) if d.fall else 0.0

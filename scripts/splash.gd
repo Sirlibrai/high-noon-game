@@ -7,7 +7,7 @@ extends Node2D
 
 signal finished
 
-const PPU := 2.0
+var PPU: float = GameState.geometry.pixels_per_unit
 
 var _t0 := -1.0  # seconds since "begin"; -1 until the first tap
 var _shot_at := -1.0

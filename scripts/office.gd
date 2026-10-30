@@ -14,7 +14,7 @@ extends Node2D
 
 signal act(name: String)
 
-const PPU := 2.0
+var PPU: float = GameState.geometry.pixels_per_unit
 ## OFFICE_SPOTS: hotspot boxes in units, as in the prototype.
 const SPOTS := [
 	{"act": "board", "label": "Bounty board", "box": [106, 12, 108, 88]},
@@ -200,12 +200,12 @@ func _build_ledger() -> void:
 	var margin := MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 0 if box is PanelContainer else 6)
+		margin.add_theme_constant_override("margin_" + side, 0 if box is PanelContainer else 12)
 	box.add_child(margin)
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(row)
-	UiKit.image(row, "ui/star_on", Vector2(22, 22))
+	UiKit.image(row, "ui/star_on", Vector2(44, 44))
 	var text := VBoxContainer.new()
 	text.add_theme_constant_override("separation", 0)
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -242,11 +242,11 @@ func _build_coach() -> void:
 	v.add_theme_constant_override("separation", 0)
 	p.add_child(v)
 	UiKit.text(v, "TELEGRAM", &"DeskKey")
-	UiKit.text(v, "Welcome, partner. Tap anything with a brass plate.", &"TelegramText", 220)
+	UiKit.text(v, "Welcome, partner. Tap anything with a brass plate.", &"TelegramText", 440)
 	add_child(p)
 	var sz := p.get_combined_minimum_size()
 	p.size = sz
-	p.position = Vector2(160 * PPU - sz.x / 2, 28)
+	p.position = Vector2(160 * PPU - sz.x / 2, 56)
 	p.rotation = deg_to_rad(-1.2)
 	_coach = p
 

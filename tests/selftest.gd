@@ -122,17 +122,71 @@ func _ready() -> void:
 				if not Assets.has("prop/" + cv[0]):
 					missing.append("prop/" + cv[0])
 			var needed: Array = []
-			if c == 0 and l.get("duel", false):
-				needed = ["idle", "aim", "hit"].map(func(p): return G.BOSS_SPRITES[l.boss] + "_duel/" + p)
+			if c == 0 and l.get("duel", false) and not Assets.rigs.has(G.BOSS_SPRITES[l.boss]):
+				missing.append("rig " + G.BOSS_SPRITES[l.boss])
 			if c == 0 and l.get("eli", false):
-				needed = ["iron_eli/idle", "iron_eli/aim", "iron_eli/run", "iron_eli_armour/intact", "iron_eli_armour/cracked",
-					"iron_eli_duel/idle", "iron_eli_duel/aim", "iron_eli_duel/hit", "fx/dynamite", "fx/fuse_spark", "fx/ping", "fx/armour"]
+				needed = ["iron_eli_parts/armour", "iron_eli_parts/armour_cracked", "fx/dynamite", "fx/fuse_spark", "fx/ping", "fx/armour"]
+				if not Assets.rigs.has("iron_eli"):
+					missing.append("rig iron_eli")
 			if c == 0 and l.get("puzzle", false):
 				needed.append("fx/hint_glow")
 			for n in needed:
 				if not Assets.has(n):
 					missing.append(n)
 	ok("Manifest: every Main Street prop, boss, effect and Iron Eli stage has art", missing.is_empty(), ", ".join(missing))
+
+	# Cut-out characters: every outlaw is built from parts and has the gameplay clips.
+	var rig_gaps: Array = []
+	for rig_name in ["outlaw", "iron_eli", "black_jack"]:
+		if not Assets.rigs.has(rig_name):
+			rig_gaps.append(rig_name + ": missing")
+			continue
+		var def: Dictionary = Assets.rigs[rig_name]
+		var names: Array = def.parts.map(func(p): return p.name)
+		for part in ["head", "torso", "arm_back", "arm_front", "gun_hand", "legs"]:
+			if not names.has(part):
+				rig_gaps.append("%s: no %s" % [rig_name, part])
+		for p in def.parts:
+			if not Assets.has(p.asset):
+				rig_gaps.append("%s: no art %s" % [rig_name, p.asset])
+		for clip in ["idle", "pop_up", "aim", "flinch", "fall", "run"]:
+			if not Assets.rig_animations.get(def.animations, {}).has(clip):
+				rig_gaps.append("%s: no %s clip" % [rig_name, clip])
+	ok("Rigs: outlaw, Iron Eli and Black Jack each have head, torso, arms, gun hand and legs, and every clip", rig_gaps.is_empty(), ", ".join(rig_gaps))
+	var rig := CutoutRig.make("iron_eli", self)
+	var played: Array = []
+	for clip in ["pop_up", "aim", "flinch", "fall", "run", "idle"]:
+		rig.pose(clip)
+		rig._player.advance(0.1)
+		if rig.current == clip and rig._player.current_animation == clip:
+			played.append(clip)
+	var aiming_shows_gun: bool
+	rig.pose("aim")
+	rig._player.advance(0.05)
+	aiming_shows_gun = rig.parts.gun_hand.visible and not rig.parts.arm_front.visible
+	rig.pose("idle")
+	ok("Rigs build from the manifest and play every clip", played.size() == 6, str(played))
+	ok("Rigs: aiming swaps the arms for the gun hand, idle swaps back", aiming_shows_gun and not rig.parts.gun_hand.visible and rig.parts.arm_front.visible)
+	rig.free()
+
+	# Painted look: a 1280×720 base with smooth filtering, gameplay geometry unchanged.
+	ok("Base resolution is 1280×720 with linear texture filtering",
+		ProjectSettings.get_setting("display/window/size/viewport_width") == 1280 and ProjectSettings.get_setting("display/window/size/viewport_height") == 720
+		and ProjectSettings.get_setting("rendering/textures/canvas_textures/default_texture_filter") == 1)
+	ok("Gameplay units still map the 320×180 stage onto the 1280×720 base", float(G.geometry.pixels_per_unit) * G.geometry.stage.width == 1280.0)
+	# The revolver stays small in the bottom-right corner at every tilt (style guide: about the bottom-right eighth).
+	var gun := Assets.texture("gun_peacemaker_0/idle")
+	var gun_scale: float = G.geometry.gun.scale
+	var ppu: float = G.geometry.pixels_per_unit
+	var anchor := Assets.anchor("gun_peacemaker_0/idle")
+	var g: Dictionary = G.geometry.gun
+	var worst := Vector2(320, 180)
+	for ang in [g.reload_angle, g.angle_range[0], g.rest_angle, g.angle_range[1]]:
+		var pivot := Vector2(320 - g.pivot_from_corner[0] + g.kick_offset[0], 180 - g.pivot_from_corner[1])
+		for corner in [Vector2.ZERO, Vector2(gun.get_width(), 0), Vector2(0, gun.get_height()), gun.get_size()]:
+			var p: Vector2 = pivot + ((corner - anchor) * gun_scale / ppu).rotated(ang)
+			worst = Vector2(minf(worst.x, p.x), minf(worst.y, p.y))
+	ok("The revolver stays in the bottom-right corner at every tilt", worst.x >= 320 * 0.75 and worst.y >= 180 * 0.5, "reaches x %.0f, y %.0f" % [worst.x, worst.y])
 	var gun_gaps: Array = []
 	for w in G.weapons:
 		for f in w.fins.size():

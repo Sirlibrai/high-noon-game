@@ -2,9 +2,10 @@
 
 ## Direction
 
-Pixel art for the world, painted portraits for characters.
+A painted storybook look for everything: soft painterly backgrounds with warm sunset light and hazy distance, painted characters and props, in place of the earlier pixel art.
 
-- `concept_gameplay.png`: the target look for levels. Warm sunset light, long shadows, red saloon against a faded blue-green bank, first-person revolver in the bottom-right.
+- `chosen_style_painted_train.png`: **the chosen style.** The train level painted in the storybook look, with the game's HUD over it.
+- `concept_gameplay.png`: the earlier target for levels (pixel art). Still right for the colours and light. Warm sunset light, long shadows, red saloon against a faded blue-green bank, first-person revolver in the bottom-right.
 - `concept_office.png`: the target look for the sheriff's office home screen.
 - `concept_portraits.png`: the target look for wanted posters, boss introductions and the player's profile.
 - `concept_flat_stage_town_and_train.png`: **the approved gameplay layout.** Iron Eli's stage 1 on Main Street and the train level, both as flat side-on stages.
@@ -14,8 +15,9 @@ These images are AI-generated concepts. Use them as direction, not as final asse
 
 ## Resolution
 
-- Gameplay at 640×360, scaled up with nearest-neighbour filtering to fill the screen. No smoothing.
-- Portraits and posters can be drawn at a higher resolution in the painted style.
+- A 1280×720 base, scaled smoothly (linear filtering) to fill the screen. Paint art at 1280×720 pixel density: 4 image pixels per gameplay unit of the 320×180 stage in `levels.json`.
+- Background layers are wider than the screen (1920 pixels for Main Street) so wide phones see more of the street at the sides; everything you can shoot stays inside the central 1280×720.
+- Hitboxes come from `data/geometry.json`, never from the art, so painted sprites can be any shape.
 
 ## Palette
 
@@ -55,6 +57,20 @@ Small and low in the bottom-right corner, as in the flat-stage concept. It must 
 | Smokey Pete | Grey hat, pale bandana, brown coat, often half-hidden in engine smoke |
 | Cole Haggerty | Soot-smudged, black hat with a gold band, coal-stained coat, carries a lantern |
 | The bounty hunter (player) | Customisable: hat, hat colour, skin tone, bandana, coat and facial hair (`data/avatar_options.json`) |
+
+### Cut-out characters
+
+Outlaws and bosses are cut-out puppets, not frame-by-frame sprites. Paint each character as separate parts:
+
+| Part | Notes |
+|---|---|
+| Head | With the hat; pivots at the neck |
+| Torso | Pivots at the hips; Iron Eli's breastplate is a separate overlay part |
+| Back arm, front arm | Pivot at the shoulders, hanging relaxed |
+| Gun hand | Both hands on the revolver, pointing at the player; shown while he aims |
+| Legs | Standing, plus a running pose |
+
+The joints and the simple clips (pop-up, aim, flinch, fall, run, idle) are set in `assets/manifest.json` under `rigs` and `rig_animations`, so new parts or timing need no code. Leave a little overlap at each joint so rotating parts don't show gaps.
 
 ## Placeholder art in this kit
 

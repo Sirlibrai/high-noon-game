@@ -1,6 +1,6 @@
 class_name AssetSprite
 extends AnimatedSprite2D
-## An AnimatedSprite2D that shows a manifest asset by name ("outlaw/aim") and
+## An AnimatedSprite2D that shows a manifest asset by name ("prop/tnt") and
 ## positions it by the asset's anchor, so the node's position is where the
 ## character's feet or the prop's base stand.
 

@@ -9,7 +9,7 @@ extends Node
 ## more of the street's background layers at the sides. HUD controls follow the
 ## real screen edges, inside the safe area.
 
-const BASE := Vector2(640, 360)
+const BASE := Vector2(1280, 720)
 
 var level: Level
 var ci := 0
@@ -60,7 +60,7 @@ func _build_home_bar() -> void:
 	add_child(_home_bar)
 	_home_box = MarginContainer.new()
 	_home_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	_home_box.add_theme_constant_override("margin_top", 8)
+	_home_box.add_theme_constant_override("margin_top", 16)
 	_home_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_home_bar.add_child(_home_box)
 	var bar := HBoxContainer.new()
@@ -242,21 +242,21 @@ func show_board() -> void:
 		var b := Button.new()
 		b.theme_type_variation = &"Poster"
 		b.focus_mode = Control.FOCUS_NONE
-		b.custom_minimum_size = Vector2(112, 0)
+		b.custom_minimum_size = Vector2(224, 0)
 		b.disabled = not open
 		b.tooltip_text = "%s: %s, %s%s" % [ch.name, ch.who, ch.reward, ", captured" if state == "captured" else ""]
 		b.pressed.connect(show_chapter.bind(i))
 		posters.add_child(b)
 		var v := VBoxContainer.new()
-		v.add_theme_constant_override("separation", 1)
+		v.add_theme_constant_override("separation", 2)
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		b.add_child(v)
 		UiKit.text(v, "WANTED", &"PosterWanted")
-		var pic := UiKit.image(v, "portrait/ch%d" % i, Vector2(54, 50))
+		var pic := UiKit.image(v, "portrait/ch%d" % i, Vector2(108, 100))
 		if not open:
 			pic.modulate = Color(0, 0, 0, 0.75)
-		UiKit.text(v, ch.who, &"PosterName", 100)
-		UiKit.text(v, ch.crime, &"PosterCrime", 104)
+		UiKit.text(v, ch.who, &"PosterName", 200)
+		UiKit.text(v, ch.crime, &"PosterCrime", 208)
 		UiKit.text(v, ch.reward, &"PosterReward")
 		if open:
 			var lvls: Array = GameState.levels_for(i)
@@ -266,8 +266,8 @@ func show_board() -> void:
 		for c in v.get_children():
 			c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		v.offset_top = 8
-		b.custom_minimum_size.y = v.get_combined_minimum_size().y + 16
+		v.offset_top = 16
+		b.custom_minimum_size.y = v.get_combined_minimum_size().y + 32
 		if state != "open":
 			var stamp := PanelContainer.new()
 			stamp.theme_type_variation = &"Stamp"
@@ -276,10 +276,10 @@ func show_board() -> void:
 			b.add_child(stamp)
 			var sz := stamp.get_combined_minimum_size()
 			stamp.size = sz
-			stamp.position = Vector2((112 - sz.x) / 2, 58)
+			stamp.position = Vector2((224 - sz.x) / 2, 116)
 			stamp.pivot_offset = sz / 2
 			stamp.rotation = deg_to_rad(-14)
-		b.pivot_offset = Vector2(56, b.custom_minimum_size.y / 2)
+		b.pivot_offset = Vector2(112, b.custom_minimum_size.y / 2)
 		b.rotation = deg_to_rad(tilt[i])
 
 
@@ -302,15 +302,15 @@ func show_chapter(c: int) -> void:
 	for i in lvls.size():
 		var lv: Dictionary = lvls[i]
 		var cell := VBoxContainer.new()
-		cell.add_theme_constant_override("separation", 2)
+		cell.add_theme_constant_override("separation", 4)
 		grid.add_child(cell)
 		var duel_level: bool = lv.get("duel", false) or lv.get("eli", false)
 		var b := UiKit.button(cell, str(i + 1), &"" if duel_level else &"GhostButton")
-		b.custom_minimum_size = Vector2(88, 0)
+		b.custom_minimum_size = Vector2(176, 0)
 		b.tooltip_text = lv.name
 		b.disabled = not GameState.level_open(c, i)
 		b.pressed.connect(show_intro.bind(c, i))
-		UiKit.stars(cell, GameState.stars_in(GameState.progress, c, i), 16)
+		UiKit.stars(cell, GameState.stars_in(GameState.progress, c, i), 32)
 	var settings := UiKit.row(card)
 	var pt := UiKit.button(settings, "All levels open: " + ("on" if GameState.playtest() else "off"), &"SmallGhostButton")
 	pt.pressed.connect(func():
@@ -335,7 +335,7 @@ func soon(kind: String) -> void:
 	var card := _open_overlay()
 	UiKit.button(UiKit.row(card), "‹ Home", &"SmallGhostButton").pressed.connect(show_home)
 	UiKit.text(card, SOON[kind][0], &"Heading")
-	UiKit.text(card, SOON[kind][1], &"", 420)
+	UiKit.text(card, SOON[kind][1], &"", 840)
 	var stamp := PanelContainer.new()
 	stamp.theme_type_variation = &"Stamp"
 	UiKit.text(stamp, "COMING SOON", &"StampLabel")
@@ -350,7 +350,7 @@ func _not_yet(title: String, body: String) -> void:
 	_office_backdrop()
 	var card := _open_overlay()
 	UiKit.text(card, title, &"Heading")
-	UiKit.text(card, body, &"", 420)
+	UiKit.text(card, body, &"", 840)
 	UiKit.button(card, "Back").pressed.connect(show_home)
 
 
@@ -391,9 +391,9 @@ func show_intro(chapter: int, index: int) -> void:
 		UiKit.pill(pills, "%d bullets" % int(L.bullets))
 		UiKit.pill(pills, "Par %d" % int(L.par))
 	if L.get("puzzle", false) and level.hint_lvl >= 1:
-		UiKit.text(card, "Clue: " + L.hint, &"Tip", 420)
+		UiKit.text(card, "Clue: " + L.hint, &"Tip", 840)
 	else:
-		UiKit.text(card, L.tip, &"Tip", 420)
+		UiKit.text(card, L.tip, &"Tip", 840)
 	var buttons := UiKit.row(card)
 	UiKit.button(buttons, "Face him" if L.get("duel", false) else "Draw").pressed.connect(_go)
 	UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
@@ -460,9 +460,9 @@ func _on_won(res: Dictionary) -> void:
 		return
 	var card := _open_overlay()
 	UiKit.text(card, "Outlaw captured" if res.last else "Showdown won", &"Heading")
-	UiKit.stars(card, res.stars, 40)
+	UiKit.stars(card, res.stars, 80)
 	if res.assisted:
-		UiKit.text(card, "Assisted clear: two stars at most. Beat it on your own for the third.", &"Hint", 420)
+		UiKit.text(card, "Assisted clear: two stars at most. Beat it on your own for the third.", &"Hint", 840)
 	var line: String
 	if level.duel != null:
 		var taken := 3 - int(res.hearts)
@@ -517,9 +517,9 @@ func _show_fail(reason: String, offer: Variant) -> void:
 	if offer != null:
 		var o := _offer_text(offer)
 		UiKit.text(card, o[0], &"Heading")
-		UiKit.text(card, o[1], &"", 420)
+		UiKit.text(card, o[1], &"", 840)
 		if clue != "":
-			UiKit.text(card, clue, &"Tip", 420)
+			UiKit.text(card, clue, &"Tip", 840)
 		if AdsManager.available():
 			UiKit.button(card, o[2]).pressed.connect(_use_offer.bind(offer, reason))
 		else:
@@ -527,7 +527,7 @@ func _show_fail(reason: String, offer: Variant) -> void:
 		UiKit.text(card, "Using this caps the clear at two stars.", &"Hint")
 	else:
 		UiKit.text(card, reason, &"Heading")
-		UiKit.text(card, clue if clue != "" else L.tip, &"Hint", 420)
+		UiKit.text(card, clue if clue != "" else L.tip, &"Hint", 840)
 	var buttons := UiKit.row(card)
 	var retry_label := "Try again"
 	if offer != null:
@@ -559,7 +559,7 @@ func _grant_hint() -> void:
 	var lvl := GameState.hint_level(ci, li)
 	var card := _open_overlay()
 	UiKit.text(card, "Here’s your clue", &"Heading")
-	UiKit.text(card, level.L.hint, &"Tip", 420)
+	UiKit.text(card, level.L.hint, &"Tip", 840)
 	if lvl >= 2:
 		UiKit.text(card, "The key spot will glow while you play.", &"Hint")
 	UiKit.button(card, "Try again with the clue").pressed.connect(restart)
@@ -573,23 +573,28 @@ func _build_hud() -> void:
 	add_child(_hud)
 	_hud_box = MarginContainer.new()
 	_hud_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	_hud_box.add_theme_constant_override("margin_top", 10)
+	_hud_box.add_theme_constant_override("margin_top", 20)
 	_hud_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hud.add_child(_hud_box)
 	var bar := HBoxContainer.new()
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hud_box.add_child(bar)
 	var hearts := HBoxContainer.new()
-	hearts.add_theme_constant_override("separation", 3)
+	hearts.add_theme_constant_override("separation", 6)
 	bar.add_child(hearts)
 	for i in 3:
 		_hearts.append(UiKit.image(hearts, "ui/heart_full"))
 	_ammo = HBoxContainer.new()
-	_ammo.add_theme_constant_override("separation", 3)
+	_ammo.add_theme_constant_override("separation", 6)
 	bar.add_child(_ammo)
 	_lvl_label = UiKit.text(bar, "", &"HudLabel")
 	_lvl_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_lvl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_lvl_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# Always one line: on a narrow screen the name is shortened, never wrapped under the buttons.
+	_lvl_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_lvl_label.clip_text = true
+	_lvl_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_sound_btn = UiKit.icon_button(bar, "ui/icon_sound_on")
 	_sound_btn.pressed.connect(func():
 		AudioManager.set_sound(not AudioManager.sound_on)

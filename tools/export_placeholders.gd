@@ -5,13 +5,17 @@ extends SceneTree
 ##
 ## Recipes are ported from highnoon.html (buildBg, drawCover, drawWindowFrame,
 ## drawDuel, drawGun, the HUD icons...). Everything is drawn in the prototype's
-## 320×180 units and saved at ×2, the 640×360 base resolution's pixel density.
-## Kit sprites (art/sprites, art/guns) are copied at the same density.
+## 320×180 units. Recipes pass the scale for the old 640×360 base (PX = 2 per
+## unit, UI at 1×); save() multiplies every image by OUTPUT_SCALE for the
+## 1280×720 base, so world art lands at 4 pixels per unit and UI at 2×.
+## Kit sprites (art/sprites, art/guns) are copied at the same density, and each
+## outlaw is also cut into parts for its cut-out rig (_rig_parts).
 ## Nothing here runs in the game.
 
 const OUT := "res://assets/placeholder/"
 const KIT := "res://port_kit/high-noon-port-kit/"
-const PX := 2  # pixels per unit
+const PX := 2  # pixels per unit at the old 640×360 base
+const OUTPUT_SCALE := 2  # 640×360 -> 1280×720
 const BG_LEFT := -80  # wide background layers cover world x -80..400 (960 px)
 const BG_W := 480
 const H := 180
@@ -96,8 +100,9 @@ func rows(lines: Array, pal: Dictionary) -> Image:
 
 func save(im: Image, path: String, scale := PX) -> void:
 	var out := im.duplicate()
-	if scale != 1:
-		out.resize(im.get_width() * scale, im.get_height() * scale, Image.INTERPOLATE_NEAREST)
+	var k := scale * OUTPUT_SCALE
+	if k != 1:
+		out.resize(im.get_width() * k, im.get_height() * k, Image.INTERPOLATE_NEAREST)
 	var full := ProjectSettings.globalize_path(OUT + path)
 	DirAccess.make_dir_recursive_absolute(full.get_base_dir())
 	out.save_png(full)
@@ -271,34 +276,36 @@ func _props() -> void:
 	save(rope, "props/sign_rope.png")
 
 
-# ---------- characters (kit sprites at ×2; the hit flash is a white silhouette) ----------
+# ---------- characters: cut-out rig parts ----------
 
+## Cut-out rig parts for each outlaw, cut from the kit's 14×19 sprites. Real art replaces each part
+## separately; the joints and animations live in the manifest's "rigs" section.
 func _characters() -> void:
-	for pose in ["idle", "aim", "run"]:
-		save(kit_image("art/sprites/outlaw_%s.png" % pose), "outlaw/%s.png" % pose)
-	var flash := kit_image("art/sprites/outlaw_aim.png")
-	for y in flash.get_height():
-		for x in flash.get_width():
-			if flash.get_pixel(x, y).a > 0:
-				flash.set_pixel(x, y, Color.WHITE)
-	save(flash, "outlaw/hit.png")
-	for pose in ["idle", "aim", "run"]:
-		save(kit_image("art/sprites/iron_eli_%s.png" % pose), "iron_eli/%s.png" % pose)
-	# Iron Eli's breastplate, drawn over him while he wears it (drawEnemy). Same frame as the outlaw sprite.
+	for who in ["outlaw", "iron_eli", "black_jack"]:
+		var idle := kit_image("art/sprites/%s_idle.png" % who)
+		var aim := kit_image("art/sprites/%s_aim.png" % who)
+		var run := kit_image("art/sprites/%s_run.png" % who)
+		save(idle.get_region(Rect2i(0, 0, 14, 8)), "%s_parts/head.png" % who)  # hat, face and bandana
+		var torso := idle.get_region(Rect2i(2, 8, 10, 6))
+		torso.fill_rect(Rect2i(0, 1, 2, 4), Color(0, 0, 0, 0))  # the arms are separate parts
+		torso.fill_rect(Rect2i(8, 1, 2, 4), Color(0, 0, 0, 0))
+		save(torso, "%s_parts/torso.png" % who)
+		save(idle.get_region(Rect2i(1, 9, 3, 4)), "%s_parts/arm_back.png" % who)
+		save(idle.get_region(Rect2i(10, 9, 3, 4)), "%s_parts/arm_front.png" % who)
+		save(aim.get_region(Rect2i(2, 10, 10, 3)), "%s_parts/gun_hand.png" % who)  # both hands on the revolver
+		save(idle.get_region(Rect2i(0, 14, 14, 5)), "%s_parts/legs.png" % who)
+		save(run.get_region(Rect2i(0, 14, 14, 5)), "%s_parts/legs_run.png" % who)
+	# Iron Eli's breastplate, a part over his torso while he wears it (drawEnemy).
 	for cracked in [false, true]:
-		var plate := img(14, 19)
-		rect(plate, 3, 8, 8, 6, "#3A3F4A")
-		rect(plate, 4, 9, 6, 4, "#8A93A2")
-		for rv in [[4, 9], [9, 9], [4, 12], [9, 12]]:
+		var plate := img(10, 6)  # same box as the torso part
+		rect(plate, 1, 0, 8, 6, "#3A3F4A")
+		rect(plate, 2, 1, 6, 4, "#8A93A2")
+		for rv in [[2, 1], [7, 1], [2, 4], [7, 4]]:
 			rect(plate, rv[0], rv[1], 1, 1, "#C9D0DA")
 		if cracked:
-			for cr in [[6, 9, 1, 2], [7, 10, 1, 2], [6, 12, 1, 1], [8, 9, 1, 1]]:
+			for cr in [[4, 1, 1, 2], [5, 2, 1, 2], [4, 4, 1, 1], [6, 1, 1, 1]]:
 				rect(plate, cr[0], cr[1], cr[2], cr[3], "#1E1A16")
-		save(plate, "iron_eli/armour_%s.png" % ("cracked" if cracked else "intact"))
-	# Duel bosses stand closer, at twice the street size: the kit's @4x files are exactly that.
-	for boss in ["black_jack", "iron_eli"]:
-		for pose in ["idle", "aim"]:
-			save(kit_image("art/sprites/%s_%s@4x.png" % [boss, pose]), "%s_duel/%s.png" % [boss, pose], 1)
+		save(plate, "iron_eli_parts/armour_%s.png" % ("cracked" if cracked else "intact"))
 	for name in ["hostage", "bottle", "tumbleweed"]:
 		save(kit_image("art/sprites/%s.png" % name), "props/%s.png" % name)
 

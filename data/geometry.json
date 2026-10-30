@@ -5,7 +5,7 @@
     "Cover sizes (hitbox width, and the height an outlaw hides behind) stay in the kit's data/cover_sizes.json.",
     "pad values grow a hitbox on each side: 'touch' for fingers, 'mouse' for desktop testing."
   ],
-  "pixels_per_unit": 2,
+  "pixels_per_unit": 4,
   "stage": {"width": 320, "height": 180},
 
   "outlaw": {
@@ -49,6 +49,7 @@
   "duel": {
     "zone": [56, 62],
     "zone_below_ground": 4,
+    "boss_scale": 2,
     "zone_pad": {"touch": 6, "mouse": 0},
     "aim_bonus": {"touch": 0.16, "mouse": 0.1},
     "card_box_from_boss": 27,
@@ -58,13 +59,15 @@
     "twitch_spark": [15, -15]
   },
   "gun": {
-    "pivot_from_corner": [20, 2],
-    "kick_offset": [10, 6],
-    "reload_drop": 10,
-    "rest_angle": 0.35,
-    "reload_angle": -0.5,
-    "angle_range": [0.05, 0.8],
-    "brass_from_pivot": [-10, -12]
+    "_about": "Small and low in the bottom-right corner (style guide): scale shrinks the gun art, the pivot sits just inside the screen's corner, and the tilt stays shallow so it never covers a target.",
+    "scale": 0.55,
+    "pivot_from_corner": [8, -1],
+    "kick_offset": [6, 4],
+    "reload_drop": 6,
+    "rest_angle": 0.3,
+    "reload_angle": -0.45,
+    "angle_range": [0.05, 0.6],
+    "brass_from_pivot": [-6, -8]
   },
   "dynamite": {
     "flight_time": 1.7,

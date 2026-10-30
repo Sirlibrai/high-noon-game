@@ -1,7 +1,7 @@
 extends Node
 ## The single source of art. Reads res://assets/manifest.json, which maps names
-## like "outlaw/aim" to image files, and builds a SpriteFrames per set
-## ("outlaw") with one animation per name ("aim"). Also fills the textures of
+## like "prop/tnt" to image files, and builds a SpriteFrames per set
+## ("prop") with one animation per name ("tnt"). Also fills the textures of
 ## the shared UI theme from manifest entries that list theme slots.
 
 const ROOT := "res://assets/"
@@ -10,6 +10,9 @@ const THEME := "res://ui/theme.tres"
 const DEFAULT_FPS := 8.0
 
 var scenes: Dictionary = {}
+## Cut-out characters (manifest "rigs") and their shared clips ("rig_animations"); see CutoutRig.
+var rigs: Dictionary = {}
+var rig_animations: Dictionary = {}
 var _entries: Dictionary = {}  # name -> {frames, fps, loop, anchor, points}
 var _sets: Dictionary = {}  # set name -> SpriteFrames
 var errors: Array[String] = []
@@ -27,6 +30,8 @@ func load_manifest() -> void:
 		push_error(errors[-1])
 		return
 	scenes = raw.get("scenes", {})
+	rigs = raw.get("rigs", {})
+	rig_animations = raw.get("rig_animations", {})
 	for name in raw.assets:
 		var e := _parse(name, raw.assets[name])
 		if e.frames.is_empty():

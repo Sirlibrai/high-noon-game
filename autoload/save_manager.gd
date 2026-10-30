@@ -37,6 +37,7 @@ static func fresh_progress() -> Dictionary:
 		"avatar": {"name": "The Stranger", "hat": 0, "hatCol": 0, "skin": 2, "bandana": 1, "coat": 0, "face": 0},
 		"avOwned": {},
 		"seenOffice": false,
+		"skins": {"active": "standard", "owned": {"standard": true}},
 	}
 
 
@@ -53,7 +54,7 @@ static func normalised(parsed: Dictionary) -> Dictionary:
 	if p is Dictionary:
 		var base := fresh_progress()
 		base.merge(p, true)
-		for key in ["stats", "inv", "avatar"]:
+		for key in ["stats", "inv", "avatar", "skins"]:
 			base[key] = fresh_progress()[key].merged(p.get(key, {}), true)
 		out.progress = base
 	return out
@@ -128,6 +129,10 @@ static func merge_progress(a: Dictionary, a_time: float, b: Dictionary, b_time: 
 			out.inv[group][k] = out.inv[group].get(k, false) or older.inv[group][k]
 	for k in older.get("avOwned", {}):
 		out.avOwned[k] = out.avOwned.get(k, false) or older.avOwned[k]
+	if not out.has("skins"):
+		out.skins = fresh_progress().skins
+	for k in older.get("skins", {}).get("owned", {}):  # skins bought on either device; the active one from the newer
+		out.skins.owned[k] = out.skins.owned.get(k, false) or older.skins.owned[k]
 	out.seenOffice = bool(out.get("seenOffice", false)) or bool(older.get("seenOffice", false))
 	var spent := maxf(float(a.stats.earned) - float(a.bucks), float(b.stats.earned) - float(b.bucks))
 	for k in older.stats:

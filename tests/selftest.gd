@@ -208,6 +208,7 @@ func _ready() -> void:
 
 	_campaign_status()
 	_saves()
+	_skins()
 
 	# Playthrough checks (expected_results.md), with the scripted player on a fresh, unsaved progress.
 	SaveManager.persist = false
@@ -442,6 +443,93 @@ func _saves() -> void:
 	ok("iCloud sync merges in another device's progress", pulled and GameState.stars_in(SaveManager.data.progress, 0, 1) == 3 and SaveManager.data.progress.inv.guns.longbarrel)
 	ok("iCloud sync ignores a copy it has already merged", not cs.pull())
 	cs.free()
+	SaveManager.data = keep
+
+
+## Every art name's image file and anchor, to compare skins against the standard art.
+func art_snapshot() -> Dictionary:
+	var out := {}
+	for n in Assets.names():
+		out[n] = [Assets.texture(n).resource_path, Assets.anchor(n), Assets.frame_count(n)]
+	return out
+
+
+## Everything a tap can hit on every Main Street level, with each outlaw fully out.
+func hitbox_snapshot() -> String:
+	var out: Array = [JSON.stringify(GameState.geometry), JSON.stringify(GameState.cover_sizes)]
+	for li in GameState.levels_for(0).size():
+		var lv := Level.new()
+		add_child(lv)
+		lv.setup(0, li)
+		if lv.duel != null:
+			out.append(lv.duel_zone())
+		for c in lv.covers:
+			out.append(lv.cover_rect(c))
+		for b in lv.bottles:
+			out.append(lv.bottle_rect(b))
+		for e in lv.enemies:
+			e.exp = 1.0
+			e.state = "aim"
+			out.append(lv.rect_of(e))
+			if e.kind == "hostage":
+				out.append(lv.hostage_rect(e))
+		remove_child(lv)
+		lv.free()
+	return str(out)
+
+
+## Optional skins: the data, the manifest lookup, the final shader layer, and the save.
+func _skins() -> void:
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/skins.json"))
+	var only: Array = data.skins
+	ok("Skins data lists only Standard: free, no shader, no overrides",
+		only.size() == 1 and only[0].id == "standard" and only[0].name == "Standard" and int(only[0].price) == 0
+		and only[0].shader == null and only[0].overrides.is_empty())
+	var fresh_skins: Dictionary = fresh().skins
+	ok("A new save has Standard active and owned", fresh_skins.active == "standard" and fresh_skins.owned.standard == true)
+	var standard: Dictionary = Skins.get_skin("standard")
+	Assets.set_skin({})
+	var plain := art_snapshot()
+	var plain_hits := hitbox_snapshot()
+	Skins.apply(standard)
+	ok("The Standard skin changes no art", art_snapshot() == plain and Assets.skin_fallbacks.is_empty())
+	ok("The Standard skin leaves the final screen layer off (no shader)", Skins.final_material() == null)
+
+	var test_skin := {"id": "test", "name": "Test", "price": 0, "shader": "res://tests/fixtures/test_skin.gdshader", "overrides": {
+		"prop/barrel": "placeholder/props/crate.png",
+		"prop/tnt": "placeholder/props/no_such_file.png",
+		"no_such/name": "placeholder/props/crate.png",
+		"outlaw_parts/head": {"frames": ["placeholder/props/bottle.png"]}}}
+	Skins.apply(test_skin)
+	ok("A skin's override is used first", Assets.texture("prop/barrel").resource_path.ends_with("placeholder/props/crate.png")
+		and Assets.texture("outlaw_parts/head").resource_path.ends_with("placeholder/props/bottle.png"))
+	ok("A missing override falls back to the standard art",
+		Assets.texture("prop/tnt").resource_path == plain["prop/tnt"][0] and Assets.skin_fallbacks.has("prop/tnt")
+		and Assets.skin_fallbacks.has("no_such/name (not in the manifest)"))
+	ok("Names a skin does not override keep the standard art",
+		Assets.texture("prop/crate").resource_path == plain["prop/crate"][0] and Assets.texture("fx/blood").resource_path == plain["fx/blood"][0])
+	ok("A skin's shader goes on the final full-screen layer", Skins.final_material() != null)
+	ok("Switching skins never changes geometry or hit areas", hitbox_snapshot() == plain_hits)
+	var rig := CutoutRig.make("outlaw", self)
+	ok("Skinned rig parts still build", rig.parts.head.sprite_frames != null and rig.parts.has("gun_hand"))
+	rig.free()
+	Skins.apply(standard)
+	ok("Switching back to Standard restores every image", art_snapshot() == plain and Skins.final_material() == null)
+	ok("Hit areas match the standard skin after switching back", hitbox_snapshot() == plain_hits)
+
+	# The save: active and owned skins, kept across restarts and devices.
+	var keep: Dictionary = SaveManager.data
+	SaveManager.persist = false
+	SaveManager.data = SaveManager.fresh_data()
+	ok("You can't switch to a skin you don't own", not Skins.set_active("test") and Skins.active_id() == "standard")
+	SaveManager.data.progress.skins = {"active": "gold_rush", "owned": {"standard": true, "gold_rush": true}}
+	var back: Dictionary = SaveManager.normalised(JSON.parse_string(JSON.stringify(SaveManager.data)))
+	ok("Active and owned skins survive a save and reload", back.progress.skins.active == "gold_rush" and back.progress.skins.owned.gold_rush)
+	ok("A saved skin that no longer exists falls back to Standard", Skins.active_id() == "standard")
+	var older := fresh()
+	older.skins.owned["dust_storm"] = true
+	var m: Dictionary = SaveManager.merge_progress(SaveManager.data.progress, 200.0, older, 100.0)
+	ok("iCloud merge keeps skins bought on either device", m.skins.owned.gold_rush and m.skins.owned.dust_storm and m.skins.active == "gold_rush")
 	SaveManager.data = keep
 
 

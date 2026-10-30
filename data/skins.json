@@ -1,0 +1,12 @@
+{
+  "_about": [
+    "Optional visual skins. Each skin: id, name, price (Bounty Dollars), optional shader and optional asset overrides.",
+    "shader: a res:// path to a canvas_item shader drawn over the whole finished screen; it reads the screen with `uniform sampler2D screen_texture : hint_screen_texture;`. null means none.",
+    "overrides: manifest names mapped to replacement art, either a file path under res://assets/ or an entry like those in assets/manifest.json. Anything not overridden, or whose file is missing, shows the standard art.",
+    "Skins change pictures only. Hitboxes, cover sizes and every other gameplay number come from data/geometry.json and levels.json and are never read from art."
+  ],
+  "default": "standard",
+  "skins": [
+    {"id": "standard", "name": "Standard", "price": 0, "shader": null, "overrides": {}}
+  ]
+}

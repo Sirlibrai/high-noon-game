@@ -3,6 +3,12 @@ extends Node
 ## like "prop/tnt" to image files, and builds a SpriteFrames per set
 ## ("prop") with one animation per name ("tnt"). Also fills the textures of
 ## the shared UI theme from manifest entries that list theme slots.
+##
+## Skins (see autoload/skins.gd): set_skin() looks up the active skin's
+## overrides first. An override replaces a name's image files and keeps the
+## standard entry's anchor, timing and points unless it sets its own; an
+## override whose files are missing falls back to the standard art. Skins only
+## change pictures: hitboxes live in data/geometry.json and never read art.
 
 const ROOT := "res://assets/"
 const MANIFEST := ROOT + "manifest.json"
@@ -13,9 +19,13 @@ var scenes: Dictionary = {}
 ## Cut-out characters (manifest "rigs") and their shared clips ("rig_animations"); see CutoutRig.
 var rigs: Dictionary = {}
 var rig_animations: Dictionary = {}
-var _entries: Dictionary = {}  # name -> {frames, fps, loop, anchor, points}
+var _entries: Dictionary = {}  # name -> {frames, fps, loop, anchor, points}: what the game shows now
+var _base: Dictionary = {}  # the same, for the standard art only
 var _sets: Dictionary = {}  # set name -> SpriteFrames
 var errors: Array[String] = []
+## Overrides of the active skin that could not be used, so the standard art shows instead.
+var skin_fallbacks: Array[String] = []
+signal skin_changed
 
 
 func _ready() -> void:
@@ -36,22 +46,50 @@ func load_manifest() -> void:
 		var e := _parse(name, raw.assets[name])
 		if e.frames.is_empty():
 			continue
+		_base[name] = e
+	_entries = _base.duplicate()
+
+
+## Shows a skin's art: `overrides` maps manifest names to replacement entries
+## (a file path, or an entry with frames and any options to change). An empty
+## dictionary is the standard art.
+func set_skin(overrides: Dictionary) -> void:
+	_entries = _base.duplicate()
+	skin_fallbacks.clear()
+	for name in overrides:
+		if not _base.has(name):
+			skin_fallbacks.append(name + " (not in the manifest)")
+			continue
+		var v: Variant = overrides[name]
+		var merged: Dictionary = _base[name].raw.duplicate(true)
+		merged.erase("sequence")
+		merged.merge({"frames": [v]} if v is String else v, true)
+		var e := _parse(name, merged, false)
+		if e.missing > 0 or e.frames.is_empty():
+			skin_fallbacks.append(name)  # keep the standard art
+			continue
 		_entries[name] = e
+	_sets.clear()
+	_apply_theme()
+	skin_changed.emit()
 
 
-func _parse(name: String, v: Variant) -> Dictionary:
+func _parse(name: String, v: Variant, report := true) -> Dictionary:
 	if v is String:
 		v = {"frames": [v]}
-	var files: Array = v.get("frames", [])
+	var files: Array = v.get("frames", []).duplicate()
 	if v.has("sequence"):
 		for i in int(v.sequence.count):
 			files.append(v.sequence.pattern % i)
 	var frames: Array[Texture2D] = []
+	var missing := 0
 	for f in files:
 		var path: String = ROOT + f
 		if not ResourceLoader.exists(path):
-			errors.append("%s: missing file %s" % [name, path])
-			push_error(errors[-1])
+			missing += 1
+			if report:
+				errors.append("%s: missing file %s" % [name, path])
+				push_error(errors[-1])
 			continue
 		frames.append(load(path))
 	var anchor := Vector2.ZERO
@@ -67,7 +105,7 @@ func _parse(name: String, v: Variant) -> Dictionary:
 	for k in v.get("points", {}):
 		points[k] = Vector2(v.points[k][0], v.points[k][1])
 	return {"frames": frames, "fps": float(v.get("fps", DEFAULT_FPS)), "loop": bool(v.get("loop", true)),
-		"anchor": anchor, "points": points, "theme": v.get("theme", []), "raw": v}
+		"anchor": anchor, "points": points, "theme": v.get("theme", []), "raw": v, "missing": missing}
 
 
 func has(name: String) -> bool:

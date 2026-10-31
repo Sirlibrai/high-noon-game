@@ -12,8 +12,20 @@ var _cooldown := 0
 var _key_done := false
 
 
+## Timed taps to play instead of choosing ([{at, tap}], from a v2 level's "solution" or "wrong").
+var taps: Array = []
+var _next := 0
+
+
 func decide(lv: Level) -> Variant:
 	if lv.state != "play":
+		return null
+	if taps.is_empty() and lv.v2 and _next == 0:
+		taps = lv.L.get("solution", [])
+	if not taps.is_empty():
+		if _next < taps.size() and lv.clock >= float(taps[_next].at):
+			_next += 1
+			return target(lv, taps[_next - 1].tap)
 		return null
 	if _cooldown > 0:
 		_cooldown -= 1
@@ -73,6 +85,23 @@ func _choose(lv: Level) -> Variant:
 		if e.state == "aim":  # tap what shows above his cover, like a player would
 			return lv.visible_rect(e).get_center()
 	return null
+
+
+## Where a scripted tap lands: "bucket", "chain", "bottle:i", "cover:i" or "enemy:i" (the part of him showing).
+static func target(lv: Level, tap: String) -> Vector2:
+	var i := int(tap.get_slice(":", 1))
+	match tap.get_slice(":", 0):
+		"bucket":
+			return lv.bucket_rects()[0].get_center()
+		"chain":
+			return lv.chain_rects()[0].get_center()
+		"bottle":
+			return lv.bottle_rect(lv.bottles[i]).get_center()
+		"cover":
+			return lv.cover_rect(lv.covers[i]).get_center()
+		"enemy":
+			return lv.visible_rect(lv.enemies[i]).get_center()
+	return Vector2.ZERO
 
 
 ## The middle of the INN sign's left chain.

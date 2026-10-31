@@ -6,6 +6,8 @@ const KIT := "res://port_kit/high-noon-port-kit/"
 const DATA_DIR := KIT + "data/"
 const MUSIC_DIR := KIT + "audio/music/"
 const GEOMETRY := "res://data/geometry.json"
+## The game's own campaign levels (data/levels/<key>.json) replace the kit's list for that scene.
+const CAMPAIGN_DIR := "res://data/levels/"
 
 ## chapters.json names a scene; levels.json keys its level lists differently.
 const SCENE_LEVEL_KEY := {"street": "main_street", "train": "train"}
@@ -36,6 +38,10 @@ var touch_mode := OS.has_feature("mobile")
 func _ready() -> void:
 	chapters = _load("chapters")
 	level_lists = _load("levels")
+	for key in level_lists.keys():
+		var own: String = CAMPAIGN_DIR + str(key) + ".json"
+		if FileAccess.file_exists(own):
+			level_lists[key] = JSON.parse_string(FileAccess.get_file_as_string(own))[key]
 	scenes = _load("scenes")
 	cover_sizes = _load("cover_sizes")
 	weapons = _load("weapons")
@@ -158,13 +164,16 @@ func apply_win(pg: Dictionary, c: int, l: int, stars: int, o: Dictionary) -> Dic
 	return {"pay": pay, "capture_now": capture_now, "before": before, "best": best}
 
 
+## Stars (brief v2 §3): one for the clear, one for losing no heart, one for par with no hints or
+## assistance. Assistance caps a clear at two. Duels count hearts, as they have no par.
 static func stars_for(lv: Dictionary, o: Dictionary) -> int:
+	var assisted: bool = o.get("assisted", false)
 	var s: int
 	if lv.get("duel", false):
 		s = 1 + (1 if o.hearts >= 2 else 0) + (1 if o.hearts == 3 else 0)
 	else:
-		s = 1 + (1 if o.used <= lv.par else 0) + (0 if o.damaged else 1)
-	return mini(2, s) if o.get("assisted", false) else s
+		s = 1 + (0 if o.damaged else 1) + (1 if o.used <= lv.par and not assisted else 0)
+	return mini(2, s) if assisted else s
 
 
 static func buy_item(pg: Dictionary, cost: int, give: Callable) -> bool:
@@ -175,7 +184,7 @@ static func buy_item(pg: Dictionary, cost: int, give: Callable) -> bool:
 	return true
 
 
-static func offer_for(lv: Dictionary, reason: String, alive: int, used: bool, stage: int = 1) -> Variant:
+static func offer_for(lv: Dictionary, reason: String, _alive: int, used: bool, stage: int = 1) -> Variant:
 	if used:
 		return null
 	if reason == "hostage":
@@ -186,9 +195,7 @@ static func offer_for(lv: Dictionary, reason: String, alive: int, used: bool, st
 		return null if reason == "ammo" else "continue"
 	if lv.get("puzzle", false):
 		return "hint"
-	if reason == "ammo" and alive == 1:
-		return "bullet"
-	return null
+	return null  # bullets are never sold or given by ads (brief v2 §3)
 
 
 func collected_in(pg: Dictionary, i: int) -> bool:

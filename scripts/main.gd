@@ -389,15 +389,23 @@ func show_intro(chapter: int, index: int) -> void:
 		UiKit.pill(pills, "Duel")
 		UiKit.pill(pills, "%d hits" % int(L.hp))
 	else:
-		UiKit.pill(pills, "%d outlaw%s" % [L.enemies.size(), "" if L.enemies.size() == 1 else "s"])
+		if not L.enemies.is_empty():
+			UiKit.pill(pills, "%d outlaw%s" % [L.enemies.size(), "" if L.enemies.size() == 1 else "s"])
 		if L.has("bottles"):
 			UiKit.pill(pills, "%d bottles" % L.bottles.size())
-		UiKit.pill(pills, "%d bullets" % int(L.bullets))
+		UiKit.pill(pills, "%d bullet%s" % [int(L.bullets), "" if int(L.bullets) == 1 else "s"])
 		UiKit.pill(pills, "Par %d" % int(L.par))
+	if L.has("story"):  # brief v2: one story line on the intro card
+		UiKit.text(card, L.story.intro, &"Tip", 840)
 	if L.get("puzzle", false) and level.hint_lvl >= 1:
 		UiKit.text(card, "Clue: " + L.hint, &"Tip", 840)
-	else:
+	elif L.has("tip"):
 		UiKit.text(card, L.tip, &"Tip", 840)
+	# Say how the level starts: observation levels wait for your first shot, the rest don't.
+	if level.observing:
+		UiKit.text(card, "Take your time. Nobody draws until you fire.", &"Hint", 840)
+	elif not L.get("duel", false):
+		UiKit.text(card, "They're already shooting.", &"Hint", 840)
 	var buttons := UiKit.row(card)
 	UiKit.button(buttons, "Face him" if L.get("duel", false) else "Draw").pressed.connect(_go)
 	UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
@@ -474,6 +482,8 @@ func _on_won(res: Dictionary) -> void:
 	else:
 		line = "%d shot%s, par %d%s" % [res.used, "" if res.used == 1 else "s", int(level.L.par), "" if res.damaged else ", untouched"]
 	UiKit.text(card, line, &"Tip")
+	if level.L.has("story"):  # brief v2: the next story beat on the result screen
+		UiKit.text(card, level.L.story.result, &"Hint", 840)
 	if res.pay:
 		UiKit.text(card, "+$%d" % res.pay, &"Pay")
 	var buttons := UiKit.row(card)
@@ -492,8 +502,6 @@ func _on_won(res: Dictionary) -> void:
 
 func _offer_text(offer: String) -> Array:
 	match offer:
-		"bullet":
-			return ["OUT OF AMMO!", "One outlaw remains. Don’t let him escape!", "Watch ad: +1 bullet"]
 		"hint":
 			return ["STUCK, PARTNER?", "There’s more than one way to take down an outlaw.",
 				"Watch ad: show me where to look" if level.hint_lvl >= 1 else "Watch ad: reveal a clue"]
@@ -531,7 +539,7 @@ func _show_fail(reason: String, offer: Variant) -> void:
 		UiKit.text(card, "Using this caps the clear at two stars.", &"Hint")
 	else:
 		UiKit.text(card, reason, &"Heading")
-		UiKit.text(card, clue if clue != "" else L.tip, &"Hint", 840)
+		UiKit.text(card, clue if clue != "" else L.get("tip", "Watch them first, then try again."), &"Hint", 840)
 	var buttons := UiKit.row(card)
 	var retry_label := "Try again"
 	if offer != null:

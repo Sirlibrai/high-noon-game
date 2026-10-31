@@ -36,6 +36,7 @@ func _init() -> void:
 	_posters()
 	_home_ui()
 	_painted_ui()
+	_hangers()
 	print("Exported %d placeholder images to %s" % [written, OUT])
 	quit()
 
@@ -918,3 +919,66 @@ func _painted_ui() -> void:
 		var d := Vector2((px - 64.0) / 62.0, (py - 16.0) / 14.0).length()
 		return Color(0.12, 0.06, 0.02, clampf(pow(maxf(0, 1 - d * d), 1.6) * 0.6, 0, 1))),
 		"ui_painted/contact_shadow.png")
+
+
+## Hanging objects (brief v2 §10): every hanging prop hangs from a beam on a post. The bucket is a
+## placeholder for painted art; post, beam and rope are stretched to fit (manifest anchors).
+func _hangers() -> void:
+	var wood := func(u: float, v: float, base: Color) -> Color:  # grain along v, lit from the left
+		var grain := sin(v * 0.9 + sin(v * 0.13) * 4.0 + u * 2.0) * 0.5 + 0.5
+		return base.lerp(base.lightened(0.35), clampf(0.7 - 0.6 * u, 0, 1) * 0.6 + grain * 0.25)
+	# A wooden bucket with iron bands and a wire bail: 18 by 20 units, the body (16 by 13) from pixel (4, 24).
+	save_exact(smooth(72, 80, func(px: float, py: float) -> Color:
+		var bail_c := Vector2(36, 26)
+		var bd := absf(Vector2((px - bail_c.x) / 30.0, (py - bail_c.y) / 22.0).length() - 1.0)
+		if py < 26 and bd < 0.06:
+			return Color("#3A3632").lerp(Color("#9A948A"), clampf(1 - bd / 0.06, 0, 1) * 0.6)
+		if py < 24 or py > 76:
+			return Color(0, 0, 0, 0)
+		var t := (py - 24.0) / 52.0  # 0 at the rim, 1 at the base
+		var half := lerpf(32.0, 27.0, t)  # a little narrower at the base
+		var u := (px - 36.0) / half
+		if absf(u) > 1:
+			return Color(0, 0, 0, 0)
+		if absf(u) > 0.93 or t < 0.05 or t > 0.95:
+			return Color("#2A1A10")
+		var c: Color = wood.call(u, px * 0.6, Color("#7A4A26"))
+		c = c.darkened(clampf(u * u * 0.35, 0, 0.4))
+		if absf(t - 0.22) < 0.05 or absf(t - 0.78) < 0.05:
+			c = Color("#2E2C2A").lerp(Color("#8A8680"), clampf(0.6 - 0.5 * u, 0, 1))
+		if int(px) % 12 == 0:
+			c = c.darkened(0.3)  # the staves
+		return c),
+		"props/bucket.png")
+	# Rope: a twisted strand, tiled by stretching (12 by 64 pixels, anchored at its top centre).
+	save_exact(smooth(12, 64, func(px: float, py: float) -> Color:
+		var u := (px - 6.0) / 4.5
+		if absf(u) > 1:
+			return Color(0, 0, 0, 0)
+		var twist := sin((py + u * 6.0) * 0.8) * 0.5 + 0.5
+		return Color("#6E5230").lerp(Color("#D2B07A"), clampf(0.75 - 0.6 * u, 0, 1) * 0.7 + twist * 0.3)),
+		"props/rope.png")
+	# A square wooden post, 6 by 90 units, anchored at its foot.
+	save_exact(smooth(24, 360, func(px: float, py: float) -> Color:
+		var u := (px - 12.0) / 12.0
+		if absf(u) > 0.92:
+			return Color("#2A1A10") if absf(u) <= 1 else Color(0, 0, 0, 0)
+		if py < 6:
+			return Color("#2A1A10")
+		return wood.call(u, py * 0.25, Color("#6A3E20"))),
+		"props/post.png")
+	# The beam across the top, 54 by 7 units, with an iron bracket and a ring at its far end.
+	save_exact(smooth(216, 32, func(px: float, py: float) -> Color:
+		var ring := absf(Vector2(px - 204.0, py - 24.0).length() - 5.0)
+		if ring < 1.6:
+			return Color("#2E2C2A").lerp(Color("#A09A90"), clampf(1 - ring / 1.6, 0, 1) * 0.6)
+		if py < 2 or py > 26 or px > 214:
+			return Color(0, 0, 0, 0)
+		var v := (py - 14.0) / 12.0
+		if absf(v) > 0.88 or px < 2 or px > 212:
+			return Color("#2A1A10")
+		var c: Color = wood.call(v, px * 0.25, Color("#6A3E20"))
+		if px < 30 and absf(v) > 0.55:
+			c = Color("#2E2C2A").lerp(Color("#8A8680"), 0.3)  # the iron bracket at the post
+		return c),
+		"props/beam.png")

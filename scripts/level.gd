@@ -76,6 +76,17 @@ var eli_pend_t := 0.0
 var throws: Array = []
 ## What happened, for the scripted-player tests: "crack:tnt", "kill:sign", "stage:2", "throw"...
 var events: Array[String] = []
+## Puzzle-first levels (brief v2, "v": 2 in data/levels): fixed timings and routes, objectives,
+## triggers and the observation start. Prototype levels keep their old, random behaviour.
+var v2 := false
+## The observation start: outlaws idle and follow their routines, but nobody draws until the first shot.
+var observing := false
+## Seconds of play since the level started (the authored solutions are timed by it).
+var clock := 0.0
+## Target Practice's hanging bucket (v2), like hang_sign.
+var bucket: Variant = null
+## Tutorial prompts waiting to show: [{text, ms, t, if}].
+var _prompt_q: Array = []
 
 var fx: FxLayer
 var _hitbox := Vector2(14, 19)
@@ -123,10 +134,13 @@ func setup(chapter: int, index: int) -> void:
 	hearts = 3
 	used = 0
 	damaged = false
+	v2 = int(L.get("v", 1)) >= 2
 	if L.get("tutorial", false):
 		tut = {"step": 0}
 	if L.get("duel", false):
 		_start_duel()
+	elif v2:
+		_setup_v2()
 	else:
 		bullets = int(L.bullets)
 		cyl = mini(int(weapon.cyl), bullets)
@@ -141,8 +155,7 @@ func setup(chapter: int, index: int) -> void:
 			bottles.append({"x": spread_x(float(x) + 2) - bottle_w / 2, "y": float(G.bottle.rail_y), "alive": true})
 		if L.has("sign"):
 			var board_w: float = G.sign.board[0]  # levels.json gives the left edge of a 22-unit board
-			hang_sign = {"x": spread_x(float(L["sign"]) + 11) - board_w / 2, "y": float(G.sign.hang_y), "w": board_w, "h": float(G.sign.board[1]),
-				"chain_top": float(G.sign.chain_top), "state": "hang", "vy": 0.0, "swing": 0.0}
+			hang_sign = _make_sign(spread_x(float(L["sign"]) + 11) - board_w / 2)
 		for k in L.enemies.size():
 			var d: Dictionary = L.enemies[k]
 			var e := {"state": "hidden", "t": 0.0, "wait": 0.7 + k * 0.55 + randf() * 0.8, "exp": 0.0, "alive": true, "fall": 0.0, "lean": 1, "aim_max": 0.0}
@@ -159,6 +172,51 @@ func setup(chapter: int, index: int) -> void:
 					"eli": true, "armor": true, "cracks": [], "hp": 3, "spot": -1, "wait": float(G.iron_eli.first_wait)})
 			enemies.append(e)
 	_build_view()
+
+
+## A puzzle-first level (data/levels, brief v2): positions are centres in world units, as placed.
+func _setup_v2() -> void:
+	bullets = int(L.bullets)
+	cyl = mini(int(weapon.cyl), bullets)
+	observing = L.get("observation", true)
+	_spread = {"p": 1.0, "old": [0.0], "new": [0.0]}  # no spreading: v2 levels are laid out at this scale
+	for cv in L.get("covers", []):
+		var size: Array = GameState.cover_sizes[cv.type]
+		covers.append({"type": cv.type, "x": float(cv.x) - float(size[0]) / 2, "w": float(size[0]), "h": float(size[1]), "alive": true, "holes": []})
+	var bottle_w: float = G.bottle.hitbox[0]
+	for b in L.get("bottles", []):
+		bottles.append({"x": float(b.x) - bottle_w / 2, "y": float(G.bottle.rail_y), "alive": true})
+	if L.has("sign"):
+		var k := float(L.sign.get("scale", 1.0))
+		hang_sign = _make_sign(float(L.sign.x) - float(G.sign.board[0]) * k / 2, k)
+	if L.has("bucket"):
+		var B: Dictionary = G.bucket
+		bucket = {"x": float(L.bucket.x) - float(B.size[0]) / 2, "y": float(B.hang_y), "w": float(B.size[0]), "h": float(B.size[1]),
+			"rope_top": float(B.rope_top), "state": "hang", "vy": 0.0, "broke": false}
+	for d in L.enemies:
+		var e := {"id": d.get("id", ""), "state": "hidden", "t": 0.0, "wait": float(d.get("first", 0.0)), "exp": 0.0, "alive": true,
+			"fall": 0.0, "lean": 1, "aim_max": 0.0, "up": float(d.get("up", 2.0)), "down": float(d.get("down", 2.0)), "alert_t": 0.0}
+		if d.has("c"):
+			e.merge({"kind": "cover", "c": int(d.c), "side": d.get("side", "up")}, true)
+		elif d.has("w"):
+			e.merge({"kind": "window", "w": int(d.w)}, true)
+		elif d.has("stand"):
+			e.merge({"kind": "stand", "x": float(d.stand), "state": "look", "exp": 1.0}, true)
+		elif d.has("route"):
+			var route: Array = d.route
+			e.merge({"kind": "walker", "route": route, "speed": float(d.speed), "leg": 0, "x": float(route[0].x), "dir": 1.0,
+				"state": "pause", "t": float(route[0].wait), "exp": 1.0, "aimed": false}, true)
+		enemies.append(e)
+
+
+## A hanging sign, its board's left edge at x. scale makes the board and its chains bigger
+## (Chain Reaction's long sign); the beam it hangs from is at the chains' top.
+func _make_sign(x: float, k := 1.0) -> Dictionary:
+	var S: Dictionary = G.sign
+	var hang_y := float(S.hang_y)
+	var top := hang_y - (hang_y - float(S.chain_top)) * k
+	return {"x": x, "y": hang_y, "w": float(S.board[0]) * k, "h": float(S.board[1]) * k, "chain_top": top, "beam_y": top,
+		"state": "hang", "vy": 0.0, "swing": 0.0, "scale": k}
 
 
 func _start_duel() -> void:
@@ -180,6 +238,32 @@ func go() -> void:
 		callout.emit("Tap a bottle.", true, 0)
 	elif L.get("puzzle", false) and hint_lvl >= 1:
 		callout.emit("Clue: " + L.hint, true, 2600)
+	else:
+		_queue_prompts()
+
+
+## Tutorial prompts (data "prompts"): each shows once the player has fired after_shots bullets,
+## delay seconds later, if its condition still holds.
+func _queue_prompts() -> void:
+	for pr in L.get("prompts", []):
+		if int(pr.after_shots) == used:
+			_prompt_q.append({"text": pr.text, "ms": int(pr.get("ms", 0)), "t": float(pr.get("delay", 0.0)), "if": pr.get("if", "")})
+
+
+func _prompt_holds(cond: String) -> bool:
+	match cond:
+		"bucket_can_break_2":
+			return bucket != null and bucket.state == "hang" and _under_bucket().size() >= 2
+	return true
+
+
+func _step_prompts(dt: float) -> void:
+	for pr in _prompt_q.duplicate():
+		pr.t -= dt
+		if pr.t <= 0:
+			_prompt_q.erase(pr)
+			if _prompt_holds(pr["if"]):
+				callout.emit(pr.text, true, pr.ms)
 
 
 ## The Second Chance checkpoint: Iron Eli from the stage reached, with full hearts (rules.md §8, §11).
@@ -213,14 +297,7 @@ func grant_offer(type: String) -> void:
 	assisted = true
 	sc_used = true
 	AudioManager.play(level_cue())
-	if type == "bullet":
-		bullets += 1
-		cyl = mini(int(weapon.cyl), bullets)
-		reload_t = 0.0
-		out_of_ammo_t = 0.0
-		state = "play"
-		callout.emit("One more bullet.", true, 1000)
-	elif type == "continue":
+	if type == "continue":  # bullets are never given (brief v2 §3)
 		hearts = 2
 		hurt_flash = 0
 		state = "play"
@@ -310,6 +387,8 @@ func geo(e: Dictionary) -> Dictionary:
 		return {"x": w.x + w.w / 2.0 - hw, "y": roundf(top_h + (top_e - top_h) * e.exp), "clip": Rect2(w.x, w.y, w.w, w.h)}
 	if e.kind == "hostage":
 		return {"x": e.hx - hw + roundf(e.lean * e.exp * G.hostage.lean), "y": GY - float(G.hostage.captor_top_above_ground), "clip": null}
+	if e.kind == "stand" or e.kind == "walker":  # in the open, on the street
+		return {"x": e.x - hw, "y": GY - _hitbox.y, "clip": null, "running": e.kind == "walker" and e.state == "walk"}
 	if e.kind == "runner" and e.state == "run":
 		var a: Dictionary = covers[e.from]
 		var b: Dictionary = covers[e.to]
@@ -369,10 +448,29 @@ func chain_rects() -> Array[Rect2]:
 	var out: Array[Rect2] = []
 	if hang_sign == null:
 		return out
-	var cw: float = G.sign.chain_width
+	var k: float = hang_sign.scale
+	var cw: float = G.sign.chain_width * k
 	for cx in G.sign.chains_x:
-		out.append(Rect2(hang_sign.x + cx - cw / 2, hang_sign.chain_top, cw, hang_sign.y - hang_sign.chain_top))
+		out.append(Rect2(hang_sign.x + cx * k - cw / 2, hang_sign.chain_top, cw, hang_sign.y - hang_sign.chain_top))
 	return out
+
+
+## The hanging bucket's hit areas: its body and the rope above it.
+func bucket_rects() -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	if bucket == null:
+		return out
+	out.append(Rect2(bucket.x, bucket.y, bucket.w, bucket.h))
+	if bucket.state == "hang":
+		var rw: float = G.bucket.rope_width
+		out.append(Rect2(bucket.x + bucket.w / 2 - rw / 2, bucket.rope_top, rw, bucket.y - bucket.rope_top))
+	return out
+
+
+## The bottles the bucket would land on.
+func _under_bucket() -> Array:
+	var m: float = G.bucket.break_margin
+	return bottles.filter(func(b): return b.alive and bottle_rect(b).get_center().x > bucket.x - m and bottle_rect(b).get_center().x < bucket.x + bucket.w + m)
 
 
 func duel_zone() -> Rect2:
@@ -526,7 +624,7 @@ func _update_eli(dt: float) -> void:
 	if hang_sign != null and hang_sign.state == "down" and not el.cracks.has("sign"):
 		hang_sign.reset = hang_sign.get("reset", reset) - dt
 		if hang_sign.reset <= 0:
-			hang_sign.merge({"state": "hang", "y": float(G.sign.hang_y), "chain_top": float(G.sign.chain_top), "vy": 0.0}, true)
+			hang_sign.merge({"state": "hang", "y": float(G.sign.hang_y), "chain_top": float(G.sign.chain_top), "vy": 0.0, "landed": false}, true)
 			hang_sign.erase("reset")
 			callout.emit("They hang the sign back up.", true, 1000)
 
@@ -667,6 +765,12 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 			fx.particle("fx/brass", 0, brass.x, brass.y, -0.5 - randf(), -1.5 - randf(), 40)
 	_fire_fx()
 	aim_pt = {"x": p.x, "y": p.y, "t": 10, "miss": false}
+	if observing:
+		_alert()
+	if not L.get("prompts", []).is_empty():
+		_prompt_q.clear()
+		callout_cleared.emit()
+		_queue_prompts()
 	# Front to back (rules.md §5).
 	for e in enemies:
 		if e.kind == "hostage" and in_r(p, hostage_rect(e), pad(G.hostage.body_pad)):
@@ -715,6 +819,14 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 			hang_sign.swing = 1.0
 			AudioManager.sfx("thunk")
 			return
+	if bucket != null and bucket.state == "hang":
+		for r in bucket_rects():  # the bucket or its rope: either drops it
+			if in_r(p, r, pad(G.bucket.hit_pad)):
+				bucket.state = "fall"
+				events.append("bucket_drop")
+				AudioManager.sfx("clank")
+				fx.burst(bucket.x + bucket.w / 2, bucket.rope_top + 3, 5, "fx/chain")
+				return
 	var live := enemies.filter(func(e): return e.alive and e.state != "dead" and e.state != "hidden")
 	for pd in [0.0, pad(G.outlaw.hit_pad)]:
 		for e in live:
@@ -728,17 +840,142 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 				return
 	for b in bottles:
 		if b.alive and in_r(p, bottle_rect(b), pad(G.bottle.hit_pad)):
-			b.alive = false
-			AudioManager.sfx("glass")
-			Haptics.hit()
-			var r := bottle_rect(b)
-			fx.burst(r.get_center().x, r.get_center().y, 10, "fx/glass", 1.4)
+			_break_bottle(b, "shot")
 			return
 	# A miss: dust, a ricochet and a red crosshair.
 	decals.append({"x": roundf(p.x), "y": roundf(p.y), "life": 90})
 	AudioManager.sfx("miss")
 	aim_pt.miss = true
 	fx.burst(p.x, p.y, 4, "fx/dust_ground" if p.y > 134 else "fx/dust_wall", 0.8)
+
+
+func _break_bottle(b: Dictionary, how: String) -> void:
+	b.alive = false
+	events.append("bottle:" + how)
+	AudioManager.sfx("glass")
+	Haptics.hit()
+	var r := bottle_rect(b)
+	fx.burst(r.get_center().x, r.get_center().y, 10, "fx/glass", 1.4)
+
+
+## The first shot ends the observation start: every outlaw left turns alert, and those in view draw.
+func _alert() -> void:
+	observing = false
+	events.append("alert")
+	for e in enemies:
+		if e.alive:
+			e.alert_t = float(G.outlaw.alert_mark_time)
+			if e.state == "look":
+				_start_aim(e)
+
+
+func _start_aim(e: Dictionary) -> void:
+	e.state = "aim"
+	e.aim_max = float(L.aim)
+	e.t = e.aim_max
+
+
+## A v2 outlaw's fixed routine (brief v2: deterministic). Over cover or in a window he is hidden
+## for `down` seconds (`first` at the start) and shows for `up`; in the open he stands; on a route
+## he walks between points at `speed` and pauses `wait` at each. While the level is in observation
+## he only looks; once alert, each time he shows (or pauses) he draws, and fires when his ring runs out.
+func _step_v2_enemy(e: Dictionary, dt: float) -> void:
+	var O: Dictionary = G.outlaw
+	if e.alert_t > 0:
+		e.alert_t -= dt
+	if e.kind == "cover" and not covers[e.c].alive:  # his cover is gone: he stands in the open
+		e.merge({"kind": "stand", "x": covers[e.c].x + covers[e.c].w / 2.0, "exp": 1.0, "state": "look"}, true)
+		if not observing:
+			_start_aim(e)
+	match e.state:
+		"hidden":
+			e.wait -= dt
+			if e.wait <= 0:
+				e.state = "rise"
+		"rise":
+			e.exp = minf(1, e.exp + dt / O.rise_time)
+			if e.exp >= 1:
+				if observing:
+					e.state = "look"
+					e.t = e.up
+				else:
+					_start_aim(e)
+		"look":
+			if e.kind == "cover" or e.kind == "window":
+				e.t -= dt
+				if e.t <= 0:
+					e.state = "drop"
+		"aim":
+			e.t -= dt
+			if e.t <= 0:
+				hurt()
+				if state != "play":
+					return
+				match e.kind:
+					"stand":
+						e.state = "rest"
+						e.t = float(O.rest_time)
+					"walker":
+						e.aimed = true
+						e.state = "pause"
+						e.t = 0.3
+					_:
+						e.state = "drop"
+		"rest":
+			e.t -= dt
+			if e.t <= 0:
+				_start_aim(e)
+		"drop":
+			e.exp = maxf(0, e.exp - dt / O.drop_time)
+			if e.exp <= 0:
+				e.state = "hidden"
+				e.wait = e.down
+		"pause":
+			if not observing and not e.aimed:
+				_start_aim(e)
+				return
+			e.t -= dt
+			if e.t <= 0:
+				e.leg = (e.leg + 1) % e.route.size()
+				e.state = "walk"
+				e.aimed = false
+		"walk":
+			var target := float(e.route[e.leg].x)
+			var stride: float = e.speed * dt
+			if absf(target - e.x) <= stride:
+				e.x = target
+				e.state = "pause"
+				e.t = float(e.route[e.leg].wait)
+			else:
+				e.dir = signf(target - e.x)
+				e.x += stride * e.dir
+
+
+func _objective_met() -> bool:
+	match L.get("objective", "eliminate_all"):
+		"bottles":
+			return bottles.all(func(b): return not b.alive)
+		"targets":
+			return enemies.filter(func(e): return L.targets.has(e.id)).all(func(e): return not e.alive)
+	return enemies.all(func(e): return not e.alive)
+
+
+func _update_bucket() -> void:
+	var b: Dictionary = bucket
+	if b.state != "fall":
+		return
+	b.vy += G.bucket.gravity
+	b.y += b.vy
+	var top_of_bottles: float = G.bottle.rail_y - G.bottle.hitbox[1]
+	if not b.broke and b.y + b.h >= top_of_bottles:  # it comes down on the bottles under it
+		b.broke = true
+		for bt in _under_bucket():
+			_break_bottle(bt, "bucket")
+	if b.y + b.h >= G.bottle.rail_y:
+		b.y = G.bottle.rail_y - b.h
+		b.state = "down"
+		AudioManager.sfx("crash")
+		shake = 4
 
 
 func _duel_shot(p: Vector2) -> void:
@@ -841,8 +1078,13 @@ func _step(dt: float) -> void:
 			reload_t = 0.0
 			cyl = mini(int(weapon.cyl), bullets)
 			AudioManager.sfx("cock")
+	clock += dt
 	if duel != null:
 		_duel_update(dt)
+		return
+	if v2:
+		_step_prompts(dt)
+		_step_v2(dt)
 		return
 
 	if tut != null and tut.step == 0 and bottles.all(func(b): return not b.alive):
@@ -961,6 +1203,31 @@ func _step(dt: float) -> void:
 			fail("Out of bullets.", "ammo")
 
 
+## A puzzle-first level's step: routines, falling objects, then the objective (brief v2 §3).
+func _step_v2(dt: float) -> void:
+	for e in enemies:
+		if e.state == "dead":
+			e.fall += dt
+			continue
+		_step_v2_enemy(e, dt)
+		if state != "play":
+			return
+	if hang_sign != null:
+		_update_sign()
+	if bucket != null:
+		_update_bucket()
+	if _objective_met():
+		end_timer += dt
+		if end_timer > 0.7:
+			win()
+		return
+	var falling: bool = (hang_sign != null and hang_sign.state == "fall") or (bucket != null and bucket.state == "fall")
+	if bullets <= 0 and not falling and fx.booms.is_empty() and pending_blasts.is_empty():
+		out_of_ammo_t += dt
+		if out_of_ammo_t > 0.9:
+			fail("Out of bullets.", "ammo")
+
+
 func _update_sign() -> void:
 	var s: Dictionary = hang_sign
 	if s.swing:
@@ -970,24 +1237,32 @@ func _update_sign() -> void:
 	s.vy += G.sign.gravity
 	s.y += s.vy
 	s.chain_top += s.vy * 0.2
-	var wagon: Variant = null
+	# It lands on the wagon (and in v2 levels on any cover, setting off TNT it lands on).
+	var support: Variant = null
 	for c in covers:
-		if c.alive and c.type == "wagon" and s.x + s.w > c.x and s.x < c.x + c.w:
-			wagon = c
-	var floor_y: float = GY - (wagon.h if wagon != null else 0) - s.h
+		if c.alive and (c.type == "wagon" or v2) and s.x + s.w > c.x and s.x < c.x + c.w and (support == null or c.h > support.h):
+			support = c
+	var floor_y: float = GY - (support.h if support != null else 0) - s.h
 	if s.y >= floor_y:
 		s.y = floor_y
 		s.state = "down"
+		if s.get("landed", false):  # settling after the TNT under it went off
+			return
+		s.landed = true
 		AudioManager.sfx("crash")
 		Haptics.explosion()
 		shake = 8
 		fx.burst(s.x + s.w / 2.0, floor_y + s.h, 16, "fx/sign_dust", 2)
-		var m: float = G.sign.crush_margin
+		var m: float = G.sign.crush_margin_v2 if v2 else G.sign.crush_margin
 		for e in enemies:
 			if e.alive and e.kind != "window" and e.kind != "hostage":
 				var cx: float = geo(e).x + _hitbox.x / 2
 				if cx > s.x - m and cx < s.x + s.w + m:
 					kill(e, "sign")
+		if v2 and support != null and support.type == "tnt":  # brief v2 trigger: a falling object sets off TNT
+			events.append("sign_on_tnt")
+			explode(support)
+			s.state = "fall"
 
 
 func _duel_update(dt: float) -> void:
@@ -1149,6 +1424,19 @@ func _cast(x: float, y: float, width: float) -> AssetSprite:
 	return s
 
 
+## What a hanging object hangs from (brief v2 §10): a post standing on the street at post_x with a
+## beam at beam_y reaching to end_x. Both are stretched to fit.
+func _hanger(post_x: float, beam_y: float, end_x: float) -> void:
+	var post := AssetSprite.make("prop/post", _back_props)
+	post.extra_scale = Vector2(1, (GY - beam_y + 3) / (Assets.texture("prop/post").get_height() / PPU))
+	_place(post, Vector2(post_x, GY))
+	var beam := AssetSprite.make("prop/beam", _back_props)
+	var from_x := post_x - float(G.sign.post_width) / 2
+	beam.extra_scale = Vector2((end_x - from_x) / (Assets.texture("prop/beam").get_width() / PPU), 1)
+	_place(beam, Vector2(from_x, beam_y))
+	_cast(post_x, GY, 10)
+
+
 ## Iron Eli's last stage swaps the street for a duel: start the view again.
 func _rebuild_view() -> void:
 	for c in get_children():
@@ -1185,7 +1473,17 @@ func _build_view() -> void:
 	if tut != null:
 		_arrow = AssetSprite.make("fx/tutorial_arrow", _back_props)
 	if hang_sign != null:
+		_hanger(hang_sign.x - 1, hang_sign.beam_y, hang_sign.x + hang_sign.w + 2)
 		_sign_nodes = {"board": AssetSprite.make("prop/sign", _back_props)}  # the painted sign includes its chains
+		_sign_nodes.board.extra_scale = Vector2.ONE * float(hang_sign.scale)
+	if bucket != null:
+		var cx: float = bucket.x + bucket.w / 2
+		_hanger(bucket.x - 9, bucket.rope_top, cx + 4)
+		_sign_nodes.rope = AssetSprite.make("prop/rope", _back_props)
+		var bail := float(Assets.anchor("prop/bucket").y) / PPU  # the bail above the bucket's rim
+		_sign_nodes.rope.extra_scale = Vector2(1, (bucket.y - bail + 1 - bucket.rope_top) / (Assets.texture("prop/rope").get_height() / PPU))
+		_place(_sign_nodes.rope, Vector2(cx, bucket.rope_top))
+		_sign_nodes.bucket = AssetSprite.make("prop/bucket", _back_props)
 	# Street outlaws are clipped at the ground line, so they sink behind cover as they drop.
 	_actors = _clip(Rect2(-1000, -1000, 3000, 1000 + GY))
 	_cover_layer = _layer()
@@ -1263,7 +1561,7 @@ func _sync_view() -> void:
 		_arrow.visible = tut.step == 0 and first != null
 		if first != null:
 			_place(_arrow, Vector2(first.x, first.y - 20 + roundf(absf(sin(frame * 0.12)) * -3)))
-	if hang_sign != null:
+	if hang_sign != null or bucket != null:
 		_sync_sign()
 	for c in covers:
 		c.node.visible = c.alive
@@ -1306,8 +1604,12 @@ func _sync_view() -> void:
 
 
 func _sync_sign() -> void:
-	var s: Dictionary = hang_sign
-	_place(_sign_nodes.board, Vector2(s.x + roundf(sin(frame * 0.2) * s.swing * 2), roundf(s.y)))
+	var s: Variant = hang_sign
+	if s != null:
+		_place(_sign_nodes.board, Vector2(s.x + roundf(sin(frame * 0.2) * s.swing * 2), roundf(s.y)))
+	if bucket != null:
+		_place(_sign_nodes.bucket, Vector2(bucket.x, roundf(bucket.y)))
+		_sign_nodes.rope.visible = bucket.state == "hang"
 
 
 ## The layer that holds (and clips) an enemy.
@@ -1328,7 +1630,7 @@ func _ensure_enemy_nodes(e: Dictionary) -> void:
 		if e.kind == "hostage":
 			e.hostage_node = AssetSprite.make("hostage/idle", _hostage_layer)
 			e.hostage_shadow = _cast(e.hx, GY, _hitbox.x * 1.1)
-		if e.kind == "runner":  # in the open he is drawn in front of the cover
+		if e.kind == "runner" or e.kind == "walker":  # in the open he is drawn in front of the cover
 			e.run_node = AssetSprite.make(who + "/run_right", _front)
 			e.run_shadow = _cast(0, GY, _hitbox.x * 1.1)
 		if e.get("eli", false):  # his breastplate rides on whichever sprite shows him
@@ -1345,9 +1647,9 @@ func _ensure_enemy_nodes(e: Dictionary) -> void:
 func _pose(e: Dictionary) -> Array:
 	var pose := "aim"
 	var flip := false
-	var by_top := false
+	var by_top: bool = e.kind == "window"  # he shows from the top of the opening down, cropped at the sill
 	match e.kind:
-		"window":
+		"window", "stand", "walker":
 			pose = "aim"
 		"hostage":
 			pose = "lean"
@@ -1361,6 +1663,8 @@ func _pose(e: Dictionary) -> Array:
 				flip = e.side == "right"  # the art leans out to the left of its cover
 			else:  # rising behind his cover, which hides him below the chest
 				pose = "aim"
+	if v2 and pose == "aim" and not (e.state == "aim" or (not observing and e.state in ["rise", "drop", "rest"])):
+		pose = "idle"  # relaxed: the observation start, or a walker between stops
 	if e.state == "dead":
 		pose = "hit" if e.fall < float(G.outlaw.hit_pose_time) else "fall"
 	elif e.get("flinch", 0.0) > 0:  # Iron Eli reels when hit
@@ -1380,7 +1684,7 @@ func _sync_enemy(e: Dictionary) -> void:
 	if e.has("run_node"):
 		e.run_node.visible = running
 		if running:
-			var to_right: bool = covers[e.to].x > covers[e.from].x
+			var to_right: bool = e.dir > 0 if e.kind == "walker" else covers[e.to].x > covers[e.from].x
 			e.run_node.show_asset(who + ("run_right" if to_right else "run_left"))
 			_place(e.run_node, Vector2(gm.x + _hitbox.x / 2, gm.y + _hitbox.y))
 			_place(e.run_shadow, Vector2(gm.x + _hitbox.x / 2, GY))
@@ -1391,6 +1695,9 @@ func _sync_enemy(e: Dictionary) -> void:
 	var p := _pose(e)
 	n.show_asset(who + p[0])
 	n.flip_h = p[1]
+	var fig: float = float(G.window_outlaw.figure_scale) if e.kind == "window" else 1.0  # upstairs is further away
+	if n.extra_scale.x != fig:
+		n.extra_scale = Vector2.ONE * fig
 	var feet := Vector2(gm.x + _hitbox.x / 2, gm.y + _hitbox.y)
 	if p[2]:
 		feet.y = gm.y + Assets.anchor(who + p[0]).y * n.scale.y / PPU
@@ -1404,7 +1711,7 @@ func _sync_enemy(e: Dictionary) -> void:
 				n.rotation = minf(O.fall_max_angle, e.fall * O.fall_spin)
 	_place(n, feet)
 	if e.has("shadow"):  # only when his feet are on the street (peekers stand behind their cover)
-		e.shadow.visible = n.visible and feet.y >= GY - 3
+		e.shadow.visible = n.visible and feet.y >= GY - 3 and not (e.kind == "cover" and covers[e.c].alive)
 		e.shadow.modulate.a = n.modulate.a
 		_place(e.shadow, Vector2(feet.x, GY))
 	if e.get("eli", false):
@@ -1430,10 +1737,13 @@ func _sync_rings() -> void:
 			e.alert = AssetSprite.make("fx/alert", _ring_layer)
 		var on: bool = e.alive and e.state == "aim"
 		e.ring.visible = on
-		e.alert.visible = false
+		var r := geo(e)
+		var marked: bool = e.alive and e.get("alert_t", 0.0) > 0  # the first shot: he's alert now
+		e.alert.visible = marked
+		if marked:
+			_place(e.alert, Vector2(r.x + _hitbox.x / 2 - 1, r.y - 6))
 		if not on:
 			continue
-		var r := geo(e)
 		var center := Vector2(r.x + _hitbox.x / 2, r.y + _hitbox.y * 0.45)
 		var k := minf(1.0, e.t / (e.aim_max if e.aim_max > 0 else L.aim))
 		var urgent := k < 0.35
@@ -1442,8 +1752,9 @@ func _sync_rings() -> void:
 		e.ring.size = tex.get_size()
 		e.ring.position = center * PPU - Assets.anchor("fx/draw_ring")
 		e.ring.value = k
-		e.alert.visible = urgent and (frame >> 2) % 2 == 1
-		_place(e.alert, Vector2(center.x - 1, center.y - Assets.texture("fx/draw_ring").get_height() / PPU / 2 - 4))
+		if not marked:
+			e.alert.visible = urgent and (frame >> 2) % 2 == 1
+			_place(e.alert, Vector2(center.x - 1, center.y - Assets.texture("fx/draw_ring").get_height() / PPU / 2 - 4))
 
 
 func _sync_throws() -> void:
@@ -1473,6 +1784,10 @@ func _sync_hint_glow() -> void:
 		r = cover_rect(covers[int(t.cover)])
 	if t.get("sign", false) and hang_sign != null and hang_sign.state == "hang":
 		r = Rect2(hang_sign.x - 2, hang_sign.chain_top, hang_sign.w + 4, hang_sign.y - hang_sign.chain_top + 3)  # both chains
+	if t.get("bucket", false) and bucket != null and bucket.state == "hang":
+		r = Rect2(bucket.x, bucket.rope_top, bucket.w, bucket.y + bucket.h - bucket.rope_top)
+	if t.has("spot"):  # where a walker stops
+		r = Rect2(float(t.spot) - _hitbox.x / 2, GY - _hitbox.y, _hitbox.x, _hitbox.y)
 	_hint_glow.visible = r != null
 	if r != null:
 		var grown: Rect2 = r.grow(2.5)

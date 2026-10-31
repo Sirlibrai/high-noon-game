@@ -74,15 +74,23 @@ func _ready() -> void:
 	var arcade := {}
 	var puzzle := {"puzzle": true}
 	var boss_l := {"duel": true}
-	ok("Arcade, out of ammo with one outlaw left: +1 bullet", G.offer_for(arcade, "ammo", 1, false) == "bullet")
-	ok("Arcade, two outlaws left: no ad offer", G.offer_for(arcade, "ammo", 2, false) == null)
+	var bullet_offers: Array = []
+	for l in G.levels_for(0):
+		for reason in ["ammo", "shot", "hostage"]:
+			for left in [1, 2]:
+				if G.offer_for(l, reason, left, false) == "bullet":
+					bullet_offers.append(l.name)
+	ok("No +1 bullet offer anywhere in the campaign, legacy levels included (brief v2)", bullet_offers.is_empty() and G.offer_for(arcade, "ammo", 1, false) == null, str(bullet_offers))
 	ok("Puzzle levels never offer bullets, only clues", G.offer_for(puzzle, "ammo", 1, false) == "hint")
 	ok("Single-stage duels offer to keep your rounds", G.offer_for(boss_l, "shot", 0, false) == "continue")
 	ok("Iron Eli, lost in stage 1: no ad offer", G.offer_for({"eli": true}, "shot", 1, false, 1) == null)
 	ok("Iron Eli, lost in stage 2 or 3: retry from that stage", G.offer_for({"eli": true}, "shot", 1, false, 2) == "checkpoint" and G.offer_for({"eli": true, "duel": true}, "shot", 0, false, 3) == "checkpoint")
-	ok("A clean perfect run earns three stars", G.stars_for({"par": 3}, {"used": 3, "damaged": false}) == 3 and G.stars_for({"duel": true}, {"hearts": 3}) == 3)
+	ok("Stars: a clear is one, no heart lost is two, par unassisted is three", G.stars_for({"par": 3}, {"used": 3, "damaged": false}) == 3 and G.stars_for({"duel": true}, {"hearts": 3}) == 3)
+	ok("Stars: no heart lost but over par is two", G.stars_for({"par": 2}, {"used": 3, "damaged": false}) == 2)
+	ok("Stars: at par but a heart lost is two", G.stars_for({"par": 2}, {"used": 2, "damaged": true}) == 2)
+	ok("Stars: over par and a heart lost is one", G.stars_for({"par": 2}, {"used": 3, "damaged": true}) == 1)
 	ok("Any assistance caps a clear at two stars", G.stars_for({"par": 3}, {"used": 3, "damaged": false, "assisted": true}) == 2 and G.stars_for({"duel": true}, {"hearts": 3, "assisted": true}) == 2)
-	ok("Assistance never lowers a one-star clear", G.stars_for({"par": 3}, {"used": 9, "damaged": true, "assisted": true}) == 1)
+	ok("An assisted clear at par with a heart lost is one star: par only counts unassisted", G.stars_for({"par": 3}, {"used": 3, "damaged": true, "assisted": true}) == 1)
 	ok("Shooting a hostage in an arcade level offers nothing", G.offer_for(arcade, "hostage", 1, false) == null)
 	ok("Only one offer per attempt", G.offer_for(arcade, "ammo", 1, true) == null)
 
@@ -95,6 +103,9 @@ func _ready() -> void:
 			var name := "%s %d, %s" % ["Train" if c else "Main Street", i + 1, l.name]
 			if l.get("duel", false):
 				ok(name + ": duel set up", G.BOSS_SPRITES.has(l.boss) and l.react.size() >= 1)
+				continue
+			if int(l.get("v", 1)) >= 2:
+				ok(name + ": v2 data valid", _v2_problems(l, sc).is_empty(), ", ".join(_v2_problems(l, sc)))
 				continue
 			var problems: Array = []
 			var n: int = l.enemies.size() + l.get("bottles", []).size()
@@ -119,10 +130,15 @@ func _ready() -> void:
 	var missing: Array = []
 	for c in 2:
 		for l in G.levels_for(c):
-			for cv in l.get("covers", []):
-				if not Assets.has("prop/" + cv[0]):
-					missing.append("prop/" + cv[0])
 			var needed: Array = []
+			for cv in l.get("covers", []):
+				var kind: String = cv.type if cv is Dictionary else cv[0]
+				if not Assets.has("prop/" + kind):
+					missing.append("prop/" + kind)
+			if l.has("bucket"):
+				needed.append_array(["prop/bucket", "prop/rope"])
+			if l.has("bucket") or l.has("sign"):
+				needed.append_array(["prop/post", "prop/beam"])
 			if c == 0 and l.get("duel", false):
 				for pose in ["idle", "aim", "hit", "fall"]:
 					needed.append(G.BOSS_SPRITES[l.boss] + "/" + pose)
@@ -150,38 +166,7 @@ func _ready() -> void:
 	var painted_props: Array = ["prop/barrel", "prop/crate", "prop/tnt", "prop/wagon", "prop/trough", "prop/sign", "prop/tumbleweed"].filter(
 		func(n): return not Assets.texture(n).resource_path.contains("painted"))
 	ok("Main Street's props are the painted ones", painted_props.is_empty(), ", ".join(painted_props))
-	var lv0 := Level.new()
-	add_child(lv0)
-	lv0.setup(0, 2)  # Crossfire: cover peekers, a side peek, a window and a runner
-	var shown: Array = []
-	for e in lv0.enemies:
-		e.state = "aim"
-		e.exp = 1.0
-		lv0._sync_enemy(e)
-		shown.append("%s%s:%s" % [e.kind, "/" + e.get("side", ""), e.node.asset.get_slice("/", 1) + ("~" if e.node.flip_h else "")])
-	ok("Aim behind cover, lean round its side, aim in windows", shown == ["cover/up:aim", "cover/right:lean~", "window/:aim", "runner/up:aim"], str(shown))
-	var runner: Dictionary = lv0.enemies[3]
-	runner.state = "run"
-	runner.run_p = 0.5
-	lv0._sync_enemy(runner)
-	ok("Runners run towards the cover they're heading for", runner.run_node.visible and runner.run_node.asset == "outlaw/run_left")
-	var peek: Dictionary = lv0.enemies[0]
-	var cover: Dictionary = lv0.covers[peek.c]
-	var shown_above: float = (lv0.GY - cover.h) - lv0.rect_of(peek).position.y
-	ok("An outlaw peeking over cover rises behind it: drawn behind the cover, visible down to his chest",
-		peek.node.get_parent() == lv0._actors and lv0._actors.get_index() < lv0._cover_layer.get_index()
-		and shown_above > 0 and shown_above <= lv0._hitbox.y * 0.45, "%.1f of %.0f units show" % [shown_above, lv0._hitbox.y])
-	var win: Dictionary = lv0.enemies[2]
-	var opening := Rect2(lv0.SC.windows[win.w].x, lv0.SC.windows[win.w].y, lv0.SC.windows[win.w].w, lv0.SC.windows[win.w].h)
-	var drawn_h: float = Assets.texture("outlaw/aim").get_height() * win.node.scale.y / lv0.PPU
-	ok("A window outlaw shows his upper body, cropped at the sill, filling most of the window",
-		win.node.get_parent() is Control and win.node.get_parent().clip_contents and drawn_h > opening.size.y * 1.6
-		and lv0.rect_of(win).get_area() >= opening.get_area() * 0.75, "figure %.0f units in a %.0f-unit window" % [drawn_h, opening.size.y])
-	var standing: Dictionary = lv0.enemies[1]  # the side peek stands on the street
-	ok("Contact shadows under every cover and every outlaw standing on the street",
-		lv0.covers.all(func(c): return c.shadow.visible) and standing.shadow.visible and not peek.shadow.visible and not win.has("shadow"))
-	remove_child(lv0)
-	lv0.free()
+	_poses_and_scale()
 
 	# The painted street: centred background, windows matched to the painting, chains on the INN sign.
 	var bg := "main_street/painted"
@@ -247,10 +232,8 @@ func _ready() -> void:
 				lay_gaps.append("%s: bottle outside" % lv.L.name)
 		remove_child(lv)
 		lv.free()
-	ok("Every Main Street level's cover is 1.7x, apart and inside the safe area", lay_gaps.is_empty(), ", ".join(lay_gaps))
-	ok("Cover spreads only where it must (Powder keg, Chain reaction, Iron Eli)",
-		spreads[1] > 1.0 and spreads[3] > 1.0 and spreads[9] > 1.0 and spreads[0] == 1.0 and spreads[2] == 1.0 and spreads[7] == 1.0, str(spreads))
-	ok("Hit areas are 1.7x the prototype's", Vector2(G.geometry.outlaw.hitbox[0], G.geometry.outlaw.hitbox[1]) == Vector2(24, 32) and absf(G.cover_sizes.barrel[0] / G.kit_cover_sizes.barrel[0] - 1.7) < 0.01)
+	ok("Every Main Street level's cover is apart and inside the safe area", lay_gaps.is_empty(), ", ".join(lay_gaps))
+	ok("Puzzle-first levels are laid out as authored (no spreading)", range(4).all(func(i): return spreads[i] == 1.0), str(spreads))
 
 	# The painted HUD: wooden panels, a licensed Western font, painted hearts and bullets, glowing rings.
 	var theme: Theme = load("res://ui/theme.tres")
@@ -263,7 +246,7 @@ func _ready() -> void:
 		["ui/heart_full", "ui/heart_empty", "ui/bullet_full", "ui/bullet_empty", "fx/draw_ring", "fx/draw_ring_urgent"].all(
 			func(n): return Assets.texture(n).resource_path.contains("ui_painted")))
 
-	# Bank job at 1.7x: the hostage-taker leaning left overlaps the TNT barrel, and stands in front of it.
+	# Bank job at the brief v2 scale: the hostage-taker leaning left overlaps the TNT barrel, and stands in front of it.
 	for case in ["captor", "barrel"]:
 		var bj := Level.new()
 		add_child(bj)
@@ -279,8 +262,10 @@ func _ready() -> void:
 			ok("Bank job: a tap on the hostage-taker in front of the TNT takes him down, not the barrel",
 				cap_rect.intersects(tnt_rect) and not cap.alive and tnt.alive and bj.state == "play")
 		else:
-			bj.shoot(Vector2(tnt_rect.position.x + 2, tnt_rect.end.y - 2), true)
-			ok("Bank job: shooting the TNT itself still costs the hostage", bj.state == "lost" and bj.events.has("lost:hostage"))
+			cap.merge({"state": "hidden", "exp": 0.0}, true)  # leaning out at this scale he covers the whole barrel
+			cap_rect = bj.rect_of(cap)
+			bj.shoot(Vector2(tnt_rect.end.x - 2 if cap_rect.get_center().x < tnt_rect.get_center().x else tnt_rect.position.x + 2, tnt_rect.end.y - 2), true)  # the side clear of him
+			ok("Bank job: shooting the TNT itself still costs the hostage", bj.state == "lost" and bj.events.has("lost:hostage"), "%s %s tnt %s captor %s hostage x %.1f" % [bj.state, bj.events, tnt_rect, cap_rect, cap.hx])
 		remove_child(bj)
 		bj.free()
 
@@ -327,6 +312,7 @@ func _ready() -> void:
 	SaveManager.persist = false
 	SaveManager.data.progress = fresh()
 	_playthroughs()
+	_puzzle_first()
 	_iron_eli_rules()
 
 	var passed := results.filter(func(x): return x[1]).size()
@@ -337,7 +323,7 @@ func _ready() -> void:
 
 
 ## Plays a Main Street level with the scripted player; tries a few seeds, as timings are random.
-func run_level(li: int, foul_rounds := [], tries := 5, prepare := Callable()) -> Dictionary:
+func run_level(li: int, foul_rounds := [], tries := 5, prepare := Callable(), taps := [], max_seconds := 300.0) -> Dictionary:
 	var out := {}
 	for attempt in tries:
 		seed(1000 + li * 17 + attempt)
@@ -353,9 +339,10 @@ func run_level(li: int, foul_rounds := [], tries := 5, prepare := Callable()) ->
 			lv.go()
 		var bot := AutoPlayer.new()
 		bot.foul_rounds = foul_rounds.duplicate()
-		AutoPlayer.play(lv, bot)
+		bot.taps = taps
+		AutoPlayer.play(lv, bot, max_seconds)
 		out = {"state": lv.state, "used": lv.used, "hearts": lv.hearts, "events": lv.events.duplicate(),
-			"stars": box.stars, "offer": box.offer, "tnt_left": lv.covers.filter(func(c): return c.type == "tnt" and c.alive).size(),
+			"stars": box.stars, "offer": box.offer, "clock": lv.clock, "bullets": lv.bullets, "damaged": lv.damaged, "tnt_left": lv.covers.filter(func(c): return c.type == "tnt" and c.alive).size(),
 			"attempts": attempt + 1}
 		remove_child(lv)
 		lv.free()
@@ -388,10 +375,6 @@ func _playthroughs() -> void:
 			if r.state != "won" or r.used > int(l.par):
 				at_par.append(l.name)
 		match l.name:
-			"Powder keg":
-				ok("Puzzle: Powder keg is solved by shooting the TNT", r.state == "won" and r.used == 1 and count(r.events, "kill:tnt") == 3, str(r.events))
-			"Chain reaction":
-				ok("Puzzle: Chain reaction, one TNT sets off the other", r.state == "won" and r.tnt_left == 0 and count(r.events, "kill:tnt") >= 2, str(r.events))
 			"Hang ’em high", "Bank job":
 				ok("Puzzle: %s is solved by shooting a sign chain" % l.name, r.state == "won" and r.events.has("kill:sign"), str(r.events))
 	ok("Every Main Street level can be won at par with its allotted bullets", at_par.is_empty(), ", ".join(at_par))
@@ -436,15 +419,15 @@ func _campaign_status() -> void:
 	var states := func(pg, pt): return range(5).map(func(i): return G.poster_state(pg, i, pt))
 	var pg := fresh()
 	var d: Dictionary = G.desk_status(pg, false)
-	ok("Desk, new save: Continue hunt, Level 1: Target practice, 0 of 5, $1,000",
-		d.hunting and d.ch == 0 and d.subtitle == "Level 1: Target practice" and d.caught == 0 and d.reward == "$1,000", str(d))
+	ok("Desk, new save: Continue hunt, Level 1: Target Practice, 0 of 5, $1,000",
+		d.hunting and d.ch == 0 and d.subtitle == "Level 1: Target Practice" and d.caught == 0 and d.reward == "$1,000", str(d))
 	ok("Posters, new save: Iron Eli open, the train locked, three coming soon",
 		states.call(pg, false) == ["open", "locked", "soon", "soon", "soon"], str(states.call(pg, false)))
 	ok("Office board, new save: Iron Eli's poster is in the middle", G.current_hunt(pg, false) == 0)
 	for l in 3:
 		G.apply_win(pg, 0, l, 3, o10(1000))
 	d = G.desk_status(pg, false)
-	ok("Desk continues at the furthest unlocked level (Level 4: Chain reaction)", d.subtitle == "Level 4: Chain reaction", str(d))
+	ok("Desk continues at the furthest unlocked level (Level 4: Chain Reaction)", d.subtitle == "Level 4: Chain Reaction", str(d))
 	G.apply_win(pg, 0, 9, 2, o10(1000, true, true))
 	d = G.desk_status(pg, false)
 	ok("Desk, Iron Eli captured: Continue hunt goes to the train, 1 of 5, $1,500",
@@ -648,3 +631,173 @@ func _skins() -> void:
 
 func o10(bounty: int, boss := false, last := false) -> Dictionary:
 	return {"boss": boss, "last": last, "bounty": bounty, "count": 10}
+
+
+## A puzzle-first level's data (brief v2 §11): par within bullets, story lines, two-step hints,
+## an authored solution within par, an obvious wrong approach, and everything placed on screen.
+func _v2_problems(l: Dictionary, sc: Dictionary) -> Array:
+	var p: Array = []
+	var LY: Dictionary = GameState.geometry.layout
+	if int(l.bullets) < int(l.par):
+		p.append("par above bullets")
+	if not (l.has("story") and l.story.has("intro") and l.story.has("result")):
+		p.append("no story lines")
+	if not (l.has("hint") and l.has("hintTarget")):
+		p.append("no two-step hint")
+	if not l.get("objective", "") in ["eliminate_all", "bottles", "targets"]:
+		p.append("unknown objective")
+	if l.get("solution", []).size() > int(l.par):
+		p.append("solution over par")
+	if not (l.has("wrong") and l.wrong.has("taps") and l.wrong.has("expect")):
+		p.append("no wrong approach")
+	for cv in l.get("covers", []):
+		var hw: float = GameState.cover_sizes[cv.type][0] / 2.0
+		if cv.x - hw < LY.safe[0] or cv.x + hw > LY.safe[1]:
+			p.append(cv.type + " outside the safe area")
+	for d in l.enemies:
+		if d.has("w") and int(d.w) >= sc.windows.size():
+			p.append("bad window")
+		if d.has("c") and int(d.c) >= l.get("covers", []).size():
+			p.append("bad cover")
+		var xs: Array = [d.stand] if d.has("stand") else (d.route.map(func(pt): return pt.x) if d.has("route") else [])
+		for x in xs:
+			if x - 14 < LY.safe[0] or x + 14 > LY.safe[1]:
+				p.append("outlaw outside the safe area")
+	return p
+
+
+## The brief v2 scale guide, and how outlaws look: relaxed before the first shot, alert after.
+func _poses_and_scale() -> void:
+	var G := GameState
+	var screen_h := 720.0
+	var drawn := func(n: String) -> float: return Assets.texture(n).get_height() * float(Assets.meta(n, "scale", 1.0)) / screen_h
+	ok("Scale: a standing outlaw is about 22% of the screen height", absf(drawn.call("outlaw/idle") - 0.22) < 0.01 and absf(G.geometry.outlaw.hitbox[1] / 180.0 - 0.21) < 0.015,
+		"%.3f drawn, %.3f hit area" % [drawn.call("outlaw/idle"), G.geometry.outlaw.hitbox[1] / 180.0])
+	ok("Scale: a barrel is about 13% of the screen height", absf(drawn.call("prop/barrel") - 0.13) < 0.01 and absf(G.cover_sizes.barrel[1] / 180.0 - 0.13) < 0.01,
+		"%.3f drawn" % drawn.call("prop/barrel"))
+	ok("Scale: the revolver is about 20% of the screen height", absf(drawn.call("gun_peacemaker_0/idle") - 0.2) < 0.03, "%.3f" % drawn.call("gun_peacemaker_0/idle"))
+	var lv := Level.new()
+	add_child(lv)
+	lv.setup(0, 2)  # Crossfire: a window, a barrel and a walker
+	lv.go()
+	var win: Dictionary = lv.enemies[0]
+	var peek: Dictionary = lv.enemies[1]
+	var walker: Dictionary = lv.enemies[2]
+	for e in [win, peek]:
+		e.state = "look"
+		e.exp = 1.0
+	var shown := func() -> Array:
+		var out: Array = []
+		for e in lv.enemies:
+			lv._sync_enemy(e)
+			out.append(e.node.asset.get_slice("/", 1))
+		return out
+	ok("Observation start: every outlaw stands relaxed (idle) before the first shot", shown.call() == ["idle", "idle", "idle"] and lv.observing, str(shown.call()))
+	lv._alert()
+	lv._step_v2_enemy(walker, 0.0)
+	lv._sync_rings()
+	ok("The first shot turns them alert: those in view draw (aim) with a draw ring and an alert mark",
+		shown.call() == ["aim", "aim", "aim"] and lv.enemies.all(func(e): return e.ring.visible and e.alert.visible), str(shown.call()))
+	var cover: Dictionary = lv.covers[peek.c]
+	var above: float = (lv.GY - cover.h) - lv.rect_of(peek).position.y
+	ok("Behind cover only head, hat and gun show, drawn behind the cover",
+		peek.node.get_parent() == lv._actors and lv._actors.get_index() < lv._cover_layer.get_index()
+		and above > lv._hitbox.y * 0.25 and above <= lv._hitbox.y * 0.36, "%.1f of %.0f units show" % [above, lv._hitbox.y])
+	var w: Dictionary = lv.SC.windows[win.w]
+	var opening := Rect2(w.x, w.y, w.w, w.h)
+	var fig_w: float = Assets.texture("outlaw/aim").get_width() * win.node.scale.x / lv.PPU
+	var share: float = lv.rect_of(win).get_area() / opening.get_area()
+	ok("A window outlaw fills about 70% of the window, upper body only, cropped at the sill",
+		win.node.get_parent() is Control and win.node.get_parent().clip_contents and absf(share - 0.7) < 0.06 and fig_w < opening.size.x * 1.25,
+		"%.0f%% of the window, figure %.1f units wide in a %.1f-unit window" % [share * 100, fig_w, opening.size.x])
+	ok("Contact shadows under the cover and the outlaw on the street, none in windows",
+		lv.covers.all(func(c): return c.shadow.visible) and walker.shadow.visible and not peek.shadow.visible and not win.has("shadow"))
+	remove_child(lv)
+	lv.free()
+
+
+func _new_level(li: int) -> Level:
+	var lv := Level.new()
+	add_child(lv)
+	lv.setup(0, li)
+	lv.go()
+	return lv
+
+
+func _drop(lv: Level) -> void:
+	remove_child(lv)
+	lv.free()
+
+
+## Brief v2 §11 tests for levels 1 to 4: the intended solution wins at par, the same taps always
+## give the same result, the obvious wrong approach doesn't win (at par), triggers fire, cover blocks
+## shots, and the observation start holds until the first shot.
+func _puzzle_first() -> void:
+	var lvls: Array = GameState.levels_for(0)
+	for i in 4:
+		var l: Dictionary = lvls[i]
+		var name := "%d. %s" % [i + 1, l.name]
+		var a := run_level(i, [], 1, Callable(), [], 60.0)
+		ok(name + ": the intended solution wins at par, untouched, for three stars",
+			a.state == "won" and a.used <= int(l.par) and a.hearts == 3 and a.stars == 3, "%s, %d shots, %d hearts, %d stars, %s" % [a.state, a.used, a.hearts, a.stars, a.events])
+		var b := run_level(i, [], 1, Callable(), [], 60.0)
+		ok(name + ": deterministic: the same taps give the same result, step for step",
+			a.events == b.events and a.clock == b.clock and a.used == b.used and a.hearts == b.hearts, "%s at %.3f vs %s at %.3f" % [a.events, a.clock, b.events, b.clock])
+		var wr := run_level(i, [], 1, Callable(), l.wrong.taps, 60.0)
+		var as_expected: bool = wr.state == "lost" if l.wrong.expect == "lost" else (wr.state == "won" and wr.stars < 3)
+		ok(name + ": the obvious wrong approach doesn't win: " + l.wrong.about, as_expected,
+			"%s, %d shots, %d stars, %s" % [wr.state, wr.used, wr.stars, wr.events])
+		if wr.state == "lost":
+			ok(name + ": losing offers a clue, never a bullet", wr.offer == "hint", str(wr.offer))
+		match i:
+			0:
+				ok("Target Practice: the bucket drops onto two bottles at once", count(a.events, "bottle:bucket") == 2 and a.events.has("bucket_drop"), str(a.events))
+			1:
+				ok("Powder Keg: one shot at the TNT takes both outlaws", count(a.events, "kill:tnt") == 2, str(a.events))
+				ok("Powder Keg: shooting one outlaw directly spends the only bullet and fails", count(wr.events, "kill:shot") == 1 and wr.events.has("lost:ammo"), str(wr.events))
+			3:
+				ok("Chain Reaction: the chain drops the sign onto the TNT; sign and blast clear all three",
+					a.events.has("sign_on_tnt") and count(a.events, "kill:sign") + count(a.events, "kill:tnt") == 3 and a.tnt_left == 0, str(a.events))
+				ok("Chain Reaction: the TNT shot directly clears only two, never all three", count(wr.events, "kill:tnt") == 2 and wr.state == "lost", str(wr.events))
+	# The observation start: nobody draws or fires until the first shot, however long you watch.
+	for i in [1, 2, 3]:
+		var lv := _new_level(i)
+		var drew := false
+		for f in 60 * 20:
+			lv._step(1.0 / 60.0)
+			drew = drew or lv.enemies.any(func(e): return e.state == "aim")
+		ok("%s: 20 seconds of watching: no draw, no hearts lost" % lv.L.name, not drew and lv.hearts == 3 and lv.observing and lv.state == "play")
+		_drop(lv)
+	var lv3 := _new_level(2)
+	for f in 30:
+		lv3._step(1.0 / 60.0)
+	lv3.shoot(Vector2(160, 20), true)  # a shot into the sky
+	ok("The first shot, even a miss, ends the observation start", not lv3.observing and lv3.events.has("alert"))
+	for f in 60 * 8:
+		lv3._step(1.0 / 60.0)
+	ok("Once alert, Crossfire's outlaws draw and fire on their fixed timings", lv3.hearts < 3, "%d hearts" % lv3.hearts)
+	_drop(lv3)
+	# Cover blocks shots: a tap on the barrel while its outlaw is down hits the wood.
+	var lv4 := _new_level(2)
+	for f in 30:
+		lv4._step(1.0 / 60.0)
+	var hid: Dictionary = lv4.enemies[1]
+	lv4.shoot(lv4.cover_rect(lv4.covers[0]).get_center(), true)
+	ok("Cover blocks shots: the barrel takes the bullet, the outlaw behind it is unhurt", hid.alive and lv4.covers[0].holes.size() == 1)
+	_drop(lv4)
+	# A ducked window outlaw can't be hit.
+	var lv5 := _new_level(2)
+	var wdw: Dictionary = lv5.enemies[0]
+	var opening: Dictionary = lv5.SC.windows[wdw.w]
+	lv5.shoot(Vector2(opening.x + opening.w / 2, opening.y + opening.h / 2), true)
+	ok("A window outlaw below the sill can't be hit", wdw.alive and wdw.state == "hidden")
+	_drop(lv5)
+	# Intro cards: observation levels say so; prototype levels say they're already shooting.
+	var obs: Array = []
+	for i in lvls.size():
+		var lv := Level.new()
+		add_child(lv)
+		lv.setup(0, i)
+		obs.append(lv.observing)
+		_drop(lv)
+	ok("Levels 1 to 4 start in observation; the prototype levels 5 to 10 keep their old timing", obs == [true, true, true, true, false, false, false, false, false, false], str(obs))

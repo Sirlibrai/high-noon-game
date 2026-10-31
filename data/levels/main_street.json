@@ -1,0 +1,353 @@
+{
+  "_about": "Main Street campaign. Levels with v 2 use the puzzle-first format of specs/high-noon-brief-v2.md: positions are centres in world units, enemies have fixed timings (first/up/down) or routes, objectives, story lines, an authored solution and an obvious wrong approach for the tests. Levels without v are the prototype levels from the kit, kept playable until Milestones 2 and 3 rebuild them.",
+  "main_street": [
+  {
+      "v": 2,
+      "name": "Target Practice",
+      "puzzle": true,
+      "bullets": 3,
+      "par": 2,
+      "aim": 2.0,
+      "objective": "bottles",
+      "observation": true,
+      "story": {
+        "intro": "Dustwater's sheriff is gone and Iron Eli's gang runs the town. Warm up that trigger finger.",
+        "result": "Steady hand. The gang's powder store is next."
+      },
+      "bottles": [{"x": 70}, {"x": 80}, {"x": 206}],
+      "bucket": {"x": 75},
+      "enemies": [],
+      "prompts": [
+        {"after_shots": 0, "text": "Tap to shoot."},
+        {"after_shots": 1, "text": "Every bullet counts.", "ms": 1700},
+        {"after_shots": 1, "delay": 1.9, "text": "Sometimes there's a smarter shot.", "if": "bucket_can_break_2"}
+      ],
+      "hint": "That bucket hangs right over two bottles.",
+      "hintTarget": {"bucket": true},
+      "solution": [
+        {"at": 1.0, "tap": "bucket"},
+        {"at": 2.0, "tap": "bottle:2"}
+      ],
+      "wrong": {
+        "about": "Shooting the bottles one by one clears the level, but with 3 bullets: over par, so no third star.",
+        "taps": [{"at": 1.0, "tap": "bottle:0"}, {"at": 1.6, "tap": "bottle:1"}, {"at": 2.2, "tap": "bottle:2"}],
+        "expect": "won_over_par"
+      }
+    },
+    {
+      "v": 2,
+      "name": "Powder Keg",
+      "puzzle": true,
+      "bullets": 1,
+      "par": 1,
+      "aim": 1.8,
+      "objective": "eliminate_all",
+      "observation": true,
+      "story": {
+        "intro": "Two of Eli's men stand guard over the gang's powder.",
+        "result": "The blast alerts the gang's lookouts."
+      },
+      "covers": [{"type": "tnt", "x": 150}],
+      "enemies": [
+        {"id": "left", "stand": 124},
+        {"id": "right", "stand": 176}
+      ],
+      "hint": "The red barrel with the lit fuse is more than cover.",
+      "hintTarget": {"cover": 0},
+      "solution": [{"at": 1.0, "tap": "cover:0"}],
+      "wrong": {
+        "about": "Shooting one outlaw spends the only bullet and leaves the other standing.",
+        "taps": [{"at": 1.0, "tap": "enemy:0"}],
+        "expect": "lost"
+      }
+    },
+    {
+      "v": 2,
+      "name": "Crossfire",
+      "puzzle": true,
+      "bullets": 3,
+      "par": 3,
+      "aim": 1.8,
+      "objective": "eliminate_all",
+      "observation": true,
+      "story": {
+        "intro": "The lookouts have the street covered: one upstairs, one behind a barrel, one on the move.",
+        "result": "Three lookouts down. The gang knows you're coming."
+      },
+      "covers": [{"type": "barrel", "x": 236}],
+      "enemies": [
+        {"id": "window", "w": 1, "first": 1.0, "up": 2.0, "down": 2.0},
+        {"id": "barrel", "c": 0, "side": "up", "first": 2.5, "up": 1.8, "down": 2.2},
+        {"id": "walker", "speed": 32, "route": [
+          {"x": 30, "wait": 1.0},
+          {"x": 110, "wait": 2.0},
+          {"x": 186, "wait": 1.0},
+          {"x": 110, "wait": 2.0}
+        ]}
+      ],
+      "hint": "Watch first. Each of them shows himself at the same moments, every time.",
+      "hintTarget": {"spot": 110},
+      "solution": [
+        {"at": 1.6, "tap": "enemy:0"},
+        {"at": 3.0, "tap": "enemy:1"},
+        {"at": 4.0, "tap": "enemy:2"}
+      ],
+      "wrong": {
+        "about": "Firing at the barrel before its outlaw rises wastes a bullet on the wood, and three outlaws can't be stopped with two.",
+        "taps": [{"at": 0.5, "tap": "cover:0"}, {"at": 1.6, "tap": "enemy:0"}, {"at": 3.0, "tap": "enemy:1"}],
+        "expect": "lost"
+      }
+    },
+    {
+      "v": 2,
+      "name": "Chain Reaction",
+      "puzzle": true,
+      "bullets": 1,
+      "par": 1,
+      "aim": 1.8,
+      "objective": "eliminate_all",
+      "observation": true,
+      "story": {
+        "intro": "Three more of the gang loiter under the old inn sign, right beside their powder.",
+        "result": "Word reaches Black Jack. He's dealing himself in."
+      },
+      "covers": [{"type": "tnt", "x": 136}],
+      "sign": {"x": 166, "scale": 1.5},
+      "enemies": [
+        {"id": "left", "stand": 110},
+        {"id": "middle", "stand": 160},
+        {"id": "far", "stand": 188}
+      ],
+      "hint": "The powder won't reach the far one. The sign will.",
+      "hintTarget": {"sign": true},
+      "solution": [{"at": 1.0, "tap": "chain"}],
+      "wrong": {
+        "about": "Shooting the TNT directly gets the two beside it, but the far one is out of the blast and the only bullet is gone.",
+        "taps": [{"at": 1.0, "tap": "cover:0"}],
+        "expect": "lost"
+      }
+    },
+    {
+      "boss" : "BOSS",
+      "cards" : true,
+      "duel" : true,
+      "fakes" : false,
+      "hp" : 3,
+      "name" : "Black Jack",
+      "react" : [
+        0.75,
+        0.65,
+        0.56
+      ],
+      "tip" : "Draw only on the ace."
+    },
+    {
+      "aim" : 1.5,
+      "bullets" : 4,
+      "covers" : [
+        [
+          "barrel",
+          40
+        ],
+        [
+          "barrel",
+          250
+        ]
+      ],
+      "enemies" : [
+        {
+          "c" : 0,
+          "side" : "up"
+        },
+        {
+          "c" : 1,
+          "side" : "up"
+        },
+        {
+          "hostage" : 153
+        }
+      ],
+      "name" : "Hostage",
+      "pace" : 1.1,
+      "par" : 3,
+      "tip" : "Shoot when he leans out."
+    },
+    {
+      "aim" : 1.35,
+      "bullets" : 4,
+      "covers" : [
+        [
+          "barrel",
+          40
+        ],
+        [
+          "wagon",
+          182
+        ]
+      ],
+      "enemies" : [
+        {
+          "c" : 1,
+          "side" : "hide"
+        },
+        {
+          "c" : 0,
+          "side" : "up"
+        },
+        {
+          "w" : 0
+        }
+      ],
+      "hint" : "Follow the chains above the wagon.",
+      "hintTarget" : {
+        "sign" : true
+      },
+      "name" : "Hang ’em high",
+      "pace" : 1,
+      "par" : 3,
+      "puzzle" : true,
+      "sign" : 196,
+      "tip" : "That sign looks heavy."
+    },
+    {
+      "aim" : 1.05,
+      "bullets" : 8,
+      "covers" : [
+        [
+          "barrel",
+          18
+        ],
+        [
+          "crate",
+          80
+        ],
+        [
+          "trough",
+          132
+        ],
+        [
+          "barrel",
+          206
+        ],
+        [
+          "crate",
+          250
+        ]
+      ],
+      "enemies" : [
+        {
+          "c" : 0,
+          "side" : "up"
+        },
+        {
+          "c" : 1,
+          "side" : "left"
+        },
+        {
+          "c" : 2,
+          "side" : "up"
+        },
+        {
+          "c" : 3,
+          "side" : "up"
+        },
+        {
+          "w" : 1
+        },
+        {
+          "w" : 3
+        }
+      ],
+      "name" : "Ambush",
+      "pace" : 0.8,
+      "par" : 6,
+      "tip" : "Six of them. Faster now."
+    },
+    {
+      "aim" : 1.2,
+      "bullets" : 5,
+      "covers" : [
+        [
+          "tnt",
+          96
+        ],
+        [
+          "barrel",
+          238
+        ]
+      ],
+      "enemies" : [
+        {
+          "hostage" : 124
+        },
+        {
+          "c" : 1,
+          "side" : "hide"
+        },
+        {
+          "w" : 2
+        },
+        {
+          "w" : 3
+        }
+      ],
+      "hint" : "Not every barrel should be shot. Look up instead.",
+      "hintTarget" : {
+        "sign" : true
+      },
+      "name" : "Bank job",
+      "pace" : 1,
+      "par" : 4,
+      "puzzle" : true,
+      "sign" : 234,
+      "tip" : "Mind the powder."
+    },
+    {
+      "aim" : 1.35,
+      "bullets" : 12,
+      "covers" : [
+        [
+          "barrel",
+          36
+        ],
+        [
+          "tnt",
+          112
+        ],
+        [
+          "crate",
+          146
+        ],
+        [
+          "wagon",
+          182
+        ],
+        [
+          "barrel",
+          250
+        ]
+      ],
+      "eli" : true,
+      "enemies" : [
+        {
+          "c" : 0,
+          "side" : "up"
+        },
+        {
+          "c" : 4,
+          "side" : "up"
+        },
+        {
+          "eli" : true,
+          "from" : 2,
+          "to" : 3
+        }
+      ],
+      "name" : "Iron Eli",
+      "pace" : 1,
+      "par" : 9,
+      "sign" : 196,
+      "tip" : "Crack the armour twice, run him down, then win the draw."
+    }
+  ]
+}

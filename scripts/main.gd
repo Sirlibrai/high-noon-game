@@ -16,6 +16,9 @@ var ci := 0
 var li := 0
 
 var _world: Node2D
+## The safe area's insets in base pixels (left, right, bottom); tests can set safe_override to a phone's.
+var _safe_lrb := Vector3.ZERO
+var safe_override: Variant = null
 var _screen: Node2D  # the splash or the office, when no level is running
 var _fresh_capture: Variant = null
 var _home_bar: CanvasLayer
@@ -97,6 +100,8 @@ func _layout() -> void:
 	var left := maxf(0, safe.position.x) * k.x if safe.size.x > 0 else 0.0
 	var right := maxf(0, win.x - safe.end.x) * k.x if safe.size.x > 0 else 0.0
 	var top := maxf(0, safe.position.y) * k.y if safe.size.y > 0 else 0.0
+	var bottom := maxf(0, win.y - safe.end.y) * k.y if safe.size.y > 0 else 0.0
+	_safe_lrb = safe_override if safe_override != null else Vector3(left, right, bottom)
 	_hud_box.add_theme_constant_override("margin_top", int(14 + top))
 	for box in [_hud_box, _home_box]:
 		box.add_theme_constant_override("margin_left", int(12 + left))
@@ -172,6 +177,7 @@ func show_splash() -> void:
 func show_home() -> void:
 	_end_level()
 	var o := Office.new()  # rebuilt each visit, so posters, rack and cabinet show the latest progress
+	o.safe_lrb = _safe_lrb
 	o.fresh_capture = _fresh_capture
 	_fresh_capture = null
 	_set_screen(o)
@@ -185,7 +191,9 @@ func show_home() -> void:
 func _office_backdrop() -> void:
 	_end_level()
 	if not _screen is Office:
-		_set_screen(Office.new())
+		var o := Office.new()
+		o.safe_lrb = _safe_lrb
+		_set_screen(o)
 		(_screen as Office).act.connect(_on_office_act)
 	AudioManager.play("office")
 	_home_bar.visible = false
@@ -202,6 +210,9 @@ func _on_office_act(name: String) -> void:
 		"profile":
 			AudioManager.sfx("tick2")
 			_not_yet("Profile", "Your own wanted poster, rank, trophy shelf and ledger arrive with the next build.")
+		"trophies":
+			AudioManager.sfx("tick2")
+			show_trophies()
 		"gunsmith":
 			_not_yet("Gunsmith", "Buying guns and finishes with Bounty Dollars arrives with the next build.")
 		"daily":
@@ -246,47 +257,10 @@ func show_board() -> void:
 	for i in GameState.chapters.size():
 		var ch: Dictionary = GameState.chapters[i]
 		var state := GameState.poster_state(pg, i, pt)
-		var open := state == "open" or state == "captured"
-		var b := Button.new()
-		b.theme_type_variation = &"Poster"
-		b.focus_mode = Control.FOCUS_NONE
-		b.custom_minimum_size = Vector2(POSTER_W, 0)
-		b.disabled = not open
+		var b := Office.wanted_poster(i, state, POSTER_W)
 		b.tooltip_text = "%s: %s, %s%s" % [ch.name, ch.who, ch.reward, ", captured" if state == "captured" else ""]
 		b.pressed.connect(show_chapter.bind(i))
 		posters.add_child(b)
-		var v := VBoxContainer.new()
-		v.add_theme_constant_override("separation", 2)
-		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		b.add_child(v)
-		UiKit.text(v, "WANTED", &"PosterWanted")
-		var pic := UiKit.image(v, "portrait/ch%d" % i, Vector2(100, 92))
-		if not open:
-			pic.modulate = Color(0, 0, 0, 0.75)
-		UiKit.text(v, ch.who, &"PosterName", POSTER_W - 24)
-		UiKit.text(v, ch.crime, &"PosterCrime", POSTER_W - 20)
-		UiKit.text(v, ch.reward, &"PosterReward")
-		if open:
-			var lvls: Array = GameState.levels_for(i)
-			UiKit.text(v, "★ %d/%d" % [GameState.chapter_stars(pg, i), lvls.size() * 3], &"PosterCrime")
-		else:
-			UiKit.text(v, ch.name, &"PosterCrime")
-		for c in v.get_children():
-			c.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		v.offset_top = 16
-		b.custom_minimum_size.y = v.get_combined_minimum_size().y + 32
-		if state != "open":
-			var stamp := PanelContainer.new()
-			stamp.theme_type_variation = &"Stamp"
-			stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			UiKit.text(stamp, {"captured": "CAPTURED", "locked": "LOCKED", "soon": "COMING SOON"}[state], &"StampLabel")
-			b.add_child(stamp)
-			var sz := stamp.get_combined_minimum_size()
-			stamp.size = sz
-			stamp.position = Vector2((POSTER_W - sz.x) / 2, 66)  # across the portrait, clear of the name
-			stamp.pivot_offset = sz / 2
-			stamp.rotation = deg_to_rad(-14)
 		b.pivot_offset = Vector2(POSTER_W / 2, b.custom_minimum_size.y / 2)
 		b.rotation = deg_to_rad(tilt[i])
 
@@ -350,6 +324,26 @@ func soon(kind: String) -> void:
 	var holder := CenterContainer.new()
 	holder.add_child(stamp)
 	card.add_child(holder)
+	UiKit.button(UiKit.row(card), "Back").pressed.connect(show_home)
+
+
+## The trophy cabinet: one trophy for each bounty captured.
+func show_trophies() -> void:
+	_office_backdrop()
+	var card := _open_overlay()
+	UiKit.text(card, "Trophy cabinet", &"Heading")
+	var pg: Dictionary = GameState.progress
+	var got := range(GameState.chapters.size()).filter(func(i): return GameState.collected_in(pg, i))
+	if got.is_empty():
+		UiKit.text(card, "The shelves are bare. Capture Iron Eli to win your first trophy.", &"", 840)
+	else:
+		var shelf := UiKit.row(card)
+		for i in got:
+			var cell := VBoxContainer.new()
+			shelf.add_child(cell)
+			UiKit.image(cell, "trophy_office/ch%d" % i, Vector2(72, 84))
+			UiKit.text(cell, GameState.chapters[i].who, &"Hint")
+		UiKit.text(card, "%d of %d outlaws captured" % [got.size(), GameState.chapters.size()], &"Tip")
 	UiKit.button(UiKit.row(card), "Back").pressed.connect(show_home)
 
 

@@ -326,6 +326,7 @@ func _ready() -> void:
 	SaveManager.data.progress = fresh()
 	_playthroughs()
 	_puzzle_first()
+	_office()
 	_iron_eli_rules()
 
 	var passed := results.filter(func(x): return x[1]).size()
@@ -814,3 +815,65 @@ func _puzzle_first() -> void:
 		obs.append(lv.observing)
 		_drop(lv)
 	ok("Levels 1 to 4 start in observation; the prototype levels 5 to 10 keep their old timing", obs == [true, true, true, true, false, false, false, false, false, false], str(obs))
+
+
+## The painted sheriff's office: its layers, hotspots over their painted objects, and the gunsmith.
+func _office() -> void:
+	var G := GameState
+	var keep: Dictionary = G.progress
+	SaveManager.data.progress = fresh()
+	var pg: Dictionary = G.progress
+	ok("The office is the painted one, with the painted gunsmith; no pixel office art is left",
+		Assets.texture("office/painted").resource_path.contains("painted/office")
+		and ["gunsmith/polish", "gunsmith/hammer", "gunsmith/tip"].all(func(n): return Assets.texture(n).resource_path.contains("painted/gunsmith"))
+		and not Assets.names().any(func(n): return Assets.has(n) and Assets.texture(n).resource_path.contains("placeholder/office")))
+	var o := Office.new()
+	add_child(o)
+	var art := Rect2(Vector2.ZERO, Office.ART_SIZE)
+	var spots := {}
+	for s in Office.SPOTS:
+		spots[s.act] = Rect2(s.box[0], s.box[1], s.box[2], s.box[3])
+	# Each hotspot covers its painted object (centres measured on assets/painted/office.png).
+	var objects := {"duelsoon": Vector2(137, 290), "daily": Vector2(372, 268), "survival": Vector2(380, 440), "board": Vector2(786, 288),
+		"profile": Vector2(1186, 298), "trophies": Vector2(790, 595), "gunsmith": Vector2(1470, 430)}
+	ok("Every hotspot sits on its painted object: window, calendar, target, board, frame, cabinet, doorway",
+		objects.keys().all(func(a): return spots.has(a) and spots[a].has_point(objects[a]) and art.encloses(spots[a])), str(spots.keys()))
+	var boxes: Array = spots.values()
+	var overlaps := 0
+	for i in boxes.size():
+		for j in range(i + 1, boxes.size()):
+			if boxes[i].intersects(boxes[j]):
+				overlaps += 1
+	ok("No two office hotspots overlap", overlaps == 0, "%d overlaps" % overlaps)
+	ok("Five wanted posters on the cork board, with the current hunt in the middle",
+		o._art.get_children().filter(func(c): return c is Button and c.theme_type_variation == &"Poster").size() == 5)
+	ok("The new save's office: no trophies, the Peacemaker alone on the rack, the gunsmith polishing",
+		_art_named(o, "trophy_office/").is_empty() and _art_named(o, "rack/") == ["rack/peacemaker"] and o._smith.asset.begins_with("gunsmith/"))
+	ok("The hunter's portrait fills the gilt frame", _art_named(o, "office/portrait").size() == 1)
+	o._smith_t = Office.IDLE_POSE_TIME + 0.1
+	o._physics_process(0.0)
+	var idle2: String = o._smith.asset
+	var fired: Array = []
+	o.act.connect(func(n): fired.append(n))
+	o._on_act("gunsmith", spots.gunsmith)
+	o._on_act("board", spots.board)  # a second tap while the first is on its way does nothing
+	ok("The gunsmith's idle loop moves from polishing to hammering, and he tips his cap when called",
+		idle2 == "gunsmith/hammer" and o._smith.asset == "gunsmith/tip" and o._lit.name == "gunsmith")
+	ok("One tap lights the chosen object; a second tap meanwhile is ignored", o._lit.t >= 0 and o._lit.name == "gunsmith" and fired.is_empty())
+	remove_child(o)
+	o.free()
+	for c in 2:
+		G.chapter_progress(pg, c).stars[str(G.levels_for(c).size() - 1)] = 3
+	for w in G.weapons:
+		pg.inv.guns[w.id] = true
+	var o2 := Office.new()
+	add_child(o2)
+	ok("Captured bounties put trophies in the cabinet; owned guns go on the rack",
+		_art_named(o2, "trophy_office/") == ["trophy_office/ch0", "trophy_office/ch1"] and _art_named(o2, "rack/").size() == G.weapons.size())
+	remove_child(o2)
+	o2.free()
+	SaveManager.data.progress = keep
+
+
+func _art_named(o: Office, prefix: String) -> Array:
+	return o._art.get_children().filter(func(c): return c is AssetSprite and c.asset.begins_with(prefix)).map(func(c): return c.asset)

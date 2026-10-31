@@ -29,6 +29,9 @@ func _ready() -> void:
 		get_window().size = aspect[1]
 		get_window().content_scale_size = Vector2i(1280, 720)
 		await _wait(0.3)
+		var k: float = get_viewport().get_visible_rect().size.y / PHONE.y
+		main.safe_override = Vector3.ZERO if aspect[0] == "16x9" else Vector3(INSET.x * k, INSET.z * k, INSET.w * k)
+		main._layout()
 		await _screens(aspect[0])
 	print("UI drive: %d screens over the safe area" % problems.size())
 	for p in problems:
@@ -69,9 +72,52 @@ func _screens(tag: String) -> void:
 	await _check(tag, "profile")
 	main.soon("daily")
 	await _check(tag, "daily_soon")
+	main.show_trophies()
+	await _check(tag, "trophies")
 	main.show_home()
-	await _wait(0.3)
+	await _wait(0.5)
 	await _shot(tag + "_office")
+	_check_office(tag)
+	var o: Office = main._screen
+	o._on_act("gunsmith", Rect2(1298, 84, 346, 622))
+	await _wait(0.3)
+	await _shot(tag + "_office_gunsmith_lit")
+	await _wait(0.6)
+	# Later in the campaign: two bounties captured (trophies, stamps) and every gun owned (the rack).
+	var pg: Dictionary = GameState.progress
+	var keep := pg.duplicate(true)
+	for c in 2:
+		GameState.chapter_progress(pg, c).stars[str(GameState.levels_for(c).size() - 1)] = 3
+	for w in GameState.weapons:
+		pg.inv.guns[w.id] = true
+	pg.seenOffice = true
+	main.show_home()
+	await _wait(0.5)
+	await _shot(tag + "_office_later")
+	_check_office(tag + " later")
+	SaveManager.data.progress = keep
+
+
+## The office: every plate and the ledger inside the safe area, none overlapping, every hotspot
+## at least 44 points each way.
+func _check_office(tag: String) -> void:
+	var o: Office = main._screen
+	var vis := get_viewport().get_visible_rect().size
+	var k := vis.y / PHONE.y
+	var s: Vector3 = main._safe_lrb
+	var safe := Rect2(s.x, 0, vis.x - s.x - s.y, vis.y - s.z)
+	var boxes: Array = o.plates.map(func(p): return [p.text.strip_edges(), p.get_global_rect()])
+	boxes.append(["ledger", o.ledger.get_global_rect()])
+	for b in boxes:
+		if not safe.encloses(b[1]):
+			problems.append("%s office: %s %s outside %s" % [tag, b[0], b[1], safe])
+		for c in boxes:
+			if b[0] < c[0] and b[1].intersects(c[1]):
+				problems.append("%s office: %s overlaps %s" % [tag, b[0], c[0]])
+	for h in o.get_children():
+		if h is Button and h.theme_type_variation == &"Hotspot" and (h.size.x < 44 * k or h.size.y < 44 * k):
+			problems.append("%s office: hotspot %s is %s, under 44 points" % [tag, h.tooltip_text, h.size / k])
+	print("%s office: %d plates and the ledger checked" % [tag, o.plates.size()])
 
 
 ## Saves the screen and checks the card fits inside the phone's safe area.

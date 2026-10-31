@@ -17,10 +17,14 @@ static func overlay(parent: Node) -> CenterContainer:
 	return center
 
 
+## A painted wooden panel (theme "Card") holding a centred column: every overlay screen sits on one.
 static func card(parent: Node) -> VBoxContainer:
+	var panel := PanelContainer.new()
+	panel.theme_type_variation = &"Card"
+	parent.add_child(panel)
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	parent.add_child(box)
+	panel.add_child(box)
 	return box
 
 

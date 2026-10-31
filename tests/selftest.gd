@@ -240,6 +240,19 @@ func _ready() -> void:
 	var hud_font: Font = theme.get_font("font", "HudLabel")
 	ok("The HUD uses Rye, a Western display font under the SIL Open Font License",
 		hud_font != null and hud_font.resource_path.ends_with("Rye-Regular.ttf") and FileAccess.get_file_as_string("res://ui/fonts/OFL.txt").contains("SIL Open Font License"))
+	# The presentation pass: no pixel font or pixel UI art left on any card, list or menu.
+	var body: Font = theme.default_font
+	ok("Body text is Lora (SIL Open Font License), set once in the theme; no pixel font anywhere",
+		body is FontVariation and body.base_font.resource_path.ends_with("Lora-Variable.ttf") and not FileAccess.get_file_as_string("res://ui/theme.tres").contains("Pixelify")
+		and FileAccess.get_file_as_string("res://ui/fonts/OFL-Lora.txt").contains("SIL Open Font License"))
+	ok("Titles and headings are Rye", ["Heading", "Title", "Logo", "Callout", "InkTitle", "PosterWanted"].all(
+		func(t): return theme.get_font("font", t).resource_path.ends_with("Rye-Regular.ttf")))
+	var pixel_ui: Array = ["ui/card", "ui/button", "ui/button_pressed", "ui/button_ghost", "ui/button_ghost_pressed", "ui/pill", "ui/star_on", "ui/star_off",
+		"ui/icon_pause", "ui/icon_restart", "ui/icon_sound_on", "ui/icon_sound_off", "ui/icon_music", "ui/icon_music_off", "ui/icon_lock",
+		"ui/plaque", "ui/plaque_soon", "ui/wallet", "ui/desk_plaque", "ui/poster_paper", "ui/telegram", "ui/stamp_box", "portrait/ch0"].filter(
+		func(n): return not Assets.texture(n).resource_path.contains("ui_painted"))
+	ok("Cards, buttons, tags, stars, icons, plates and posters use the painted UI art", pixel_ui.is_empty(), ", ".join(pixel_ui))
+	ok("Every overlay screen sits on the painted wooden card", theme.get_stylebox("panel", "Card") is StyleBoxTexture and UiKit.card(Control.new()).get_parent().theme_type_variation == &"Card")
 	ok("The HUD's panels and buttons are wood", theme.get_stylebox("panel", "HudPanel") is StyleBoxTexture
 		and Assets.texture("ui/hud_panel").resource_path.contains("wood") and Assets.texture("ui/icon_button").resource_path.contains("wood"))
 	ok("Hearts, bullets and draw rings are the painted versions",

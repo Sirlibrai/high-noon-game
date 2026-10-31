@@ -226,14 +226,18 @@ func hunt() -> void:
 	show_intro(st.ch, st.level)
 
 
+## A poster's width on the Bounty board: five fit side by side inside a phone's safe area.
+const POSTER_W := 200.0
+
+
 ## The Bounty board: all five posters, open, captured, locked or coming soon.
 func show_board() -> void:
 	_office_backdrop()
 	var card := _open_overlay()
-	var top := UiKit.row(card)
+	var top := UiKit.row(card)  # one row keeps the board inside a phone's safe area
 	UiKit.button(top, "‹ Home", &"SmallGhostButton").pressed.connect(show_home)
+	UiKit.text(top, "Bounty board", &"Heading")
 	_wallet_button(top)
-	UiKit.text(card, "Bounty board", &"Heading")
 	UiKit.text(card, "Pick a poster and go after the outlaw.", &"Hint")
 	var posters := UiKit.row(card)
 	var pg: Dictionary = GameState.progress
@@ -246,7 +250,7 @@ func show_board() -> void:
 		var b := Button.new()
 		b.theme_type_variation = &"Poster"
 		b.focus_mode = Control.FOCUS_NONE
-		b.custom_minimum_size = Vector2(224, 0)
+		b.custom_minimum_size = Vector2(POSTER_W, 0)
 		b.disabled = not open
 		b.tooltip_text = "%s: %s, %s%s" % [ch.name, ch.who, ch.reward, ", captured" if state == "captured" else ""]
 		b.pressed.connect(show_chapter.bind(i))
@@ -256,11 +260,11 @@ func show_board() -> void:
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		b.add_child(v)
 		UiKit.text(v, "WANTED", &"PosterWanted")
-		var pic := UiKit.image(v, "portrait/ch%d" % i, Vector2(108, 100))
+		var pic := UiKit.image(v, "portrait/ch%d" % i, Vector2(100, 92))
 		if not open:
 			pic.modulate = Color(0, 0, 0, 0.75)
-		UiKit.text(v, ch.who, &"PosterName", 200)
-		UiKit.text(v, ch.crime, &"PosterCrime", 208)
+		UiKit.text(v, ch.who, &"PosterName", POSTER_W - 24)
+		UiKit.text(v, ch.crime, &"PosterCrime", POSTER_W - 20)
 		UiKit.text(v, ch.reward, &"PosterReward")
 		if open:
 			var lvls: Array = GameState.levels_for(i)
@@ -280,10 +284,10 @@ func show_board() -> void:
 			b.add_child(stamp)
 			var sz := stamp.get_combined_minimum_size()
 			stamp.size = sz
-			stamp.position = Vector2((224 - sz.x) / 2, 116)
+			stamp.position = Vector2((POSTER_W - sz.x) / 2, 66)  # across the portrait, clear of the name
 			stamp.pivot_offset = sz / 2
 			stamp.rotation = deg_to_rad(-14)
-		b.pivot_offset = Vector2(112, b.custom_minimum_size.y / 2)
+		b.pivot_offset = Vector2(POSTER_W / 2, b.custom_minimum_size.y / 2)
 		b.rotation = deg_to_rad(tilt[i])
 
 
@@ -346,7 +350,7 @@ func soon(kind: String) -> void:
 	var holder := CenterContainer.new()
 	holder.add_child(stamp)
 	card.add_child(holder)
-	UiKit.button(card, "Back").pressed.connect(show_home)
+	UiKit.button(UiKit.row(card), "Back").pressed.connect(show_home)
 
 
 ## The Gunsmith and Profile screens are not part of this build yet.
@@ -355,7 +359,7 @@ func _not_yet(title: String, body: String) -> void:
 	var card := _open_overlay()
 	UiKit.text(card, title, &"Heading")
 	UiKit.text(card, body, &"", 840)
-	UiKit.button(card, "Back").pressed.connect(show_home)
+	UiKit.button(UiKit.row(card), "Back").pressed.connect(show_home)
 
 
 func _wallet_button(parent: Node) -> Button:
@@ -533,9 +537,9 @@ func _show_fail(reason: String, offer: Variant) -> void:
 		if clue != "":
 			UiKit.text(card, clue, &"Tip", 840)
 		if AdsManager.available():
-			UiKit.button(card, o[2]).pressed.connect(_use_offer.bind(offer, reason))
+			UiKit.button(UiKit.row(card), o[2]).pressed.connect(_use_offer.bind(offer, reason))
 		else:
-			UiKit.button(card, "No ad available right now").disabled = true
+			UiKit.button(UiKit.row(card), "No ad available right now").disabled = true
 		UiKit.text(card, "Using this caps the clear at two stars.", &"Hint")
 	else:
 		UiKit.text(card, reason, &"Heading")
@@ -574,7 +578,7 @@ func _grant_hint() -> void:
 	UiKit.text(card, level.L.hint, &"Tip", 840)
 	if lvl >= 2:
 		UiKit.text(card, "The key spot will glow while you play.", &"Hint")
-	UiKit.button(card, "Try again with the clue").pressed.connect(restart)
+	UiKit.button(UiKit.row(card), "Try again with the clue").pressed.connect(restart)
 
 
 # ---------- HUD ----------

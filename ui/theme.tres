@@ -1,50 +1,70 @@
-[gd_resource type="Theme" load_steps=14 format=3]
+[gd_resource type="Theme" format=3]
 
 [ext_resource type="FontFile" path="res://ui/fonts/Rye-Regular.ttf" id="rye"]
 
-[sub_resource type="SystemFont" id="font"]
-font_names = PackedStringArray("Pixelify Sans", "Menlo", "Courier New", "monospace")
-font_weight = 700
+[ext_resource type="FontFile" path="res://ui/fonts/Lora-Variable.ttf" id="lora"]
+
+[sub_resource type="FontVariation" id="font"]
+base_font = ExtResource("lora")
+variation_opentype = {
+2003265652: 500
+}
+
+[sub_resource type="FontVariation" id="font_bold"]
+base_font = ExtResource("lora")
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="StyleBoxTexture" id="card"]
+content_margin_left = 52.0
+content_margin_top = 36.0
+content_margin_right = 52.0
+content_margin_bottom = 40.0
+texture_margin_left = 40.0
+texture_margin_top = 40.0
+texture_margin_right = 40.0
+texture_margin_bottom = 40.0
 
 [sub_resource type="StyleBoxTexture" id="button"]
 content_margin_left = 40.0
 content_margin_top = 14.0
 content_margin_right = 40.0
 content_margin_bottom = 20.0
-texture_margin_left = 20.0
-texture_margin_top = 20.0
-texture_margin_right = 20.0
-texture_margin_bottom = 20.0
+texture_margin_left = 24.0
+texture_margin_top = 24.0
+texture_margin_right = 24.0
+texture_margin_bottom = 24.0
 
 [sub_resource type="StyleBoxTexture" id="button_pressed"]
 content_margin_left = 40.0
 content_margin_top = 20.0
 content_margin_right = 40.0
 content_margin_bottom = 14.0
-texture_margin_left = 20.0
-texture_margin_top = 20.0
-texture_margin_right = 20.0
-texture_margin_bottom = 20.0
+texture_margin_left = 24.0
+texture_margin_top = 24.0
+texture_margin_right = 24.0
+texture_margin_bottom = 24.0
 
 [sub_resource type="StyleBoxTexture" id="ghost"]
 content_margin_left = 40.0
 content_margin_top = 14.0
 content_margin_right = 40.0
-content_margin_bottom = 14.0
-texture_margin_left = 20.0
-texture_margin_top = 20.0
-texture_margin_right = 20.0
-texture_margin_bottom = 20.0
+content_margin_bottom = 20.0
+texture_margin_left = 24.0
+texture_margin_top = 24.0
+texture_margin_right = 24.0
+texture_margin_bottom = 24.0
 
 [sub_resource type="StyleBoxTexture" id="ghost_pressed"]
 content_margin_left = 40.0
-content_margin_top = 14.0
+content_margin_top = 20.0
 content_margin_right = 40.0
 content_margin_bottom = 14.0
-texture_margin_left = 20.0
-texture_margin_top = 20.0
-texture_margin_right = 20.0
-texture_margin_bottom = 20.0
+texture_margin_left = 24.0
+texture_margin_top = 24.0
+texture_margin_right = 24.0
+texture_margin_bottom = 24.0
 
 [sub_resource type="StyleBoxTexture" id="icon_button"]
 content_margin_left = 12.0
@@ -111,30 +131,30 @@ content_margin_left = 18.0
 content_margin_top = 8.0
 content_margin_right = 18.0
 content_margin_bottom = 12.0
-texture_margin_left = 6.0
-texture_margin_top = 6.0
-texture_margin_right = 6.0
-texture_margin_bottom = 8.0
+texture_margin_left = 12.0
+texture_margin_top = 12.0
+texture_margin_right = 12.0
+texture_margin_bottom = 12.0
 
 [sub_resource type="StyleBoxTexture" id="plaque_pressed"]
 content_margin_left = 18.0
 content_margin_top = 12.0
 content_margin_right = 18.0
 content_margin_bottom = 8.0
-texture_margin_left = 6.0
-texture_margin_top = 6.0
-texture_margin_right = 6.0
-texture_margin_bottom = 8.0
+texture_margin_left = 12.0
+texture_margin_top = 12.0
+texture_margin_right = 12.0
+texture_margin_bottom = 12.0
 
 [sub_resource type="StyleBoxTexture" id="plaque_soon"]
 content_margin_left = 18.0
 content_margin_top = 8.0
 content_margin_right = 18.0
 content_margin_bottom = 12.0
-texture_margin_left = 6.0
-texture_margin_top = 6.0
-texture_margin_right = 6.0
-texture_margin_bottom = 8.0
+texture_margin_left = 12.0
+texture_margin_top = 12.0
+texture_margin_right = 12.0
+texture_margin_bottom = 12.0
 
 [sub_resource type="StyleBoxTexture" id="wallet"]
 content_margin_left = 24.0
@@ -181,42 +201,55 @@ content_margin_left = 16.0
 content_margin_top = 20.0
 content_margin_right = 16.0
 content_margin_bottom = 16.0
-texture_margin_left = 6.0
-texture_margin_top = 6.0
-texture_margin_right = 6.0
-texture_margin_bottom = 8.0
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
 
 [sub_resource type="StyleBoxTexture" id="poster_locked"]
 content_margin_left = 16.0
 content_margin_top = 20.0
 content_margin_right = 16.0
 content_margin_bottom = 16.0
-texture_margin_left = 6.0
-texture_margin_top = 6.0
-texture_margin_right = 6.0
-texture_margin_bottom = 8.0
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
 
 [sub_resource type="StyleBoxTexture" id="telegram"]
 content_margin_left = 24.0
 content_margin_top = 12.0
 content_margin_right = 24.0
 content_margin_bottom = 16.0
-texture_margin_left = 6.0
-texture_margin_top = 6.0
-texture_margin_right = 6.0
-texture_margin_bottom = 8.0
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
 
 [sub_resource type="StyleBoxTexture" id="stamp"]
 content_margin_left = 16.0
 content_margin_top = 4.0
 content_margin_right = 16.0
 content_margin_bottom = 4.0
-texture_margin_left = 6.0
-texture_margin_top = 6.0
-texture_margin_right = 6.0
-texture_margin_bottom = 6.0
+texture_margin_left = 12.0
+texture_margin_top = 12.0
+texture_margin_right = 12.0
+texture_margin_bottom = 12.0
 
 [resource]
+Card/base_type = &"PanelContainer"
+Card/styles/panel = SubResource("card")
+Button/fonts/font = SubResource("font_bold")
+PillLabel/fonts/font = SubResource("font_bold")
+Heading/fonts/font = ExtResource("rye")
+Title/fonts/font = ExtResource("rye")
+Logo/fonts/font = ExtResource("rye")
+CalloutSmall/fonts/font = ExtResource("rye")
+InkTitle/fonts/font = ExtResource("rye")
+PosterWanted/fonts/font = ExtResource("rye")
+PosterReward/fonts/font = ExtResource("rye")
+StampLabel/fonts/font = ExtResource("rye")
+DeskTitle/fonts/font = SubResource("font_bold")
 default_font = SubResource("font")
 default_font_size = 30
 Button/colors/font_color = Color(0.164706, 0.101961, 0.0627451, 1)
@@ -231,10 +264,11 @@ Button/styles/hover = SubResource("button")
 Button/styles/normal = SubResource("button")
 Button/styles/pressed = SubResource("button_pressed")
 GhostButton/base_type = &"Button"
-GhostButton/colors/font_color = Color(1, 1, 1, 1)
-GhostButton/colors/font_hover_color = Color(1, 1, 1, 1)
-GhostButton/colors/font_pressed_color = Color(1, 1, 1, 1)
-GhostButton/colors/font_focus_color = Color(1, 1, 1, 1)
+GhostButton/colors/font_color = Color(0.964706, 0.905882, 0.8, 1)
+GhostButton/colors/font_hover_color = Color(0.964706, 0.905882, 0.8, 1)
+GhostButton/colors/font_pressed_color = Color(0.964706, 0.905882, 0.8, 1)
+GhostButton/colors/font_focus_color = Color(0.964706, 0.905882, 0.8, 1)
+GhostButton/colors/font_disabled_color = Color(0.964706, 0.905882, 0.8, 0.45)
 GhostButton/styles/disabled = SubResource("ghost")
 GhostButton/styles/hover = SubResource("ghost")
 GhostButton/styles/normal = SubResource("ghost")
@@ -245,7 +279,7 @@ IconButton/base_type = &"Button"
 IconButton/styles/hover = SubResource("icon_button")
 IconButton/styles/normal = SubResource("icon_button")
 IconButton/styles/pressed = SubResource("icon_button_pressed")
-Label/colors/font_color = Color(1, 1, 1, 1)
+Label/colors/font_color = Color(0.964706, 0.905882, 0.8, 1)
 Label/font_sizes/font_size = 30
 Heading/base_type = &"Label"
 Heading/colors/font_color = Color(0.94902, 0.709804, 0.266667, 1)
@@ -256,11 +290,11 @@ Heading/font_sizes/font_size = 68
 Title/base_type = &"Heading"
 Title/font_sizes/font_size = 112
 Tip/base_type = &"Label"
-Tip/colors/font_color = Color(1, 1, 1, 0.9)
+Tip/colors/font_color = Color(0.964706, 0.905882, 0.8, 1)
 Tip/font_sizes/font_size = 32
 Hint/base_type = &"Label"
-Hint/colors/font_color = Color(1, 1, 1, 0.85)
-Hint/font_sizes/font_size = 26
+Hint/colors/font_color = Color(0.909804, 0.827451, 0.682353, 1)
+Hint/font_sizes/font_size = 28
 Pay/base_type = &"Label"
 Pay/colors/font_color = Color(0.94902, 0.709804, 0.266667, 1)
 Pay/font_sizes/font_size = 36
@@ -334,7 +368,7 @@ DeskSub/colors/font_color = Color(0.415686, 0.164706, 0.101961, 1)
 DeskSub/font_sizes/font_size = 22
 DeskKey/base_type = &"Label"
 DeskKey/colors/font_color = Color(0.352941, 0.227451, 0.141176, 0.8)
-DeskKey/font_sizes/font_size = 18
+DeskKey/font_sizes/font_size = 20
 DeskValue/base_type = &"Label"
 DeskValue/colors/font_color = Color(0.164706, 0.101961, 0.0627451, 1)
 DeskValue/font_sizes/font_size = 24
@@ -362,7 +396,7 @@ PosterName/colors/font_color = Color(0.227451, 0.145098, 0.0862745, 1)
 PosterName/font_sizes/font_size = 24
 PosterCrime/base_type = &"Label"
 PosterCrime/colors/font_color = Color(0.227451, 0.145098, 0.0862745, 0.8)
-PosterCrime/font_sizes/font_size = 18
+PosterCrime/font_sizes/font_size = 20
 PosterReward/base_type = &"Label"
 PosterReward/colors/font_color = Color(0.419608, 0.164706, 0.101961, 1)
 PosterReward/font_sizes/font_size = 26

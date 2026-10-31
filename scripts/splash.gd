@@ -60,7 +60,9 @@ func _ready() -> void:
 	_tap.anchor_top = 0.86
 	_tap.anchor_bottom = 0.86
 	_tap.modulate.a = 0.0
-	_begin = UiKit.card(ui)
+	_begin = VBoxContainer.new()  # a plain column over the scene, not a card
+	_begin.alignment = BoxContainer.ALIGNMENT_CENTER
+	ui.add_child(_begin)
 	_begin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_begin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UiKit.text(_begin, "TAP TO BEGIN", &"Heading")

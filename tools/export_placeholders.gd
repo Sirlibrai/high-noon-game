@@ -37,6 +37,7 @@ func _init() -> void:
 	_home_ui()
 	_painted_ui()
 	_hangers()
+	_painted_cards()
 	print("Exported %d placeholder images to %s" % [written, OUT])
 	quit()
 
@@ -982,3 +983,247 @@ func _hangers() -> void:
 			c = Color("#2E2C2A").lerp(Color("#8A8680"), 0.3)  # the iron bracket at the post
 		return c),
 		"props/beam.png")
+
+
+## Signed distance to a five-pointed star pointing up (y up), outer radius r, inner ratio rf.
+static func star5(p: Vector2, r: float, rf: float) -> float:
+	var k1 := Vector2(0.809016994375, -0.587785252292)
+	var k2 := Vector2(-k1.x, k1.y)
+	p.x = absf(p.x)
+	p -= 2.0 * maxf(k1.dot(p), 0.0) * k1
+	p -= 2.0 * maxf(k2.dot(p), 0.0) * k2
+	p.x = absf(p.x)
+	p.y -= r
+	var ba := rf * Vector2(-k1.y, k1.x) - Vector2(0, 1)
+	var h := clampf(p.dot(ba) / ba.dot(ba), 0.0, r)
+	return (p - ba * h).length() * signf(p.y * ba.x - p.x * ba.y)
+
+
+## Signed distance to a triangle (negative inside), approximately: the furthest edge.
+static func tri(p: Vector2, a: Vector2, b: Vector2, c: Vector2) -> float:
+	var d := -INF
+	var s := signf((b - a).cross(c - a))
+	for e in [[a, b], [b, c], [c, a]]:
+		var edge: Vector2 = e[1] - e[0]
+		d = maxf(d, -s * edge.cross(p - e[0]) / edge.length())
+	return d
+
+
+## Signed distance to a rounded rectangle (negative inside), for the painted UI below.
+static func rr(px: float, py: float, x: float, y: float, w: float, h: float, r: float) -> float:
+	var qx := absf(px - (x + w / 2)) - (w / 2 - r)
+	var qy := absf(py - (y + h / 2)) - (h / 2 - r)
+	return Vector2(maxf(qx, 0), maxf(qy, 0)).length() + minf(maxf(qx, qy), 0) - r
+
+
+## Wood grain colour at a point: planks running across, lit from the top left.
+func grain(px: float, py: float, base: Color, plank_h := 18.0) -> Color:
+	var plank := int(py / plank_h)
+	var g := sin(px * 0.21 + plank * 7.0 + sin(px * 0.05 + plank) * 3.0) * 0.5 + 0.5
+	return base.lerp(base.lightened(0.28), g * 0.45 + noise2(px, py) * 0.15)
+
+
+## Brass: a warm metal ramp lit from the top left.
+static func brass(t: float) -> Color:
+	return Color("#6B4A1A").lerp(Color("#F4D58A"), clampf(t, 0, 1))
+
+
+## The painted UI kit (no pixel art): the overlay card, wood and brass buttons, parchment tags,
+## stars, icons, office plates and poster paper. All nine-patches; the theme sets their margins.
+func _painted_cards() -> void:
+	var clear := Color(0, 0, 0, 0)
+	var rim := Color("#1E120A")
+	# The card every overlay screen sits on: a wooden frame with nails round a dark stained inset.
+	save_exact(smooth(128, 128, func(px: float, py: float) -> Color:
+		var d := rr(px, py, 1, 1, 126, 126, 18)
+		if d > 0:
+			return clear
+		if d > -3:
+			return rim
+		var inset := rr(px, py, 22, 22, 84, 84, 8)
+		if inset < 0:
+			var c := Color("#2B1B10").lerp(Color("#3A2616"), (sin(px * 0.15 + sin(py * 0.04) * 2.0) * 0.5 + 0.5) * 0.5 + noise2(px, py) * 0.1)
+			return c.darkened(clampf(1.0 + inset / 6.0, 0, 1) * 0.5)  # a shadow along the inset's edge
+		if inset < 2.5:
+			return Color("#120A05")
+		var c2 := grain(px, py, Color("#6E4222"), 22.0)
+		if d > -7:
+			c2 = c2.lightened(0.15)  # bevel
+		for nail in [Vector2(11, 11), Vector2(117, 11), Vector2(11, 117), Vector2(117, 117)]:
+			var nd := Vector2(px, py).distance_to(nail)
+			if nd < 3.2:
+				return brass(1.3 - nd / 3.2)
+		return c2),
+		"ui_painted/card.png")
+	# Buttons: a brass-rimmed plank with a lip underneath (the lip shrinks when pressed).
+	for kind in ["gold", "gold_pressed", "wood", "wood_pressed"]:
+		var pressed: bool = kind.ends_with("pressed")
+		var gold: bool = kind.begins_with("gold")
+		var lip := 3.0 if pressed else 8.0
+		save_exact(smooth(96, 72, func(px: float, py: float) -> Color:
+			var top := 2.0 + (8.0 - lip)
+			var body := rr(px, py, 2, top, 92, 68 - top, 16)
+			if body > 0:
+				return clear
+			if body > -2.5:
+				return rim
+			var face := rr(px, py, 2, top, 92, 68 - top - lip, 16)
+			if face > -2.5 and face <= 0:
+				return brass(0.9 - (py - top) / 60.0)  # the brass edge
+			if face > 0:  # the lip
+				return (Color("#8A5A16") if gold else Color("#3A2414")).darkened(0.2)
+			var c: Color
+			if gold:
+				c = Color("#C9862E").lerp(Color("#F7CC6A"), clampf(1.0 - (py - top) / 50.0, 0, 1))
+				c = c.lerp(c.darkened(0.12), (sin(px * 0.2 + sin(px * 0.05) * 3.0) * 0.5 + 0.5) * 0.3)
+			else:
+				c = grain(px, py, Color("#5E3A1E"), 30.0)
+			if face > -6:
+				c = c.lightened(0.12)
+			return c.darkened(0.12 if pressed else 0.0)),
+			"ui_painted/button_%s.png" % kind)
+	# A parchment tag for counts on the intro card (bullets, par).
+	save_exact(smooth(64, 56, func(px: float, py: float) -> Color:
+		var d := rr(px, py, 2, 2, 60, 52, 24)
+		if d > 0:
+			return clear
+		if d > -2.5:
+			return Color("#5A3A1E")
+		var c := Color("#E8D3A8").lerp(Color("#F7ECCF"), clampf(1.0 - py / 50.0, 0, 1) * 0.6 + noise2(px * 0.5, py * 0.5) * 0.15)
+		return c.darkened(clampf(1.0 + d / 8.0, 0, 1) * 0.15)),
+		"ui_painted/pill.png")
+	# Parchment for posters and the telegram (aged edges), and a darker one for locked posters.
+	for kind in ["paper", "paper_locked"]:
+		var locked: bool = kind == "paper_locked"
+		save_exact(smooth(64, 64, func(px: float, py: float) -> Color:
+			var wob := sin(px * 0.9) * 0.6 + sin(py * 1.1) * 0.6
+			var d := rr(px, py, 2, 2, 60, 60, 4) + wob
+			if d > 0:
+				return clear
+			var c := Color("#E2C994").lerp(Color("#F4E4BE"), noise2(px * 0.4, py * 0.4) * 0.35 + 0.4)
+			c = c.darkened(clampf(1.0 + d / 10.0, 0, 1) * 0.35)  # browned edges
+			return c.darkened(0.45) if locked else c),
+			"ui_painted/%s.png" % kind)
+	# The red ink box of a stamp.
+	save_exact(smooth(64, 48, func(px: float, py: float) -> Color:
+		var d := absf(rr(px, py, 4, 4, 56, 40, 4)) - 2.6
+		if d > 0 or noise2(px * 1.7, py * 1.7) < 0.12:
+			return clear
+		return Color(0.72, 0.16, 0.18, 0.92)),
+		"ui_painted/stamp_box.png")
+	# Office plates: brass name plates (dull for "coming soon"), wooden desk plaques, a leather wallet.
+	for kind in ["plate", "plate_pressed", "plate_soon"]:
+		save_exact(smooth(48, 48, func(px: float, py: float) -> Color:
+			var d := rr(px, py, 1, 1, 46, 46, 8)
+			if d > 0:
+				return clear
+			if d > -2:
+				return rim
+			var t := 1.0 - py / 46.0 + (0.0 if kind != "plate_pressed" else -0.25)
+			var c := brass(0.35 + t * 0.6)
+			if kind == "plate_soon":
+				c = Color(c.get_luminance(), c.get_luminance(), c.get_luminance()).darkened(0.25)
+			return c.darkened(clampf(1.0 + d / 5.0, 0, 1) * 0.25)),
+			"ui_painted/%s.png" % kind)
+	for kind in ["desk", "desk_pressed"]:
+		save_exact(smooth(48, 52, func(px: float, py: float) -> Color:
+			var d := rr(px, py, 1, 1, 46, 50, 10)
+			if d > 0:
+				return clear
+			if d > -2.5:
+				return rim
+			var c := Color("#E9D7B0").lerp(Color("#F8EDD2"), clampf(1.0 - py / 48.0, 0, 1) * 0.5)
+			return c.darkened((0.12 if kind == "desk_pressed" else 0.0) + clampf(1.0 + d / 6.0, 0, 1) * 0.2)),
+			"ui_painted/%s.png" % kind)
+	save_exact(smooth(64, 64, func(px: float, py: float) -> Color:
+		var d := rr(px, py, 1, 1, 62, 62, 14)
+		if d > 0:
+			return clear
+		if d > -2.5:
+			return rim
+		if absf(d + 7) < 0.9 and int(px + py) % 6 < 3:
+			return Color("#C9A86A")  # stitching
+		return Color("#3E2414").lerp(Color("#6A3E22"), clampf(1.0 - py / 60.0, 0, 1) * 0.6 + noise2(px, py) * 0.15)),
+		"ui_painted/wallet.png")
+	# Stars: polished gold, or an empty carved socket.
+	for on in [true, false]:
+		save_exact(smooth(80, 80, func(px: float, py: float) -> Color:
+			var p := Vector2(px - 40, py - 43)
+			var d := star5(Vector2(p.x, -p.y), 34.0, 0.48)
+			if d > 0:
+				return clear
+			if d > -3:
+				return rim
+			if not on:
+				return Color("#3A2A1E").lerp(Color("#5A4634"), clampf(-p.y / 30.0, 0, 1) * 0.5)
+			var light := clampf(0.55 - p.x / 60.0 - p.y / 45.0, 0, 1)
+			var c := Color("#B9781E").lerp(Color("#FFE08A"), light)
+			return c.lerp(Color(1, 0.97, 0.85), clampf(1 - Vector2(p.x + 8, p.y + 10).length() / 7.0, 0, 1) * 0.8)),
+			"ui_painted/star_%s.png" % ("on" if on else "off"))
+	# Icons: cream glyphs with a dark outline, for the wooden icon buttons and plates.
+	var glyph := func(sz: int, inside: Callable, path: String) -> void:
+		save_exact(smooth(sz, sz, func(px: float, py: float) -> Color:
+			var d: float = inside.call(px / sz, py / sz) * sz
+			if d < 0:
+				return Color("#F6E7CC")
+			if d < 2.2:
+				return Color(0.12, 0.07, 0.04, 0.9)
+			return clear), path)
+	var seg := func(x: float, y: float, ax: float, ay: float, bx: float, by: float, w: float) -> float:
+		var pa := Vector2(x - ax, y - ay)
+		var ba := Vector2(bx - ax, by - ay)
+		var h := clampf(pa.dot(ba) / ba.dot(ba), 0, 1)
+		return (pa - ba * h).length() - w
+	var box := func(x: float, y: float, cx: float, cy: float, hw: float, hh: float) -> float:
+		return maxf(absf(x - cx) - hw, absf(y - cy) - hh)
+	var speaker := func(x: float, y: float) -> float:
+		return minf(box.call(x, y, 0.24, 0.5, 0.08, 0.12), maxf(absf(y - 0.5) - (x - 0.18) * 0.9, absf(x - 0.36) - 0.12))
+	glyph.call(48, func(x, y): return minf(box.call(x, y, 0.36, 0.5, 0.08, 0.27), box.call(x, y, 0.64, 0.5, 0.08, 0.27)), "ui_painted/icon_pause.png")
+	glyph.call(48, func(x, y):
+		var p := Vector2(x - 0.5, y - 0.53)
+		var ring := absf(p.length() - 0.25) - 0.065
+		var a := atan2(p.y, p.x)
+		if a > -1.75 and a < -0.75:
+			ring = 1.0  # the gap the arrow head points into
+		return minf(ring, tri(Vector2(x, y), Vector2(0.42, 0.14), Vector2(0.42, 0.42), Vector2(0.62, 0.28))), "ui_painted/icon_restart.png")
+	glyph.call(48, func(x, y):
+		var p := Vector2(x - 0.42, y - 0.5)
+		var waves := 1.0
+		for r in [0.18, 0.3]:
+			if p.x > 0 and absf(atan2(p.y, p.x)) < 0.8:
+				waves = minf(waves, absf(p.length() - r) - 0.04)
+		return minf(speaker.call(x, y), waves), "ui_painted/icon_sound_on.png")
+	glyph.call(48, func(x, y):
+		return minf(speaker.call(x, y), minf(seg.call(x, y, 0.58, 0.38, 0.8, 0.62, 0.045), seg.call(x, y, 0.58, 0.62, 0.8, 0.38, 0.045))), "ui_painted/icon_sound_off.png")
+	for off in [false, true]:
+		glyph.call(36, func(x, y):
+			var note := minf(Vector2((x - 0.38) / 1.25, y - 0.72).length() - 0.12, minf(box.call(x, y, 0.5, 0.45, 0.045, 0.28), seg.call(x, y, 0.5, 0.19, 0.74, 0.32, 0.05)))
+			return minf(note, seg.call(x, y, 0.18, 0.18, 0.82, 0.84, 0.05)) if off else note,
+			"ui_painted/icon_music%s.png" % ("_off" if off else ""))
+	glyph.call(36, func(x, y):
+		var shackle := maxf(absf(Vector2(x - 0.5, y - 0.4).length() - 0.2) - 0.06, y - 0.45)
+		return minf(box.call(x, y, 0.5, 0.65, 0.28, 0.2), shackle), "ui_painted/icon_lock.png")
+	# A brass pin for the posters on the office wall.
+	save_exact(smooth(16, 16, func(px: float, py: float) -> Color:
+		var d := Vector2(px - 8, py - 8).length()
+		if d > 6.5:
+			return clear
+		return rim if d > 5.2 else brass(1.1 - Vector2(px - 6, py - 6).length() / 6.0)), "ui_painted/pin.png")
+	# Wanted-poster portraits: the painted outlaw's head and shoulders, inked in sepia (placeholders).
+	var src := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/outlaw_idle.png"))
+	var tints := [Color("#5A3A22"), Color("#3E3A30"), Color("#4A2E2A"), Color("#2E3A3A"), Color("#4A3A1E")]
+	for c in 5:
+		var head := src.get_region(Rect2i(0, 0, src.get_width(), 84))
+		head.resize(int(head.get_width() * 156.0 / 84.0), 156, Image.INTERPOLATE_LANCZOS)
+		if c % 2 == 1:
+			head.flip_x()
+		var out := img(168, 156)
+		var ox := (168 - head.get_width()) / 2
+		for y in 156:
+			for x in 168:
+				var paper := Color("#EAD6A8").darkened(Vector2((x - 84) / 84.0, (y - 78) / 78.0).length_squared() * 0.18)
+				var hx := x - ox
+				var px_c := head.get_pixel(hx, y) if hx >= 0 and hx < head.get_width() else Color(0, 0, 0, 0)
+				var ink: Color = Color(tints[c]).lerp(Color("#EAD6A8"), clampf(px_c.get_luminance() * 1.6, 0, 1) * 0.7)
+				out.set_pixel(x, y, paper.lerp(ink, px_c.a))
+		save_exact(out, "ui_painted/portrait_ch%d.png" % c)

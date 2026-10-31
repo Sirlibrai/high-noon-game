@@ -5,6 +5,7 @@ extends Node
 ## Exits with code 0 when every check passes.
 
 var results: Array = []
+const POSES := ["idle", "aim", "hit", "crouch", "lean", "run_left", "run_right", "fall"]
 
 
 func ok(name: String, cond: bool, detail := "") -> void:
@@ -107,7 +108,7 @@ func _ready() -> void:
 				if d.has("c") and int(d.c) >= l.covers.size():
 					problems.append("bad cover")
 			for cv in l.covers:
-				if cv[1] < 0 or cv[1] + G.cover_sizes[cv[0]][0] > 270:
+				if cv[1] < 0 or cv[1] + G.kit_cover_sizes[cv[0]][0] > 270:  # the prototype's own data check, in its sizes
 					problems.append(cv[0] + " behind the gun")
 			if l.get("puzzle", false) and not (l.has("hint") and l.has("hintTarget")):
 				problems.append("puzzle without hint")
@@ -122,12 +123,13 @@ func _ready() -> void:
 				if not Assets.has("prop/" + cv[0]):
 					missing.append("prop/" + cv[0])
 			var needed: Array = []
-			if c == 0 and l.get("duel", false) and not Assets.rigs.has(G.BOSS_SPRITES[l.boss]):
-				missing.append("rig " + G.BOSS_SPRITES[l.boss])
+			if c == 0 and l.get("duel", false):
+				for pose in ["idle", "aim", "hit", "fall"]:
+					needed.append(G.BOSS_SPRITES[l.boss] + "/" + pose)
 			if c == 0 and l.get("eli", false):
-				needed = ["iron_eli_parts/armour", "iron_eli_parts/armour_cracked", "fx/dynamite", "fx/fuse_spark", "fx/ping", "fx/armour"]
-				if not Assets.rigs.has("iron_eli"):
-					missing.append("rig iron_eli")
+				needed.append_array(["iron_eli_armour/intact", "iron_eli_armour/cracked", "fx/dynamite", "fx/fuse_spark", "fx/ping", "fx/armour"])
+				for pose in POSES:
+					needed.append("iron_eli/" + pose)
 			if c == 0 and l.get("puzzle", false):
 				needed.append("fx/hint_glow")
 			for n in needed:
@@ -135,39 +137,152 @@ func _ready() -> void:
 					missing.append(n)
 	ok("Manifest: every Main Street prop, boss, effect and Iron Eli stage has art", missing.is_empty(), ", ".join(missing))
 
-	# Cut-out characters: every outlaw is built from parts and has the gameplay clips.
-	var rig_gaps: Array = []
-	for rig_name in ["outlaw", "iron_eli", "black_jack"]:
-		if not Assets.rigs.has(rig_name):
-			rig_gaps.append(rig_name + ": missing")
-			continue
-		var def: Dictionary = Assets.rigs[rig_name]
-		var names: Array = def.parts.map(func(p): return p.name)
-		for part in ["head", "torso", "arm_back", "arm_front", "gun_hand", "legs"]:
-			if not names.has(part):
-				rig_gaps.append("%s: no %s" % [rig_name, part])
-		for p in def.parts:
-			if not Assets.has(p.asset):
-				rig_gaps.append("%s: no art %s" % [rig_name, p.asset])
-		for clip in ["idle", "pop_up", "aim", "flinch", "fall", "run"]:
-			if not Assets.rig_animations.get(def.animations, {}).has(clip):
-				rig_gaps.append("%s: no %s clip" % [rig_name, clip])
-	ok("Rigs: outlaw, Iron Eli and Black Jack each have head, torso, arms, gun hand and legs, and every clip", rig_gaps.is_empty(), ", ".join(rig_gaps))
-	var rig := CutoutRig.make("iron_eli", self)
-	var played: Array = []
-	for clip in ["pop_up", "aim", "flinch", "fall", "run", "idle"]:
-		rig.pose(clip)
-		rig._player.advance(0.1)
-		if rig.current == clip and rig._player.current_animation == clip:
-			played.append(clip)
-	var aiming_shows_gun: bool
-	rig.pose("aim")
-	rig._player.advance(0.05)
-	aiming_shows_gun = rig.parts.gun_hand.visible and not rig.parts.arm_front.visible
-	rig.pose("idle")
-	ok("Rigs build from the manifest and play every clip", played.size() == 6, str(played))
-	ok("Rigs: aiming swaps the arms for the gun hand, idle swaps back", aiming_shows_gun and not rig.parts.gun_hand.visible and rig.parts.arm_front.visible)
-	rig.free()
+	# Pose-based characters: the painted outlaw's eight poses, each anchored at the soles.
+	var pose_gaps: Array = []
+	for pose in POSES:
+		var n: String = "outlaw/" + pose
+		if not Assets.has(n):
+			pose_gaps.append(n + " missing")
+		elif absf(Assets.anchor(n).y - Assets.texture(n).get_height()) > 4:
+			pose_gaps.append("%s anchored %d px above its soles" % [n, Assets.texture(n).get_height() - Assets.anchor(n).y])
+	ok("Outlaw poses: idle, aim, hit, crouch, run left and right, lean and fall, each anchored at the feet", pose_gaps.is_empty(), ", ".join(pose_gaps))
+	ok("The falling hat is its own sprite", Assets.has("fx/hat") and Assets.texture("fx/hat").resource_path.contains("painted"))
+	var painted_props: Array = ["prop/barrel", "prop/crate", "prop/tnt", "prop/wagon", "prop/trough", "prop/sign", "prop/tumbleweed"].filter(
+		func(n): return not Assets.texture(n).resource_path.contains("painted"))
+	ok("Main Street's props are the painted ones", painted_props.is_empty(), ", ".join(painted_props))
+	var lv0 := Level.new()
+	add_child(lv0)
+	lv0.setup(0, 2)  # Crossfire: cover peekers, a side peek, a window and a runner
+	var shown: Array = []
+	for e in lv0.enemies:
+		e.state = "aim"
+		e.exp = 1.0
+		lv0._sync_enemy(e)
+		shown.append("%s%s:%s" % [e.kind, "/" + e.get("side", ""), e.node.asset.get_slice("/", 1) + ("~" if e.node.flip_h else "")])
+	ok("Aim behind cover, lean round its side, aim in windows", shown == ["cover/up:aim", "cover/right:lean~", "window/:aim", "runner/up:aim"], str(shown))
+	var runner: Dictionary = lv0.enemies[3]
+	runner.state = "run"
+	runner.run_p = 0.5
+	lv0._sync_enemy(runner)
+	ok("Runners run towards the cover they're heading for", runner.run_node.visible and runner.run_node.asset == "outlaw/run_left")
+	var peek: Dictionary = lv0.enemies[0]
+	var cover: Dictionary = lv0.covers[peek.c]
+	var shown_above: float = (lv0.GY - cover.h) - lv0.rect_of(peek).position.y
+	ok("An outlaw peeking over cover rises behind it: drawn behind the cover, visible down to his chest",
+		peek.node.get_parent() == lv0._actors and lv0._actors.get_index() < lv0._cover_layer.get_index()
+		and shown_above > 0 and shown_above <= lv0._hitbox.y * 0.45, "%.1f of %.0f units show" % [shown_above, lv0._hitbox.y])
+	var win: Dictionary = lv0.enemies[2]
+	var opening := Rect2(lv0.SC.windows[win.w].x, lv0.SC.windows[win.w].y, lv0.SC.windows[win.w].w, lv0.SC.windows[win.w].h)
+	var drawn_h: float = Assets.texture("outlaw/aim").get_height() * win.node.scale.y / lv0.PPU
+	ok("A window outlaw shows his upper body, cropped at the sill, filling most of the window",
+		win.node.get_parent() is Control and win.node.get_parent().clip_contents and drawn_h > opening.size.y * 1.6
+		and lv0.rect_of(win).get_area() >= opening.get_area() * 0.75, "figure %.0f units in a %.0f-unit window" % [drawn_h, opening.size.y])
+	var standing: Dictionary = lv0.enemies[1]  # the side peek stands on the street
+	ok("Contact shadows under every cover and every outlaw standing on the street",
+		lv0.covers.all(func(c): return c.shadow.visible) and standing.shadow.visible and not peek.shadow.visible and not win.has("shadow"))
+	remove_child(lv0)
+	lv0.free()
+
+	# The painted street: centred background, windows matched to the painting, chains on the INN sign.
+	var bg := "main_street/painted"
+	var bg_scale: float = Assets.meta(bg, "scale", 1.0)
+	var bg_w: float = Assets.texture(bg).get_width() * bg_scale
+	ok("Main Street's painting fills the 720-pixel height, centred on the play area",
+		absf(Assets.texture(bg).get_height() * bg_scale - 720) < 1 and absf(Assets.anchor(bg).x + 640 / bg_scale - Assets.texture(bg).get_width() / 2.0) < 2)
+	ok("Main Street's painting covers 16:9 and 19.5:9 screens", bg_w >= 720 * 19.5 / 9.0, "%d px wide" % bg_w)
+	var street: Dictionary = G.scene_for(0)
+	ok("Main Street's ground line comes from the painted street (geometry.json)", int(street.GY) == int(G.geometry.scenes.street.GY))
+	var hud_bottom := 22.0  # units: the hearts, bullets and buttons
+	var win_gaps: Array = []
+	for aspect in [16.0 / 9.0, 19.5 / 9.0]:
+		var half: float = (720 * aspect / 4.0) / 2.0  # visible half-width in units
+		for w in street.windows:
+			if w.x < 160 - half or w.x + w.w > 160 + half:
+				win_gaps.append("window at %s off a %.2f screen" % [w.x, aspect])
+			if w.y < hud_bottom:
+				win_gaps.append("window at %s under the HUD" % w.x)
+	ok("Every window outlaw is on screen at 16:9 and 19.5:9, and clear of the HUD", win_gaps.is_empty(), ", ".join(win_gaps))
+	ok("The clue for Hang 'em high says chains", G.levels_for(0)[6].hint.contains("chains") and not G.levels_for(0)[6].hint.contains("rope"))
+	for side in [0, 1]:
+		var lv := Level.new()
+		add_child(lv)
+		lv.setup(0, 6)  # Hang 'em high
+		lv.go()
+		lv.shoot(lv.chain_rects()[side].get_center(), true)
+		ok("A shot at the INN sign's %s chain drops it" % ["left", "right"][side], lv.hang_sign.state == "fall")
+		remove_child(lv)
+		lv.free()
+	var lv2 := Level.new()
+	add_child(lv2)
+	lv2.setup(0, 6)
+	lv2.go()
+	lv2.shoot(Vector2(lv2.hang_sign.x + lv2.hang_sign.w / 2.0, lv2.hang_sign.y + lv2.hang_sign.h - 1), true)  # the board's lower edge, clear of the chains
+	ok("A shot at the INN board only swings it", lv2.hang_sign.state == "hang")
+	remove_child(lv2)
+	lv2.free()
+
+	# The 1.7x gameplay plane: bigger cover, spread to fit, every target inside the safe area.
+	var LY: Dictionary = G.geometry.layout
+	var lay_gaps: Array = []
+	var spreads: Array = []
+	for li in G.levels_for(0).size():
+		var lv := Level.new()
+		add_child(lv)
+		lv.setup(0, li)
+		spreads.append(snappedf(lv._spread.p, 0.01))
+		var xs: Array = lv.covers.map(func(c): return [c.x, c.x + c.w])
+		xs.sort_custom(func(a, b): return a[0] < b[0])
+		for k in xs.size():
+			if xs[k][0] < LY.safe[0] - 0.01 or xs[k][1] > LY.safe[1] + 0.01:
+				lay_gaps.append("%s: cover outside the safe area" % lv.L.name)
+			if k + 1 < xs.size() and xs[k][1] > xs[k + 1][0]:
+				lay_gaps.append("%s: cover overlaps" % lv.L.name)
+		for e in lv.enemies:
+			if e.kind == "hostage" and (e.hx < LY.safe[0] or e.hx > LY.safe[1]):
+				lay_gaps.append("%s: hostage outside" % lv.L.name)
+		if lv.hang_sign != null and (lv.hang_sign.x < LY.safe[0] or lv.hang_sign.x + lv.hang_sign.w > LY.safe[1]):
+			lay_gaps.append("%s: sign outside" % lv.L.name)
+		for b in lv.bottles:
+			if b.x < LY.safe[0] or b.x > LY.safe[1]:
+				lay_gaps.append("%s: bottle outside" % lv.L.name)
+		remove_child(lv)
+		lv.free()
+	ok("Every Main Street level's cover is 1.7x, apart and inside the safe area", lay_gaps.is_empty(), ", ".join(lay_gaps))
+	ok("Cover spreads only where it must (Powder keg, Chain reaction, Iron Eli)",
+		spreads[1] > 1.0 and spreads[3] > 1.0 and spreads[9] > 1.0 and spreads[0] == 1.0 and spreads[2] == 1.0 and spreads[7] == 1.0, str(spreads))
+	ok("Hit areas are 1.7x the prototype's", Vector2(G.geometry.outlaw.hitbox[0], G.geometry.outlaw.hitbox[1]) == Vector2(24, 32) and absf(G.cover_sizes.barrel[0] / G.kit_cover_sizes.barrel[0] - 1.7) < 0.01)
+
+	# The painted HUD: wooden panels, a licensed Western font, painted hearts and bullets, glowing rings.
+	var theme: Theme = load("res://ui/theme.tres")
+	var hud_font: Font = theme.get_font("font", "HudLabel")
+	ok("The HUD uses Rye, a Western display font under the SIL Open Font License",
+		hud_font != null and hud_font.resource_path.ends_with("Rye-Regular.ttf") and FileAccess.get_file_as_string("res://ui/fonts/OFL.txt").contains("SIL Open Font License"))
+	ok("The HUD's panels and buttons are wood", theme.get_stylebox("panel", "HudPanel") is StyleBoxTexture
+		and Assets.texture("ui/hud_panel").resource_path.contains("wood") and Assets.texture("ui/icon_button").resource_path.contains("wood"))
+	ok("Hearts, bullets and draw rings are the painted versions",
+		["ui/heart_full", "ui/heart_empty", "ui/bullet_full", "ui/bullet_empty", "fx/draw_ring", "fx/draw_ring_urgent"].all(
+			func(n): return Assets.texture(n).resource_path.contains("ui_painted")))
+
+	# Bank job at 1.7x: the hostage-taker leaning left overlaps the TNT barrel, and stands in front of it.
+	for case in ["captor", "barrel"]:
+		var bj := Level.new()
+		add_child(bj)
+		bj.setup(0, 8)
+		bj.go()
+		var cap: Dictionary = bj.enemies[0]
+		cap.merge({"state": "aim", "exp": 1.0, "lean": -1, "t": 5.0}, true)
+		var tnt: Dictionary = bj.covers[0]
+		var cap_rect := bj.rect_of(cap)
+		var tnt_rect := bj.cover_rect(tnt)
+		if case == "captor":
+			bj.shoot(cap_rect.intersection(tnt_rect).get_center(), true)
+			ok("Bank job: a tap on the hostage-taker in front of the TNT takes him down, not the barrel",
+				cap_rect.intersects(tnt_rect) and not cap.alive and tnt.alive and bj.state == "play")
+		else:
+			bj.shoot(Vector2(tnt_rect.position.x + 2, tnt_rect.end.y - 2), true)
+			ok("Bank job: shooting the TNT itself still costs the hostage", bj.state == "lost" and bj.events.has("lost:hostage"))
+		remove_child(bj)
+		bj.free()
 
 	# Painted look: a 1280×720 base with smooth filtering, gameplay geometry unchanged.
 	ok("Base resolution is 1280×720 with linear texture filtering",
@@ -176,17 +291,19 @@ func _ready() -> void:
 	ok("Gameplay units still map the 320×180 stage onto the 1280×720 base", float(G.geometry.pixels_per_unit) * G.geometry.stage.width == 1280.0)
 	# The revolver stays small in the bottom-right corner at every tilt (style guide: about the bottom-right eighth).
 	var gun := Assets.texture("gun_peacemaker_0/idle")
-	var gun_scale: float = G.geometry.gun.scale
+	var gun_scale: float = Assets.meta("gun_peacemaker_0/idle", "scale", 1.0)
 	var ppu: float = G.geometry.pixels_per_unit
 	var anchor := Assets.anchor("gun_peacemaker_0/idle")
 	var g: Dictionary = G.geometry.gun
 	var worst := Vector2(320, 180)
-	for ang in [g.reload_angle, g.angle_range[0], g.rest_angle, g.angle_range[1]]:
+	for ang in [g.reload_angle, g.angle_range[0], g.rest_angle, g.angle_range[1], g.angle_range[1] + 0.85 * g.kick_tilt]:  # the strongest kick (Coach Gun)
 		var pivot := Vector2(320 - g.pivot_from_corner[0] + g.kick_offset[0], 180 - g.pivot_from_corner[1])
 		for corner in [Vector2.ZERO, Vector2(gun.get_width(), 0), Vector2(0, gun.get_height()), gun.get_size()]:
 			var p: Vector2 = pivot + ((corner - anchor) * gun_scale / ppu).rotated(ang)
 			worst = Vector2(minf(worst.x, p.x), minf(worst.y, p.y))
 	ok("The revolver stays in the bottom-right corner at every tilt", worst.x >= 320 * 0.75 and worst.y >= 180 * 0.5, "reaches x %.0f, y %.0f" % [worst.x, worst.y])
+	ok("The Peacemaker is the painted gloved hand and gun, with a small tilt",
+		gun.resource_path.contains("painted") and absf(g.angle_range[1] - g.angle_range[0]) <= 0.2 and absf(g.reload_angle) <= 0.3)
 	var gun_gaps: Array = []
 	for w in G.weapons:
 		for f in w.fins.size():
@@ -194,10 +311,6 @@ func _ready() -> void:
 			if not Assets.has(n) or not Assets.has("gun_%s_%d/reload" % [w.id, f]) or Assets.point(n, "muzzle") == Vector2.ZERO:
 				gun_gaps.append(n)
 	ok("Manifest: every gun finish has idle and reload art with a muzzle point", gun_gaps.is_empty(), ", ".join(gun_gaps))
-	var street_art: Dictionary = Assets.scenes.main_street
-	var narrow: Array = street_art.layers.filter(func(n): return Assets.texture(n).get_width() <= 640)
-	ok("Main Street background layers are wider than 640 px", narrow.is_empty(), ", ".join(narrow))
-	ok("Main Street has a frame for every window", street_art.window_frames.size() == G.scenes.street.windows.size())
 	var drawing: Array = []
 	var draw_call := RegEx.create_from_string("\\bdraw_(rect|arc|line|lines|polyline|polygon|colored_polygon|circle|texture\\w*|string\\w*|set_transform\\w*|primitive|mesh|style_box|char)\\(|func _draw\\(|StyleBoxFlat")
 	for dir in ["res://scripts/", "res://autoload/"]:
@@ -280,7 +393,7 @@ func _playthroughs() -> void:
 			"Chain reaction":
 				ok("Puzzle: Chain reaction, one TNT sets off the other", r.state == "won" and r.tnt_left == 0 and count(r.events, "kill:tnt") >= 2, str(r.events))
 			"Hang ’em high", "Bank job":
-				ok("Puzzle: %s is solved by shooting the sign rope" % l.name, r.state == "won" and r.events.has("kill:sign"), str(r.events))
+				ok("Puzzle: %s is solved by shooting a sign chain" % l.name, r.state == "won" and r.events.has("kill:sign"), str(r.events))
 	ok("Every Main Street level can be won at par with its allotted bullets", at_par.is_empty(), ", ".join(at_par))
 
 
@@ -496,13 +609,13 @@ func _skins() -> void:
 	ok("The Standard skin leaves the final screen layer off (no shader)", Skins.final_material() == null)
 
 	var test_skin := {"id": "test", "name": "Test", "price": 0, "shader": "res://tests/fixtures/test_skin.gdshader", "overrides": {
-		"prop/barrel": "placeholder/props/crate.png",
+		"prop/barrel": "placeholder/props/bottle.png",
 		"prop/tnt": "placeholder/props/no_such_file.png",
-		"no_such/name": "placeholder/props/crate.png",
-		"outlaw_parts/head": {"frames": ["placeholder/props/bottle.png"]}}}
+		"no_such/name": "placeholder/props/bottle.png",
+		"outlaw/aim": {"frames": ["placeholder/props/bottle.png"]}}}
 	Skins.apply(test_skin)
-	ok("A skin's override is used first", Assets.texture("prop/barrel").resource_path.ends_with("placeholder/props/crate.png")
-		and Assets.texture("outlaw_parts/head").resource_path.ends_with("placeholder/props/bottle.png"))
+	ok("A skin's override is used first", Assets.texture("prop/barrel").resource_path.ends_with("placeholder/props/bottle.png")
+		and Assets.texture("outlaw/aim").resource_path.ends_with("placeholder/props/bottle.png"))
 	ok("A missing override falls back to the standard art",
 		Assets.texture("prop/tnt").resource_path == plain["prop/tnt"][0] and Assets.skin_fallbacks.has("prop/tnt")
 		and Assets.skin_fallbacks.has("no_such/name (not in the manifest)"))
@@ -510,9 +623,9 @@ func _skins() -> void:
 		Assets.texture("prop/crate").resource_path == plain["prop/crate"][0] and Assets.texture("fx/blood").resource_path == plain["fx/blood"][0])
 	ok("A skin's shader goes on the final full-screen layer", Skins.final_material() != null)
 	ok("Switching skins never changes geometry or hit areas", hitbox_snapshot() == plain_hits)
-	var rig := CutoutRig.make("outlaw", self)
-	ok("Skinned rig parts still build", rig.parts.head.sprite_frames != null and rig.parts.has("gun_hand"))
-	rig.free()
+	var skinned := AssetSprite.make("outlaw/aim", self)
+	ok("Skinned poses still build", skinned.sprite_frames != null and skinned.sprite_frames.has_animation("aim"))
+	skinned.free()
 	Skins.apply(standard)
 	ok("Switching back to Standard restores every image", art_snapshot() == plain and Skins.final_material() == null)
 	ok("Hit areas match the standard skin after switching back", hitbox_snapshot() == plain_hits)

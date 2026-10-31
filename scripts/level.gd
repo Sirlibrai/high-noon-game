@@ -79,7 +79,11 @@ var events: Array[String] = []
 
 var fx: FxLayer
 var _hitbox := Vector2(14, 19)
+## This level's cover layout (see _layout): old and new cover centres, and the spread p.
+var _spread := {"p": 1.0, "old": [160.0], "new": [160.0]}
 var _decal_layer: Node2D
+var _shadow_layer: Node2D
+var _tumble_shadow: AssetSprite
 var _window_clips: Array[Control] = []
 var _back_props: Node2D
 var _actors: Control
@@ -126,14 +130,19 @@ func setup(chapter: int, index: int) -> void:
 	else:
 		bullets = int(L.bullets)
 		cyl = mini(int(weapon.cyl), bullets)
+		_spread = _layout()
 		for cv in L.covers:
 			var size: Array = GameState.cover_sizes[cv[0]]
-			covers.append({"type": cv[0], "x": float(cv[1]), "w": int(size[0]), "h": int(size[1]), "alive": true, "holes": []})
-		for x in L.get("bottles", []):
-			bottles.append({"x": float(x), "y": float(G.bottle.rail_y), "alive": true})
+			var old_w: float = GameState.kit_cover_sizes[cv[0]][0]
+			var centre := spread_x(float(cv[1]) + old_w / 2)
+			covers.append({"type": cv[0], "x": centre - float(size[0]) / 2, "w": float(size[0]), "h": float(size[1]), "alive": true, "holes": []})
+		var bottle_w: float = G.bottle.hitbox[0]
+		for x in L.get("bottles", []):  # levels.json gives the left edge of a 4-unit bottle
+			bottles.append({"x": spread_x(float(x) + 2) - bottle_w / 2, "y": float(G.bottle.rail_y), "alive": true})
 		if L.has("sign"):
-			hang_sign = {"x": float(L["sign"]), "y": float(G.sign.hang_y), "w": int(G.sign.board[0]), "h": int(G.sign.board[1]),
-				"rope_top": float(G.sign.rope_top), "state": "hang", "vy": 0.0, "swing": 0.0}
+			var board_w: float = G.sign.board[0]  # levels.json gives the left edge of a 22-unit board
+			hang_sign = {"x": spread_x(float(L["sign"]) + 11) - board_w / 2, "y": float(G.sign.hang_y), "w": board_w, "h": float(G.sign.board[1]),
+				"chain_top": float(G.sign.chain_top), "state": "hang", "vy": 0.0, "swing": 0.0}
 		for k in L.enemies.size():
 			var d: Dictionary = L.enemies[k]
 			var e := {"state": "hidden", "t": 0.0, "wait": 0.7 + k * 0.55 + randf() * 0.8, "exp": 0.0, "alive": true, "fall": 0.0, "lean": 1, "aim_max": 0.0}
@@ -144,7 +153,7 @@ func setup(chapter: int, index: int) -> void:
 			elif d.has("run"):
 				e.merge({"kind": "runner", "c": int(d.run[0]), "from": int(d.run[0]), "to": int(d.run[1]), "run_p": 0.0, "side": "up"})
 			elif d.has("hostage"):
-				e.merge({"kind": "hostage", "hx": float(d.hostage)})
+				e.merge({"kind": "hostage", "hx": spread_x(float(d.hostage))})
 			elif d.get("eli", false):
 				e.merge({"kind": "runner", "c": int(d.from), "from": int(d.from), "to": int(d.to), "run_p": 0.0, "side": "up",
 					"eli": true, "armor": true, "cracks": [], "hp": 3, "spot": -1, "wait": float(G.iron_eli.first_wait)})
@@ -225,6 +234,64 @@ func grant_offer(type: String) -> void:
 
 # ---------- geometry (all from data/geometry.json and cover_sizes.json) ----------
 
+## This level's layout (geometry.json "layout"): the cover is 1.7x the prototype's size, so it is
+## spread about its own middle just enough not to overlap (factor p). If that no longer fits the
+## safe area, only the wide empty gaps shrink (tight groups keep their spacing), then the whole
+## row slides inside. Blast radii use p, so every puzzle reaches exactly what it did before.
+func _layout() -> Dictionary:
+	var LY: Dictionary = G.layout
+	var lo := float(LY.safe[0])
+	var hi := float(LY.safe[1])
+	var cs: Array = []
+	for cv in L.get("covers", []):
+		cs.append([float(cv[1]) + float(GameState.kit_cover_sizes[cv[0]][0]) / 2, float(GameState.cover_sizes[cv[0]][0])])
+	if cs.is_empty():
+		return {"p": 1.0, "old": [160.0], "new": [160.0]}
+	cs.sort_custom(func(a, b): return a[0] < b[0])
+	var p := 1.0
+	for k in cs.size() - 1:
+		p = maxf(p, ((cs[k][1] + cs[k + 1][1]) / 2 + float(LY.gap)) / (cs[k + 1][0] - cs[k][0]))
+	var mid: float = (cs[0][0] + cs[-1][0]) / 2
+	var old: Array = cs.map(func(c): return c[0])
+	var new: Array = cs.map(func(c): return mid + (c[0] - mid) * p)
+	var width: float = (new[-1] + cs[-1][1] / 2) - (new[0] - cs[0][1] / 2)
+	if width > hi - lo:  # too wide: take the excess out of the gaps that have room to spare
+		var slack: Array = []
+		var total := 0.0
+		for k in cs.size() - 1:
+			var s: float = (new[k + 1] - new[k]) - ((cs[k][1] + cs[k + 1][1]) / 2 + float(LY.gap))
+			slack.append(s)
+			total += s
+		var take: float = minf(1.0, (width - (hi - lo)) / maxf(total, 0.001))
+		var shift := 0.0
+		for k in cs.size() - 1:
+			shift += slack[k] * take
+			new[k + 1] -= shift
+	var left: float = new[0] - cs[0][1] / 2
+	var right: float = new[-1] + cs[-1][1] / 2
+	var slide := 0.0
+	if left < lo:
+		slide = lo - left
+	elif right > hi:
+		slide = hi - right
+	return {"p": p, "old": old, "new": new.map(func(x): return x + slide)}
+
+
+## Where a position from levels.json lands in this level's layout: between two covers it keeps
+## its place between their new centres; beyond the ends it moves with the spread.
+func spread_x(x: float) -> float:
+	var o: Array = _spread.old
+	var n: Array = _spread.new
+	if x <= o[0] or o.size() == 1:
+		return n[0] + (x - o[0]) * _spread.p
+	if x >= o[-1]:
+		return n[-1] + (x - o[-1]) * _spread.p
+	for k in o.size() - 1:
+		if x <= o[k + 1]:
+			return lerpf(n[k], n[k + 1], (x - o[k]) / (o[k + 1] - o[k]))
+	return x
+
+
 static func _vec(a: Array) -> Vector2:
 	return Vector2(a[0], a[1])
 
@@ -269,6 +336,16 @@ func rect_of(e: Dictionary) -> Rect2:
 	return r
 
 
+## The part of an outlaw you can see (and hit): his hit area above the top of the cover he hides behind.
+func visible_rect(e: Dictionary) -> Rect2:
+	var r := rect_of(e)
+	if (e.kind == "cover" or (e.kind == "runner" and e.state != "run")) and covers[e.c].alive:
+		var top: float = GY - covers[e.c].h
+		if r.end.y > top:
+			r.size.y = maxf(0, top - r.position.y)
+	return r
+
+
 static func in_r(p: Vector2, r: Rect2, extra := 0.0) -> bool:
 	return r.size.x > 0 and p.x >= r.position.x - extra and p.x < r.end.x + extra and p.y >= r.position.y - extra and p.y < r.end.y + extra
 
@@ -285,6 +362,17 @@ func hostage_rect(e: Dictionary) -> Rect2:
 func bottle_rect(b: Dictionary) -> Rect2:
 	var hb := _vec(G.bottle.hitbox)
 	return Rect2(b.x, b.y - hb.y, hb.x, hb.y)
+
+
+## The hanging sign's two chains, as hit areas.
+func chain_rects() -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	if hang_sign == null:
+		return out
+	var cw: float = G.sign.chain_width
+	for cx in G.sign.chains_x:
+		out.append(Rect2(hang_sign.x + cx - cw / 2, hang_sign.chain_top, cw, hang_sign.y - hang_sign.chain_top))
+	return out
 
 
 func duel_zone() -> Rect2:
@@ -438,7 +526,7 @@ func _update_eli(dt: float) -> void:
 	if hang_sign != null and hang_sign.state == "down" and not el.cracks.has("sign"):
 		hang_sign.reset = hang_sign.get("reset", reset) - dt
 		if hang_sign.reset <= 0:
-			hang_sign.merge({"state": "hang", "y": float(G.sign.hang_y), "rope_top": float(G.sign.rope_top), "vy": 0.0}, true)
+			hang_sign.merge({"state": "hang", "y": float(G.sign.hang_y), "chain_top": float(G.sign.chain_top), "vy": 0.0}, true)
 			hang_sign.erase("reset")
 			callout.emit("They hang the sign back up.", true, 1000)
 
@@ -481,22 +569,22 @@ func explode(c: Dictionary) -> void:
 		if not e.alive:
 			continue
 		if e.kind == "hostage":
-			if absf(e.hx - cx) < T.hostage_radius:
+			if absf(e.hx - cx) < T.hostage_radius * _spread.p:
 				fail("The blast caught the hostage.", "hostage")
 				return
 			continue
 		var r := geo(e)
-		if Vector2(r.x + _hitbox.x / 2 - cx, r.y + 10 - cy).length() < T.kill_radius and e.kind != "window":
+		if Vector2(r.x + _hitbox.x / 2 - cx, r.y + _hitbox.y / 2 - cy).length() < T.kill_radius * _spread.p and e.kind != "window":
 			kill(e, "tnt")
 	for o in covers:
-		if o.alive and not is_same(o, c) and absf(o.x + o.w / 2.0 - cx) < T.cover_radius:
+		if o.alive and not is_same(o, c) and absf(o.x + o.w / 2.0 - cx) < T.cover_radius * _spread.p:
 			if o.type == "tnt":
 				pending_blasts.append({"c": o, "t": float(T.chain_delay)})
 			elif o.type != "wagon":
 				o.alive = false
 				fx.burst(o.x + o.w / 2.0, GY - o.h / 2.0, 14, "fx/debris", 2)
 	for b in bottles:
-		if b.alive and absf(b.x - cx) < T.bottle_radius:
+		if b.alive and absf(b.x - cx) < T.bottle_radius * _spread.p:
 			b.alive = false
 
 
@@ -595,6 +683,12 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 			fx.burst(q.x, q.y, 18, "fx/dynamite_blast", 2.4)
 			callout.emit("Nice shooting!", true, 800)
 			return
+	# A hostage-taker leaning out stands in front of any cover beside him (at 1.7x he can overlap
+	# Bank job's TNT barrel), so a tap on his body hits him before the cover behind.
+	for e in enemies:
+		if e.kind == "hostage" and e.alive and e.state in ["rise", "aim", "drop"] and e.exp >= G.hostage.exposed_min and in_r(p, rect_of(e)):
+			kill(e)
+			return
 	for e in enemies:
 		if e.alive and e.state == "run" and in_r(p, rect_of(e), pad(G.runner.hit_pad)):
 			kill(e)
@@ -611,13 +705,12 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 			fx.burst(p.x, p.y, 6, "fx/splinter", 1)
 			return
 	if hang_sign != null and hang_sign.state == "hang":
-		var rw: float = G.sign.rope_width
-		var rope := Rect2(hang_sign.x + hang_sign.w / 2.0 - rw / 2, hang_sign.rope_top, rw, hang_sign.y - hang_sign.rope_top)
-		if in_r(p, rope, pad(G.sign.rope_pad)):
-			hang_sign.state = "fall"
-			AudioManager.sfx("thunk")
-			fx.burst(hang_sign.x + hang_sign.w / 2.0, hang_sign.rope_top + 2, 5, "fx/rope")
-			return
+		for chain in chain_rects():  # the sign hangs from two chains; a shot at either drops it
+			if in_r(p, chain, pad(G.sign.chain_pad)):
+				hang_sign.state = "fall"
+				AudioManager.sfx("clank")
+				fx.burst(chain.get_center().x, hang_sign.chain_top + 2, 5, "fx/chain")
+				return
 		if in_r(p, Rect2(hang_sign.x, hang_sign.y, hang_sign.w, hang_sign.h)):
 			hang_sign.swing = 1.0
 			AudioManager.sfx("thunk")
@@ -876,7 +969,7 @@ func _update_sign() -> void:
 		return
 	s.vy += G.sign.gravity
 	s.y += s.vy
-	s.rope_top += s.vy * 0.2
+	s.chain_top += s.vy * 0.2
 	var wagon: Variant = null
 	for c in covers:
 		if c.alive and c.type == "wagon" and s.x + s.w > c.x and s.x < c.x + c.w:
@@ -993,9 +1086,15 @@ func _gun_pivot() -> Vector2:
 		H - g.pivot_from_corner[1] + kick * g.kick_offset[1] + (g.reload_drop if reload_t > 0 else 0))
 
 
+## The gun's tilt: its aim plus a little of the recoil (kick_tilt keeps the kick a nod, not a flip).
+func _gun_tilt() -> float:
+	return gun_ang + kick * float(G.gun.kick_tilt)
+
+
 ## Where the muzzle is, from the gun art's "muzzle" point in the manifest.
 func _muzzle() -> Vector2:
-	return _gun_pivot() + (Assets.point(gun_asset + "/idle", "muzzle") * float(G.gun.scale) / PPU).rotated(gun_ang + kick)
+	var art := gun_asset + "/idle"
+	return _gun_pivot() + (Assets.point(art, "muzzle") * float(Assets.meta(art, "scale", 1.0)) / PPU).rotated(_gun_tilt())
 
 
 func _muzzle_smoke() -> void:
@@ -1010,7 +1109,9 @@ func _aim_gun() -> void:
 	var want: float = g.rest_angle
 	if t != null and duel == null:
 		var p := _gun_pivot()
-		want = clampf(atan2(-(t.y - p.y), -(t.x - p.x)), g.angle_range[0], g.angle_range[1])
+		# The art already points its barrel up-left by barrel_angle; the gun only nods from there.
+		var barrel: float = Assets.meta(gun_asset + "/idle", "barrel_angle", 0.0)
+		want = clampf(atan2(-(t.y - p.y), -(t.x - p.x)) - barrel, g.angle_range[0], g.angle_range[1])
 	if reload_t > 0:
 		want = g.reload_angle
 	gun_ang += (want - gun_ang) * 0.25
@@ -1040,6 +1141,14 @@ func _place(n: Node2D, at: Vector2) -> void:
 	n.position = at * PPU - (parent.position if parent is Control else Vector2.ZERO)
 
 
+## A soft contact shadow, `width` units across, centred at x on the ground line y.
+func _cast(x: float, y: float, width: float) -> AssetSprite:
+	var s := AssetSprite.make("fx/contact_shadow", _shadow_layer)
+	s.extra_scale = Vector2.ONE * width * PPU / Assets.texture("fx/contact_shadow").get_width()
+	_place(s, Vector2(x, y))
+	return s
+
+
 ## Iron Eli's last stage swaps the street for a duel: start the view again.
 func _rebuild_view() -> void:
 	for c in get_children():
@@ -1061,26 +1170,28 @@ func _build_view() -> void:
 	for layer in art.layers:
 		AssetSprite.make(layer, bg)
 	_decal_layer = _layer()
+	_shadow_layer = _layer()  # soft contact shadows, on the street behind everything standing on it
 	for i in SC.windows.size():
 		var w: Dictionary = SC.windows[i]
 		_window_clips.append(_clip(Rect2(w.x, w.y, w.w, w.h)))
 	var frames := _layer()
-	for i in SC.windows.size():
+	for i in art.get("window_frames", []).size():  # painted streets have their window frames in the painting
 		_place(AssetSprite.make(art.window_frames[i], frames), Vector2(SC.windows[i].x, SC.windows[i].y))
 	_back_props = _layer()
 	for b in bottles:
 		b.node = AssetSprite.make("prop/bottle", _back_props)
+		b.shadow = _cast(bottle_rect(b).get_center().x, b.y, bottle_rect(b).size.x * 1.6)
 		_place(b.node, Vector2(bottle_rect(b).get_center().x, b.y))
 	if tut != null:
 		_arrow = AssetSprite.make("fx/tutorial_arrow", _back_props)
 	if hang_sign != null:
-		_sign_nodes = {"beam": AssetSprite.make("prop/sign_beam", _back_props), "rope": AssetSprite.make("prop/sign_rope", _back_props),
-			"board": AssetSprite.make("prop/sign", _back_props)}
+		_sign_nodes = {"board": AssetSprite.make("prop/sign", _back_props)}  # the painted sign includes its chains
 	# Street outlaws are clipped at the ground line, so they sink behind cover as they drop.
 	_actors = _clip(Rect2(-1000, -1000, 3000, 1000 + GY))
 	_cover_layer = _layer()
 	for c in covers:
 		c.node = AssetSprite.make("prop/" + c.type, _cover_layer)
+		c.shadow = _cast(c.x + c.w / 2.0, GY, c.w * 1.15)
 		_place(c.node, Vector2(c.x + c.w / 2.0, GY))
 	_front = _layer()
 	if L.get("puzzle", false) and L.has("hintTarget") and hint_lvl >= 2:
@@ -1099,19 +1210,20 @@ func _build_view() -> void:
 	if duel != null:
 		_duel_layer = _layer()
 		var dn := {}
-		dn.boss = CutoutRig.make(boss_set, _duel_layer)
-		dn.boss.scale = Vector2.ONE * float(G.duel.boss_scale)  # duel bosses stand closer
+		dn.boss = AssetSprite.make(boss_set + "/idle", _duel_layer)
+		dn.boss.extra_scale = Vector2.ONE * float(G.duel.boss_scale)  # duel bosses stand closer
 		dn.twitch = AssetSprite.make("duel/twitch", _duel_layer)
 		if L.get("cards", false):
 			dn.box = AssetSprite.make("duel/card_box", _duel_layer)
 			dn.card = AssetSprite.make("card/A", _duel_layer)
 		dn.smoke = _layer(_duel_layer)
-		dn.shadow = AssetSprite.make("duel/shadow", _duel_layer)
+		dn.shadow = _cast(SC.duelX, GY, 28.0 * float(G.duel.boss_scale) * 0.6)
 		dn.pips = []
 		for i in int(L.hp):
 			dn.pips.append(AssetSprite.make("duel/pip_full", _duel_layer))
 		_duel_nodes = dn
 	_tumble = AssetSprite.make("prop/tumbleweed", self)
+	_tumble_shadow = _cast(0, GY, 16)
 	fx = FxLayer.new()
 	fx.ppu = PPU
 	add_child(fx)
@@ -1141,6 +1253,7 @@ func _sync_view() -> void:
 	decals = decals.filter(func(dc): return dc.life > 0)
 	for b in bottles:
 		b.node.visible = b.alive
+		b.shadow.visible = b.alive
 	if _arrow != null:
 		var first: Variant = null
 		for b in bottles:
@@ -1154,6 +1267,7 @@ func _sync_view() -> void:
 		_sync_sign()
 	for c in covers:
 		c.node.visible = c.alive
+		c.shadow.visible = c.alive
 		if c.node.get_child_count() > c.holes.size():  # a replaced TNT keg has no holes
 			for hole in c.node.get_children():
 				hole.queue_free()
@@ -1174,10 +1288,11 @@ func _sync_view() -> void:
 	if tumble.on:
 		var T: Dictionary = G.tumbleweed
 		_place(_tumble, Vector2(roundf(tumble.x) + 5, GY - float(T.above_ground) - absf(roundf(sin(tumble.x * 0.08) * T.bounce))))
+		_place(_tumble_shadow, Vector2(roundf(tumble.x) + 5, GY - float(T.above_ground)))
+	_tumble_shadow.visible = tumble.on
 	_gun.show_asset(gun_asset + ("/reload" if reload_t > 0 else "/idle"))
 	_place(_gun, _gun_pivot().round())
-	_gun.rotation = gun_ang + kick
-	_gun.scale = Vector2.ONE * float(G.gun.scale)
+	_gun.rotation = _gun_tilt()
 	_muzzle_flash.visible = flash > 0
 	if flash:
 		_place(_muzzle_flash, _muzzle().round())
@@ -1192,13 +1307,6 @@ func _sync_view() -> void:
 
 func _sync_sign() -> void:
 	var s: Dictionary = hang_sign
-	var S: Dictionary = G.sign
-	var hanging: bool = s.state == "hang"
-	_place(_sign_nodes.beam, Vector2(s.x - S.beam_overhang, s.rope_top - 2 if hanging else float(S.fallen_beam_y)))
-	_sign_nodes.rope.visible = hanging
-	if hanging:
-		_place(_sign_nodes.rope, Vector2(s.x + s.w / 2.0, s.rope_top))
-		_sign_nodes.rope.scale.y = (s.y - s.rope_top) * PPU / Assets.texture("prop/sign_rope").get_height()
 	_place(_sign_nodes.board, Vector2(s.x + roundf(sin(frame * 0.2) * s.swing * 2), roundf(s.y)))
 
 
@@ -1212,41 +1320,81 @@ func _enemy_parent(e: Dictionary) -> Node:
 
 
 func _ensure_enemy_nodes(e: Dictionary) -> void:
-	var rig := "iron_eli" if e.get("eli", false) else "outlaw"
+	var who := "iron_eli" if e.get("eli", false) else "outlaw"
 	if not e.has("node"):
-		e.node = CutoutRig.make(rig, _enemy_parent(e))
+		e.node = AssetSprite.make(who + "/idle", _enemy_parent(e))
+		if e.kind != "window":
+			e.shadow = _cast(0, GY, _hitbox.x * 1.1)
 		if e.kind == "hostage":
 			e.hostage_node = AssetSprite.make("hostage/idle", _hostage_layer)
+			e.hostage_shadow = _cast(e.hx, GY, _hitbox.x * 1.1)
 		if e.kind == "runner":  # in the open he is drawn in front of the cover
-			e.run_node = CutoutRig.make(rig, _front)
-			e.run_node.pose("run")
+			e.run_node = AssetSprite.make(who + "/run_right", _front)
+			e.run_shadow = _cast(0, GY, _hitbox.x * 1.1)
+		if e.get("eli", false):  # his breastplate rides on whichever sprite shows him
+			e.armour_node = AssetSprite.make("iron_eli_armour/intact", e.node)
+			e.run_armour_node = AssetSprite.make("iron_eli_armour/intact", e.run_node)
 	var parent := _enemy_parent(e)
 	if e.node.get_parent() != parent:  # Iron Eli moves between windows and cover in the chase
 		e.node.reparent(parent, false)
 
 
-## Picks each outlaw's clip from the gameplay state, and places him at his feet.
+## The pose an outlaw shows: [pose, mirrored, placed by the top of his hit area].
+## Over cover and in windows he aims, rising behind the cover or the sill (both drawn in
+## front of him); he leans round a cover's side or a hostage; with his cover gone he stands and aims.
+func _pose(e: Dictionary) -> Array:
+	var pose := "aim"
+	var flip := false
+	var by_top := false
+	match e.kind:
+		"window":
+			pose = "aim"
+		"hostage":
+			pose = "lean"
+			flip = e.lean > 0
+		_:
+			var cover_gone: bool = not covers[e.c].alive
+			if cover_gone:
+				pose = "aim"
+			elif e.get("side") == "left" or e.get("side") == "right":
+				pose = "lean"
+				flip = e.side == "right"  # the art leans out to the left of its cover
+			else:  # rising behind his cover, which hides him below the chest
+				pose = "aim"
+	if e.state == "dead":
+		pose = "hit" if e.fall < float(G.outlaw.hit_pose_time) else "fall"
+	elif e.get("flinch", 0.0) > 0:  # Iron Eli reels when hit
+		pose = "hit"
+	return [pose, flip, by_top]
+
+
+## Shows each outlaw's pose and places it: at his feet, or for a crouch so his
+## head sits at the top of his hit area. Art never changes where he can be hit.
 func _sync_enemy(e: Dictionary) -> void:
 	_ensure_enemy_nodes(e)
 	var O: Dictionary = G.outlaw
+	var who := "iron_eli/" if e.get("eli", false) else "outlaw/"
 	var gm := geo(e)
-	var feet := Vector2(gm.x + _hitbox.x / 2, gm.y + _hitbox.y)
-	var n: CutoutRig = e.node
+	var n: AssetSprite = e.node
 	var running: bool = gm.get("running", false)
 	if e.has("run_node"):
 		e.run_node.visible = running
 		if running:
-			_place(e.run_node, feet)
+			var to_right: bool = covers[e.to].x > covers[e.from].x
+			e.run_node.show_asset(who + ("run_right" if to_right else "run_left"))
+			_place(e.run_node, Vector2(gm.x + _hitbox.x / 2, gm.y + _hitbox.y))
+			_place(e.run_shadow, Vector2(gm.x + _hitbox.x / 2, GY))
+		e.run_shadow.visible = running
 	n.visible = not running
 	n.rotation = 0.0
 	n.modulate.a = 1.0
-	if e.get("eli", false):
-		var plate := "iron_eli_parts/armour" + ("_cracked" if not e.cracks.is_empty() else "")
-		for rig in [n, e.run_node]:
-			rig.set_part_visible("armour", e.armor)
-			rig.set_part_asset("armour", plate)
+	var p := _pose(e)
+	n.show_asset(who + p[0])
+	n.flip_h = p[1]
+	var feet := Vector2(gm.x + _hitbox.x / 2, gm.y + _hitbox.y)
+	if p[2]:
+		feet.y = gm.y + Assets.anchor(who + p[0]).y * n.scale.y / PPU
 	if e.state == "dead":
-		n.pose("fall")
 		if e.fall > O.fall_time:
 			n.visible = false
 		else:
@@ -1254,15 +1402,16 @@ func _sync_enemy(e: Dictionary) -> void:
 			feet.y += e.fall * O.fall_drop
 			if e.kind != "window":
 				n.rotation = minf(O.fall_max_angle, e.fall * O.fall_spin)
-	elif e.get("flinch", 0.0) > 0:
-		n.pose("flinch")
-	elif e.state == "aim":
-		n.pose("aim")
-	elif e.state == "rise":
-		n.pose("pop_up")
-	else:
-		n.pose("idle")
 	_place(n, feet)
+	if e.has("shadow"):  # only when his feet are on the street (peekers stand behind their cover)
+		e.shadow.visible = n.visible and feet.y >= GY - 3
+		e.shadow.modulate.a = n.modulate.a
+		_place(e.shadow, Vector2(feet.x, GY))
+	if e.get("eli", false):
+		var plate := "iron_eli_armour/" + ("cracked" if not e.cracks.is_empty() else "intact")
+		for a in [e.armour_node, e.run_armour_node]:
+			a.show_asset(plate)
+			a.visible = e.armor
 	if e.has("hostage_node"):
 		var body := hostage_rect(e)
 		_place(e.hostage_node, Vector2(e.hx, body.end.y))
@@ -1285,7 +1434,7 @@ func _sync_rings() -> void:
 		if not on:
 			continue
 		var r := geo(e)
-		var center := Vector2(r.x + _hitbox.x / 2, r.y + 9)
+		var center := Vector2(r.x + _hitbox.x / 2, r.y + _hitbox.y * 0.45)
 		var k := minf(1.0, e.t / (e.aim_max if e.aim_max > 0 else L.aim))
 		var urgent := k < 0.35
 		var tex := Assets.texture("fx/draw_ring_urgent" if urgent else "fx/draw_ring")
@@ -1294,7 +1443,7 @@ func _sync_rings() -> void:
 		e.ring.position = center * PPU - Assets.anchor("fx/draw_ring")
 		e.ring.value = k
 		e.alert.visible = urgent and (frame >> 2) % 2 == 1
-		_place(e.alert, Vector2(center.x - 1, r.y - 8))
+		_place(e.alert, Vector2(center.x - 1, center.y - Assets.texture("fx/draw_ring").get_height() / PPU / 2 - 4))
 
 
 func _sync_throws() -> void:
@@ -1323,7 +1472,7 @@ func _sync_hint_glow() -> void:
 	if t.has("cover") and int(t.cover) < covers.size() and covers[int(t.cover)].alive:
 		r = cover_rect(covers[int(t.cover)])
 	if t.get("sign", false) and hang_sign != null and hang_sign.state == "hang":
-		r = Rect2(hang_sign.x + hang_sign.w / 2.0 - 4, hang_sign.rope_top, 8, hang_sign.y - hang_sign.rope_top + 3)
+		r = Rect2(hang_sign.x - 2, hang_sign.chain_top, hang_sign.w + 4, hang_sign.y - hang_sign.chain_top + 3)  # both chains
 	_hint_glow.visible = r != null
 	if r != null:
 		var grown: Rect2 = r.grow(2.5)
@@ -1338,8 +1487,8 @@ func _sync_duel() -> void:
 	var D: Dictionary = G.duel
 	var DX: float = SC.duelX
 	var dx := (1 if (frame >> 1) % 2 else -1) if d.twitch > 0 else 0
-	var boss: CutoutRig = dn.boss
-	boss.pose("fall" if d.fall else ("aim" if d.pose == "aim" else ("flinch" if d.pose == "hit" else "idle")))
+	var boss: AssetSprite = dn.boss
+	boss.show_asset(boss_set + "/" + ("fall" if d.fall else ("aim" if d.pose == "aim" else ("hit" if d.pose == "hit" else "idle"))))
 	var jitter := float(frame % 4 - 2) if d.pose == "hit" and not d.fall else 0.0
 	_place(boss, Vector2(DX + dx + jitter, GY))
 	boss.rotation = minf(1.4, d.fall * 2.5) if d.fall else 0.0
@@ -1362,7 +1511,6 @@ func _sync_duel() -> void:
 	for node in dn.smoke.get_children():
 		if not d.smoke.any(func(s): return s.get("node") == node):
 			node.queue_free()
-	_place(dn.shadow, Vector2(DX, GY))
 	var hp := int(L.hp)
 	for i in hp:
 		dn.pips[i].show_asset("duel/pip_full" if i < d.hp else "duel/pip_empty")

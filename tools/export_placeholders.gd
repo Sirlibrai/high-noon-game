@@ -8,8 +8,8 @@ extends SceneTree
 ## 320×180 units. Recipes pass the scale for the old 640×360 base (PX = 2 per
 ## unit, UI at 1×); save() multiplies every image by OUTPUT_SCALE for the
 ## 1280×720 base, so world art lands at 4 pixels per unit and UI at 2×.
-## Kit sprites (art/sprites, art/guns) are copied at the same density, and each
-## outlaw is also cut into parts for its cut-out rig (_rig_parts).
+## Kit sprites (art/sprites, art/guns) are copied at the same density. Main Street, its props,
+## the outlaw and the Peacemaker now use painted art (tools/import_painted.gd); their old recipes were removed.
 ## Nothing here runs in the game.
 
 const OUT := "res://assets/placeholder/"
@@ -26,8 +26,6 @@ var written := 0
 
 func _init() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
-	_backgrounds()
-	_props()
 	_characters()
 	_guns()
 	_fx()
@@ -37,6 +35,7 @@ func _init() -> void:
 	_office()
 	_posters()
 	_home_ui()
+	_painted_ui()
 	print("Exported %d placeholder images to %s" % [written, OUT])
 	quit()
 
@@ -125,188 +124,37 @@ static func hash32(n: int) -> int:
 	return n
 
 
-# ---------- Main Street background layers (buildBg) ----------
-
-func _backgrounds() -> void:
-	var ox := -BG_LEFT  # image x = world x + ox
-	# Sky with the sun.
-	var sky := img(BG_W, H)
-	var top := Color("#E8894A")
-	var bottom := Color("#F7D9A0")
-	for y in 130:
-		rect(sky, 0, y, BG_W, 1, top.lerp(bottom, clampf((y + 0.5) / 110.0, 0, 1)))
-	rect(sky, 0, 130, BG_W, H - 130, bottom)
-	disc(sky, 160 + ox, 34, 12, "#FFE9B0")
-	save(sky, "main_street/sky.png")
-
-	# Distant mesas.
-	var far := img(BG_W, H)
-	for m in [[-74, 72, 50], [-28, 66, 30], [0, 70, 60], [50, 60, 40], [230, 64, 90], [290, 74, 40], [336, 66, 34], [366, 60, 34]]:
-		rect(far, m[0] + ox, m[1], m[2], 60, "#D07E52")
-		rect(far, m[0] + 4 + ox, m[1] - 4, m[2] - 8, 4, "#D07E52")
-	save(far, "main_street/far.png")
-
-	# Saloon, bank and their neighbours, with the painted signs.
-	var b := img(BG_W, H)
-	_plank(b, -78 + ox, 52, 84, 76, "#8A6440", "#704E30")
-	rect(b, -80 + ox, 50, 88, 3, "#5A3A24")
-	rect(b, -60 + ox, 66, 22, 18, "#2A1A12")
-	_plank(b, 8 + ox, 30, 140, 98, "#9A4430", "#7E3424")
-	rect(b, 6 + ox, 28, 144, 3, "#6E4526")
-	rect(b, 8 + ox, 90, 140, 4, "#6E4526")
-	rect(b, 40 + ox, 36, 76, 14, "#F2D9A8")
-	rect(b, 40 + ox, 36, 76, 1, "#6E4526")
-	rect(b, 40 + ox, 49, 76, 1, "#6E4526")
-	_plank(b, 172 + ox, 42, 140, 86, "#6E9A8E", "#577F74")
-	rect(b, 170 + ox, 40, 144, 3, "#7A5232")
-	rect(b, 172 + ox, 98, 140, 4, "#7A5232")
-	rect(b, 216 + ox, 48, 52, 14, "#E8E2D2")
-	rect(b, 216 + ox, 48, 52, 1, "#7A5232")
-	rect(b, 216 + ox, 61, 52, 1, "#7A5232")
-	_plank(b, 314 + ox, 58, 86, 70, "#B08A58", "#94713F")
-	rect(b, 312 + ox, 56, 90, 3, "#6E4526")
-	rect(b, 340 + ox, 72, 22, 18, "#2A1A12")
-	rect(b, 148 + ox, 60, 24, 68, "#5A3A24")
-	var windows: Array = _json("data/scenes.json").street.windows
-	for w in windows:
-		rect(b, w.x + ox, w.y, w.w, w.h, "#2A1A12")
-	rect(b, 66 + ox, 98, 28, 30, "#2A1A12")
-	rect(b, 226 + ox, 102, 26, 26, "#2A1A12")
-	rect(b, 68 + ox, 106, 11, 14, "#C08A54")
-	rect(b, 81 + ox, 106, 11, 14, "#C08A54")
-	rect(b, 228 + ox, 102, 22, 26, "#7A5232")
-	rect(b, 238 + ox, 102, 2, 26, "#5A3A24")
-	text(b, "SALOON", 54 + ox, 39, "#8E2A1E", 2)
-	text(b, "BANK", 226 + ox, 51, "#2A3A5A", 2)
-	save(b, "main_street/buildings.png")
-
-	# Boardwalk, posts, the bottle rail and the street.
-	var s := img(BG_W, H)
-	rect(s, 0, 128, BG_W, 6, "#7A5232")
-	for i in range(0, BG_W, 10):
-		rect(s, i, 128, 1, 6, "#5A3A24")
-	for px in [-70, -30, 10, 60, 100, 146, 174, 220, 260, 310, 350, 390]:
-		rect(s, px + ox, 94, 3, 34, "#6E4526")
-	rect(s, 0, 118, BG_W, 2, "#6E4526")
-	rect(s, 0, 134, BG_W, H - 134, "#D9A86C")
-	for i in 390:
-		var hh := hash32(i * 7 + 3)
-		var x := hh % 320 + ox if i < 260 else (hh % 160 if hh % 160 < 80 else hh % 160 + 320)
-		rect(s, x, 136 + (hh >> 9) % 44, 1 + (hh >> 3) % 3, 1, "#C9965A" if hh % 3 else "#E6BC84")
-	rect(s, 0, 134, BG_W, 2, Color(120 / 255.0, 70 / 255.0, 30 / 255.0, 0.25))
-	save(s, "main_street/street.png")
-
-	# Window frames, drawn in front of window outlaws. Anchor: the window's top-left.
-	for i in windows.size():
-		var w: Dictionary = windows[i]
-		var f := img(w.w + 4, w.h + 5)
-		rect(f, 0, 0, w.w + 4, 2, "#5A3A24")
-		rect(f, 0, w.h + 2, w.w + 4, 3, "#5A3A24")
-		rect(f, 0, 2, 2, w.h, "#5A3A24")
-		rect(f, w.w + 2, 2, 2, w.h, "#5A3A24")
-		var curtain := "#E8C36A" if w.x < 150 else "#B8323E"
-		rect(f, 2, 2, 4, w.h - 4, curtain)
-		rect(f, w.w - 2, 2, 4, w.h - 4, curtain)
-		save(f, "main_street/window_%d.png" % i)
-
-
-func _plank(im: Image, x0: int, y0: int, w: int, h: int, base: String, line: String) -> void:
-	rect(im, x0, y0, w, h, base)
-	for yy in range(y0 + 4, y0 + h, 5):
-		rect(im, x0, yy, w, 1, line)
-	for i in w * h / 60:
-		var hh := hash32(i + x0 * 31)
-		rect(im, x0 + hh % w, y0 + (hh >> 8) % h, 2, 1, line)
-
-
 func _json(path: String) -> Variant:
 	return JSON.parse_string(FileAccess.get_file_as_string(KIT + path))
 
 
-# ---------- props (drawCover, the sign) ----------
+# ---------- characters: pose placeholders for the bosses ----------
 
-func _props() -> void:
-	for kind in ["barrel", "tnt"]:
-		var tnt: bool = kind == "tnt"
-		for spark in ([0, 1] if tnt else [0]):
-			var im := img(14, 23)
-			var y := 23
-			rect(im, 0, y - 18, 14, 18, "#3A2414")
-			rect(im, 1, y - 17, 12, 16, "#B8323E" if tnt else "#8A5A32")
-			rect(im, 1, y - 14, 12, 2, "#8E2530" if tnt else "#6E4526")
-			rect(im, 1, y - 6, 12, 2, "#8E2530" if tnt else "#6E4526")
-			if tnt:
-				text(im, "TNT", 2, y - 12, "#F4E2B8")
-				rect(im, 6, y - 22, 1, 4, "#E8DCC4")
-				if spark:
-					rect(im, 6, y - 23, 1, 1, "#FFD45E")
-			save(im.get_region(Rect2i(0, 0 if tnt else 5, 14, 23 if tnt else 18)), "props/%s%s.png" % [kind, "_%d" % spark if tnt else ""])
-	var crate := img(18, 22)
-	for bx in [[0, 11, 18, 11], [2, 0, 14, 11]]:
-		rect(crate, bx[0], bx[1], bx[2], bx[3], "#5A3A24")
-		rect(crate, bx[0] + 1, bx[1] + 1, bx[2] - 2, bx[3] - 2, "#C08A54")
-		rect(crate, bx[0] + 1, floorf(bx[1] + bx[3] / 2.0 - 1), bx[2] - 2, 1, "#8E5E34")
-	save(crate, "props/crate.png")
-	var wagon := img(50, 26)
-	rect(wagon, 0, 4, 50, 14, "#5A3A24")
-	rect(wagon, 1, 5, 48, 12, "#9C6A43")
-	for i in 3:
-		rect(wagon, 1, 8 + i * 4, 48, 1, "#865834")
-	rect(wagon, 4, 0, 42, 4, "#E8DCC4")
-	for cx in [9, 41]:
-		disc(wagon, cx, 19, 7, "#3A2414")
-		disc(wagon, cx, 19, 5, "#8A5A32")
-		rect(wagon, cx - 1, 18, 2, 2, "#3A2414")
-	save(wagon, "props/wagon.png")
-	var trough := img(34, 12)
-	rect(trough, 0, 0, 34, 12, "#5A3A24")
-	rect(trough, 1, 1, 32, 10, "#9C6A43")
-	rect(trough, 2, 1, 30, 2, "#5FA8C8")
-	save(trough, "props/trough.png")
-	var sign := img(22, 12)
-	rect(sign, 0, 0, 22, 12, "#3A2414")
-	rect(sign, 1, 1, 20, 10, "#C9A25A")
-	text(sign, "INN", 5, 4, "#5A2E1A")
-	save(sign, "props/sign.png")
-	var beam := img(30, 3)
-	rect(beam, 0, 0, 30, 3, "#5A3A24")
-	save(beam, "props/sign_beam.png")
-	var rope := img(1, 5)
-	rect(rope, 0, 0, 1, 5, "#E8DCC4")
-	save(rope, "props/sign_rope.png")
-
-
-# ---------- characters: cut-out rig parts ----------
-
-## Cut-out rig parts for each outlaw, cut from the kit's 14×19 sprites. Real art replaces each part
-## separately; the joints and animations live in the manifest's "rigs" section.
+## Pose placeholders for the characters that have no painted art yet (Iron Eli, Black Jack), with the same
+## pose names as the painted outlaw in assets/painted, so they swap straight in when their art arrives.
 func _characters() -> void:
-	for who in ["outlaw", "iron_eli", "black_jack"]:
+	for who in ["iron_eli", "black_jack"]:
 		var idle := kit_image("art/sprites/%s_idle.png" % who)
 		var aim := kit_image("art/sprites/%s_aim.png" % who)
 		var run := kit_image("art/sprites/%s_run.png" % who)
-		save(idle.get_region(Rect2i(0, 0, 14, 8)), "%s_parts/head.png" % who)  # hat, face and bandana
-		var torso := idle.get_region(Rect2i(2, 8, 10, 6))
-		torso.fill_rect(Rect2i(0, 1, 2, 4), Color(0, 0, 0, 0))  # the arms are separate parts
-		torso.fill_rect(Rect2i(8, 1, 2, 4), Color(0, 0, 0, 0))
-		save(torso, "%s_parts/torso.png" % who)
-		save(idle.get_region(Rect2i(1, 9, 3, 4)), "%s_parts/arm_back.png" % who)
-		save(idle.get_region(Rect2i(10, 9, 3, 4)), "%s_parts/arm_front.png" % who)
-		save(aim.get_region(Rect2i(2, 10, 10, 3)), "%s_parts/gun_hand.png" % who)  # both hands on the revolver
-		save(idle.get_region(Rect2i(0, 14, 14, 5)), "%s_parts/legs.png" % who)
-		save(run.get_region(Rect2i(0, 14, 14, 5)), "%s_parts/legs_run.png" % who)
-	# Iron Eli's breastplate, a part over his torso while he wears it (drawEnemy).
+		var poses := {"idle": idle, "aim": aim, "hit": idle, "crouch": aim, "lean": aim, "run_right": run, "fall": idle}
+		for pose in poses:
+			save(poses[pose], "%s/%s.png" % [who, pose])
+		var left: Image = run.duplicate()
+		left.flip_x()
+		save(left, "%s/run_left.png" % who)
+	# Iron Eli's breastplate, drawn over him while he wears it (drawEnemy). Same frame as his pose sprites.
 	for cracked in [false, true]:
-		var plate := img(10, 6)  # same box as the torso part
-		rect(plate, 1, 0, 8, 6, "#3A3F4A")
-		rect(plate, 2, 1, 6, 4, "#8A93A2")
-		for rv in [[2, 1], [7, 1], [2, 4], [7, 4]]:
+		var plate := img(14, 19)
+		rect(plate, 3, 8, 8, 6, "#3A3F4A")
+		rect(plate, 4, 9, 6, 4, "#8A93A2")
+		for rv in [[4, 9], [9, 9], [4, 12], [9, 12]]:
 			rect(plate, rv[0], rv[1], 1, 1, "#C9D0DA")
 		if cracked:
-			for cr in [[4, 1, 1, 2], [5, 2, 1, 2], [4, 4, 1, 1], [6, 1, 1, 1]]:
+			for cr in [[6, 9, 1, 2], [7, 10, 1, 2], [6, 12, 1, 1], [8, 9, 1, 1]]:
 				rect(plate, cr[0], cr[1], cr[2], cr[3], "#1E1A16")
-		save(plate, "iron_eli_parts/armour_%s.png" % ("cracked" if cracked else "intact"))
-	for name in ["hostage", "bottle", "tumbleweed"]:
+		save(plate, "iron_eli/armour_%s.png" % ("cracked" if cracked else "intact"))
+	for name in ["hostage", "bottle"]:
 		save(kit_image("art/sprites/%s.png" % name), "props/%s.png" % name)
 
 
@@ -327,7 +175,7 @@ const PARTICLES := {
 	"blood": ["#B8323E", "#F4E2B8"], "dust_ground": ["#E6BC84", "#C9965A"], "dust_wall": ["#5A3A24", "#C08A54"],
 	"splinter": ["#C08A54", "#5A3A24"], "glass": ["#3FA45B", "#C8F2D2"], "smoke": ["#E6E6E6", "#BDBDC4"],
 	"blast": ["#FFD45E", "#FF8A1F", "#E2463B", "#3A2414", "#8A5A32"], "debris": ["#8A5A32", "#C08A54"],
-	"rope": ["#E8DCC4"], "sign_dust": ["#E6BC84", "#8A5A32"], "ping": ["#FFFFFF", "#FFE9B0", "#9AA3B5"],
+	"chain": ["#5A5F6A", "#9AA3B5"], "sign_dust": ["#E6BC84", "#8A5A32"], "ping": ["#FFFFFF", "#FFE9B0", "#9AA3B5"],
 	"armour": ["#9AA3B5", "#5A5F6A", "#FFFFFF"], "dynamite_blast": ["#FFD45E", "#FF8A1F", "#E2463B"]}
 
 
@@ -366,14 +214,6 @@ func _fx() -> void:
 		rect(c, 6, 0, 1, 4, col)
 		rect(c, 6, 9, 1, 4, col)
 		save(c, "fx/crosshair_%s.png" % kind)
-	for kind in {"normal": "#FFE9B0", "urgent": "#FF3B2F"}.keys():
-		var ring := img(24, 24)
-		var col := Color({"normal": "#FFE9B0", "urgent": "#FF3B2F"}[kind])
-		for y in 24:
-			for x in 24:
-				if absf(Vector2(x + 0.5, y + 0.5).distance_to(Vector2(12, 12)) - 11) < 0.6:
-					ring.set_pixel(x, y, col)
-		save(ring, "fx/draw_ring_%s.png" % kind)
 	var alert := img(3, 5)
 	text(alert, "!", 0, 0, "#FF3B2F")
 	save(alert, "fx/alert.png")
@@ -435,7 +275,6 @@ func _duel() -> void:
 
 # ---------- UI (drawn at UI pixel size, not ×2) ----------
 
-const HEART := [".xx.xx.", "xxxxxxx", "xxxxxxx", ".xxxxx.", "..xxx..", "...x..."]
 const ICONS := {
 	"pause": ["............", "..xxx..xxx..", "..xxx..xxx..", "..xxx..xxx..", "..xxx..xxx..", "..xxx..xxx..", "..xxx..xxx..",
 		"..xxx..xxx..", "..xxx..xxx..", "..xxx..xxx..", "..xxx..xxx..", "............"],
@@ -451,15 +290,6 @@ const STAR := [Vector2(5, 0.6), Vector2(6.3, 3.5), Vector2(9.4, 3.8), Vector2(7.
 
 
 func _ui() -> void:
-	save(rows(HEART, {"x": "#FF5A5F"}), "ui/heart_full.png", 3)
-	var empty := rows(HEART, {"x": "#FFFFFF"})
-	_fade(empty, 0.35)
-	save(empty, "ui/heart_empty.png", 3)
-	for full in [true, false]:
-		var b := img(6, 16)
-		rect(b, 1, 0, 4, 4, "#C9C9C9" if full else Color(1, 1, 1, 0.2))
-		rect(b, 0, 4, 6, 12, "#E8B84A" if full else Color(1, 1, 1, 0.3))
-		save(b, "ui/bullet_%s.png" % ("full" if full else "empty"), 1)
 	for name in ICONS:
 		save(rows(ICONS[name], {"x": "#FFFFFF"}), "ui/icon_%s.png" % name)
 	for on in [true, false]:
@@ -482,8 +312,6 @@ func _ui() -> void:
 	save(_rounded(24, 24, 9, Color(1, 1, 1, 0), Color(1, 1, 1, 0), 0, Color(1, 1, 1, 0.5)), "ui/button_ghost.png", 1)
 	save(_rounded(24, 24, 9, Color(1, 1, 1, 0.15), Color(1, 1, 1, 0), 0, Color(1, 1, 1, 0.5)), "ui/button_ghost_pressed.png", 1)
 	save(_rounded(28, 28, 13, Color("#F6E7CC"), Color("#A8452A"), 3), "ui/pill.png", 1)
-	save(_rounded(20, 20, 7, Color(42 / 255.0, 26 / 255.0, 16 / 255.0, 0.4), Color(), 0), "ui/icon_button.png", 1)
-	save(_rounded(20, 20, 7, Color(42 / 255.0, 26 / 255.0, 16 / 255.0, 0.65), Color(), 0), "ui/icon_button_pressed.png", 1)
 	var shade := img(4, 4)
 	rect(shade, 0, 0, 4, 4, Color(42 / 255.0, 22 / 255.0, 10 / 255.0, 0.62))
 	save(shade, "ui/shade.png", 1)
@@ -980,3 +808,113 @@ func _home_ui() -> void:
 	var off := rows(["....xxxxx", "....x...x", "....x...x", "....x...x", "....xxxxx", "..xxx..xx", ".xxxx.xxx", ".xxx..xx.", "..x......"], {"x": "#FFFFFF"})
 	_fade(off, 0.4)
 	save(off, "ui/icon_music_off.png")
+
+
+# ================= painted-style HUD and gameplay effects (smooth, drawn at final size) =================
+
+func save_exact(im: Image, path: String) -> void:
+	var full := ProjectSettings.globalize_path(OUT + path)
+	DirAccess.make_dir_recursive_absolute(full.get_base_dir())
+	im.save_png(full)
+	written += 1
+
+
+## Renders a smooth image: `shade` gives the colour at a point (pixel units), averaged over 4×4 samples.
+func smooth(w: int, h: int, shade: Callable) -> Image:
+	var im := img(w, h)
+	for y in h:
+		for x in w:
+			var acc := Color(0, 0, 0, 0)
+			for sy in 4:
+				for sx in 4:
+					var c: Color = shade.call(x + (sx + 0.5) / 4.0, y + (sy + 0.5) / 4.0)
+					acc += Color(c.r * c.a, c.g * c.a, c.b * c.a, c.a)
+			acc /= 16.0
+			im.set_pixel(x, y, Color(acc.r / acc.a, acc.g / acc.a, acc.b / acc.a, acc.a) if acc.a > 0.001 else Color(0, 0, 0, 0))
+	return im
+
+
+func noise2(x: float, y: float) -> float:
+	return float(hash32(int(x) * 73856093 ^ int(y) * 19349663) % 1000) / 1000.0
+
+
+func _painted_ui() -> void:
+	# A heart: (x² + y² - 1)³ - x² y³ <= 0, shaded from a warm top-left light, with a dark rim and a gloss.
+	for full in [true, false]:
+		save_exact(smooth(52, 48, func(px: float, py: float) -> Color:
+			var x := (px - 26.0) / 18.0
+			var y := -(py - 27.0) / 18.0
+			var f := pow(x * x + y * y - 1, 3) - x * x * y * y * y
+			if f > 0:
+				return Color(0, 0, 0, 0)
+			var rim := f > -0.035
+			if not full:
+				return Color("#2A1A10") if rim else Color(0.32, 0.2, 0.14, 0.55)
+			if rim:
+				return Color("#4A0E10")
+			var light := clampf(0.55 - 0.45 * x + 0.35 * y, 0, 1)
+			var c := Color("#8E1A22").lerp(Color("#E8414A"), light)
+			var gloss := Vector2((x + 0.45) / 0.28, (y - 0.45) / 0.16).length()
+			return c.lerp(Color(1, 0.9, 0.85), clampf(1 - gloss, 0, 1) * 0.8)),
+			"ui_painted/heart_%s.png" % ("full" if full else "empty"))
+	# A brass cartridge with a copper bullet, lit from the left.
+	for full in [true, false]:
+		save_exact(smooth(18, 46, func(px: float, py: float) -> Color:
+			var u := (px - 9.0) / 7.0  # -1..1 across
+			if py < 2 or py > 45:
+				return Color(0, 0, 0, 0)
+			var shade := clampf(0.75 - 0.6 * u - 0.5 * u * u, 0, 1)
+			if py < 16:  # the bullet's rounded tip
+				var t := (16.0 - py) / 14.0
+				if absf(u) > sqrt(maxf(0, 1 - t * t)) * 0.85:
+					return Color(0, 0, 0, 0)
+				return Color("#6E3B1E").lerp(Color("#E59A5E"), shade) if full else Color(0.25, 0.17, 0.12, 0.5)
+			if absf(u) > 1:
+				return Color(0, 0, 0, 0)
+			if not full:
+				return Color(0.25, 0.17, 0.12, 0.5)
+			var c := Color("#7A5418").lerp(Color("#F6D27A"), shade)
+			if py > 41:  # the rim
+				c = c.darkened(0.35)
+			return c),
+			"ui_painted/bullet_%s.png" % ("full" if full else "empty"))
+	# Wooden planks with grain, a dark frame and brass nails: a nine-patch for HUD panels and buttons.
+	for kind in ["panel", "button", "button_pressed"]:
+		var dark := 0.18 if kind == "button_pressed" else 0.0
+		save_exact(smooth(64, 64, func(px: float, py: float) -> Color:
+			var edge := minf(minf(px, 64 - px), minf(py, 64 - py))
+			var r := 10.0
+			var cx := clampf(px, r, 64 - r)
+			var cy := clampf(py, r, 64 - r)
+			if Vector2(px - cx, py - cy).length() > r:
+				return Color(0, 0, 0, 0)
+			if edge < 3.5:
+				return Color("#2A1A10")
+			var plank := int(py / 16.0)
+			var grain := sin(px * 0.35 + plank * 7.0 + sin(px * 0.07 + plank) * 3.0) * 0.5 + 0.5
+			var c := Color("#7A4A26").lerp(Color("#A86A38"), grain * 0.55 + noise2(px, py) * 0.2)
+			if fmod(py, 16.0) < 1.2 and py > 4 and py < 60:
+				c = Color("#3A2414")  # the seam between planks
+			if edge < 6:
+				c = c.lightened(0.18)  # bevel
+			for nail in [Vector2(9, 9), Vector2(55, 9), Vector2(9, 55), Vector2(55, 55)]:
+				var d := Vector2(px, py).distance_to(nail)
+				if d < 2.4:
+					return Color("#5A3A1A").lerp(Color("#F2C14E"), clampf(1.2 - d / 2.4, 0, 1))
+			return c.darkened(dark)),
+			"ui_painted/wood_%s.png" % kind)
+	# Glowing draw rings: a bright core line with a soft halo, gold and (when time is short) red.
+	for kind in {"normal": ["#FFF4C8", "#FFC85A"], "urgent": ["#FFE0D0", "#FF3B2F"]}.keys():
+		var cols: Array = {"normal": ["#FFF4C8", "#FFC85A"], "urgent": ["#FFE0D0", "#FF3B2F"]}[kind]
+		save_exact(smooth(176, 176, func(px: float, py: float) -> Color:
+			var d := absf(Vector2(px, py).distance_to(Vector2(88, 88)) - 72.0)
+			var core := clampf(1.0 - d / 2.6, 0, 1)
+			var halo := exp(-d * d / 60.0) * 0.55
+			var a := maxf(core, halo)
+			return Color(Color(cols[1]).lerp(Color(cols[0]), core), a)),
+			"ui_painted/draw_ring_%s.png" % kind)
+	# A soft dark contact shadow, stretched under whatever stands on the street.
+	save_exact(smooth(128, 32, func(px: float, py: float) -> Color:
+		var d := Vector2((px - 64.0) / 62.0, (py - 16.0) / 14.0).length()
+		return Color(0.12, 0.06, 0.02, clampf(pow(maxf(0, 1 - d * d), 1.6) * 0.6, 0, 1))),
+		"ui_painted/contact_shadow.png")

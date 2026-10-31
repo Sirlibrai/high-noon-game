@@ -7,45 +7,71 @@
   ],
   "pixels_per_unit": 4,
   "stage": {"width": 320, "height": 180},
+  "layout": {
+    "_about": "The gameplay plane is drawn 1.7x the prototype's size against the painted street; hit areas here and cover_sizes below are scaled with it. Each level spreads its cover about its own middle just enough that the bigger cover doesn't overlap (with gap units between), then slides it inside the safe area (units: the 16:9 screen less a margin, and clear of the revolver in the bottom-right corner). Its bottles, hostages and sign move with it, and its blast radii are multiplied by the same spread.",
+    "plane_scale": 1.7,
+    "gap": 2,
+    "safe": [10, 288]
+  },
+  "cover_sizes": {
+    "_about": "Overrides the kit's cover_sizes.json at the 1.7x plane scale: [hit width, height an outlaw hides behind].",
+    "barrel": [23.8, 30.6],
+    "crate": [30.6, 37.4],
+    "wagon": [85, 44.2],
+    "trough": [57.8, 20.4],
+    "tnt": [23.8, 30.6]
+  },
+  "scenes": {
+    "_about": "Overrides for the kit's scenes.json, measured on the painted art. Main Street (assets/painted/main_street.png) is drawn 720 pixels tall and centred, so 1 painting pixel = 0.877 screen pixels: windows are the dark openings between the shutters of the saloon's and bank's upper floors, and the ground line is the dirt in front of the boardwalks.",
+    "street": {
+      "GY": 156,
+      "windows": [
+        {"x": 27.1, "y": 58.8, "w": 14.5, "h": 16.4},
+        {"x": 72.1, "y": 58.8, "w": 14.5, "h": 16.4},
+        {"x": 236.5, "y": 58.8, "w": 14.3, "h": 16.4},
+        {"x": 277.1, "y": 58.8, "w": 14.7, "h": 16.4}
+      ]
+    }
+  },
 
   "outlaw": {
-    "hitbox": [14, 19],
-    "hide_gap": 2,
-    "peek_up": 12,
-    "peek_side_extra": 5,
+    "hitbox": [24, 32],
+    "hide_gap": 3.4,
+    "peek_up": 10,
+    "peek_side_extra": 8.5,
     "rise_time": 0.16,
     "drop_time": 0.16,
     "hit_pad": {"touch": 6, "mouse": 3},
     "fall_time": 1.2,
-    "fall_drop": 10,
-    "fall_spin": 4,
-    "fall_max_angle": 1.5,
-    "hit_flash_time": 0.08
+    "fall_drop": 4,
+    "fall_spin": 1,
+    "fall_max_angle": 0.25,
+    "hit_flash_time": 0.08,
+    "hit_pose_time": 0.3
   },
-  "window_outlaw": {"hidden_below_sill": 1, "exposed_from_top": 3},
+  "window_outlaw": {"hidden_below_sill": 1, "exposed_from_top": 1.5},
   "runner": {"run_time": 1.5, "dash_chance": 0.55, "hit_pad": {"touch": 6, "mouse": 3}},
   "hostage": {
-    "lean": 13,
-    "captor_top_above_ground": 21,
-    "body": [14, 15],
-    "body_top_above_ground": 17,
+    "lean": 22,
+    "captor_top_above_ground": 36,
+    "body": [24, 26],
+    "body_top_above_ground": 29,
     "body_pad": {"touch": -2, "mouse": 0},
     "exposed_min": 0.5,
     "aim_multiplier": 1.3
   },
-  "bottle": {"hitbox": [4, 9], "rail_y": 118, "hit_pad": {"touch": 6, "mouse": 3}},
+  "bottle": {"hitbox": [7, 15], "rail_y": 118, "hit_pad": {"touch": 6, "mouse": 3}},
   "sign": {
-    "board": [22, 12],
-    "hang_y": 104,
-    "rope_top": 99,
-    "rope_width": 2,
-    "rope_pad": {"touch": 7, "mouse": 4},
-    "beam_overhang": 4,
-    "fallen_beam_y": 97,
+    "board": [37.4, 20.4],
+    "hang_y": 84,
+    "chain_top": 77,
+    "chains_x": [5.4, 31.1],
+    "chain_width": 3.4,
+    "chain_pad": {"touch": 7, "mouse": 4},
     "gravity": 0.35,
-    "crush_margin": 14
+    "crush_margin": 24
   },
-  "tnt": {"kill_radius": 38, "hostage_radius": 38, "cover_radius": 34, "bottle_radius": 40, "chain_delay": 0.15},
+  "tnt": {"_about": "Radii at no spread; each level multiplies them by its layout spread (see layout), so blasts reach exactly what they did in the prototype.", "kill_radius": 38, "hostage_radius": 38, "cover_radius": 34, "bottle_radius": 40, "chain_delay": 0.15},
   "duel": {
     "zone": [56, 62],
     "zone_below_ground": 4,
@@ -59,15 +85,15 @@
     "twitch_spark": [15, -15]
   },
   "gun": {
-    "_about": "Small and low in the bottom-right corner (style guide): scale shrinks the gun art, the pivot sits just inside the screen's corner, and the tilt stays shallow so it never covers a target.",
-    "scale": 0.55,
-    "pivot_from_corner": [8, -1],
-    "kick_offset": [6, 4],
+    "_about": "Small and low in the bottom-right corner (style guide). The pivot is the gun art's anchor (the painted glove's cuff), placed just past the screen's corner. Angles are added to the barrel's own angle in the art (manifest barrel_angle) and kept small: the gun only nods towards the target.",
+    "pivot_from_corner": [4, -2],
+    "kick_offset": [4, 3],
+    "kick_tilt": 0.25,
     "reload_drop": 6,
-    "rest_angle": 0.3,
-    "reload_angle": -0.45,
-    "angle_range": [0.05, 0.6],
-    "brass_from_pivot": [-6, -8]
+    "rest_angle": 0,
+    "reload_angle": -0.25,
+    "angle_range": [-0.05, 0.1],
+    "brass_from_pivot": [-8, -22]
   },
   "dynamite": {
     "flight_time": 1.7,

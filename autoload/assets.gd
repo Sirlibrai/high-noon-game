@@ -16,9 +16,6 @@ const THEME := "res://ui/theme.tres"
 const DEFAULT_FPS := 8.0
 
 var scenes: Dictionary = {}
-## Cut-out characters (manifest "rigs") and their shared clips ("rig_animations"); see CutoutRig.
-var rigs: Dictionary = {}
-var rig_animations: Dictionary = {}
 var _entries: Dictionary = {}  # name -> {frames, fps, loop, anchor, points}: what the game shows now
 var _base: Dictionary = {}  # the same, for the standard art only
 var _sets: Dictionary = {}  # set name -> SpriteFrames
@@ -40,8 +37,6 @@ func load_manifest() -> void:
 		push_error(errors[-1])
 		return
 	scenes = raw.get("scenes", {})
-	rigs = raw.get("rigs", {})
-	rig_animations = raw.get("rig_animations", {})
 	for name in raw.assets:
 		var e := _parse(name, raw.assets[name])
 		if e.frames.is_empty():

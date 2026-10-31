@@ -70,14 +70,14 @@ func _choose(lv: Level) -> Variant:
 			continue
 		if e.state == "run" and e.run_p > 0.2 and e.run_p < 0.8:
 			return lv.rect_of(e).get_center()
-		if e.state == "aim":
-			return lv.rect_of(e).get_center()
+		if e.state == "aim":  # tap what shows above his cover, like a player would
+			return lv.visible_rect(e).get_center()
 	return null
 
 
-func _rope(lv: Level) -> Vector2:
-	var s: Dictionary = lv.hang_sign
-	return Vector2(s.x + s.w / 2.0, (s.rope_top + s.y) / 2.0)
+## The middle of the INN sign's left chain.
+func _chain(lv: Level) -> Vector2:
+	return lv.chain_rects()[0].get_center()
 
 
 func _key(lv: Level) -> Variant:
@@ -85,7 +85,7 @@ func _key(lv: Level) -> Variant:
 	if t.has("cover"):
 		return lv.cover_rect(lv.covers[int(t.cover)]).get_center()
 	if t.get("sign", false) and lv.hang_sign != null:
-		return _rope(lv)
+		return _chain(lv)
 	return null
 
 
@@ -93,14 +93,14 @@ func _eli_tool(lv: Level, eli: Dictionary) -> Variant:
 	if eli.state == "run":
 		return null
 	var r := lv.geo(eli)
-	var centre := Vector2(r.x + lv._hitbox.x / 2, r.y + 10)
+	var centre := Vector2(r.x + lv._hitbox.x / 2, r.y + lv._hitbox.y / 2)  # as Level.explode measures
 	if not eli.cracks.has("tnt"):
 		for c in lv.covers:
-			if c.type == "tnt" and c.alive and centre.distance_to(lv.cover_rect(c).get_center()) < float(lv.G.tnt.kill_radius) - 0.5:
+			if c.type == "tnt" and c.alive and centre.distance_to(lv.cover_rect(c).get_center()) < float(lv.G.tnt.kill_radius) * lv._spread.p - 0.5:
 				return lv.cover_rect(c).get_center()
 	var s: Variant = lv.hang_sign
 	if not eli.cracks.has("sign") and s != null and s.state == "hang":
 		var m: float = lv.G.sign.crush_margin - 2
 		if centre.x > s.x - m and centre.x < s.x + s.w + m and (eli.state != "hidden" or eli.wait > 0.35):
-			return _rope(lv)
+			return _chain(lv)
 	return null

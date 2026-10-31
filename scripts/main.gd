@@ -90,10 +90,14 @@ func _layout() -> void:
 		level.view_left = -off.x / ppu
 		level.view_right = BASE.x / ppu + off.x / ppu
 	var win := Vector2(DisplayServer.window_get_size())
-	var safe := Rect2(DisplayServer.get_display_safe_area())
+	# The safe area (notch, Dynamic Island, rounded corners) matters on phones, where the game fills the screen;
+	# on a desktop it would only measure the menu bar.
+	var safe := Rect2(DisplayServer.get_display_safe_area()) if OS.has_feature("mobile") else Rect2()
 	var k := vis / win if win.x > 0 and win.y > 0 else Vector2.ONE
 	var left := maxf(0, safe.position.x) * k.x if safe.size.x > 0 else 0.0
 	var right := maxf(0, win.x - safe.end.x) * k.x if safe.size.x > 0 else 0.0
+	var top := maxf(0, safe.position.y) * k.y if safe.size.y > 0 else 0.0
+	_hud_box.add_theme_constant_override("margin_top", int(14 + top))
 	for box in [_hud_box, _home_box]:
 		box.add_theme_constant_override("margin_left", int(12 + left))
 		box.add_theme_constant_override("margin_right", int(12 + right))
@@ -573,28 +577,43 @@ func _build_hud() -> void:
 	add_child(_hud)
 	_hud_box = MarginContainer.new()
 	_hud_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	_hud_box.add_theme_constant_override("margin_top", 20)
+	_hud_box.add_theme_constant_override("margin_top", 14)
 	_hud_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hud.add_child(_hud_box)
 	var bar := HBoxContainer.new()
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hud_box.add_child(bar)
+	# Wooden panels (theme "HudPanel"): hearts and bullets on one, the level name on another.
+	var left := PanelContainer.new()
+	left.theme_type_variation = &"HudPanel"
+	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_child(left)
+	var stock := HBoxContainer.new()
+	stock.add_theme_constant_override("separation", 16)
+	left.add_child(stock)
 	var hearts := HBoxContainer.new()
-	hearts.add_theme_constant_override("separation", 6)
-	bar.add_child(hearts)
+	hearts.add_theme_constant_override("separation", 4)
+	hearts.alignment = BoxContainer.ALIGNMENT_CENTER
+	stock.add_child(hearts)
 	for i in 3:
 		_hearts.append(UiKit.image(hearts, "ui/heart_full"))
 	_ammo = HBoxContainer.new()
-	_ammo.add_theme_constant_override("separation", 6)
-	bar.add_child(_ammo)
-	_lvl_label = UiKit.text(bar, "", &"HudLabel")
-	_lvl_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_lvl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_ammo.add_theme_constant_override("separation", 3)
+	_ammo.alignment = BoxContainer.ALIGNMENT_CENTER
+	stock.add_child(_ammo)
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_child(spacer)
+	var name_panel := PanelContainer.new()
+	name_panel.theme_type_variation = &"HudPanel"
+	name_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_panel.size_flags_horizontal = Control.SIZE_SHRINK_END
+	bar.add_child(name_panel)
+	_lvl_label = UiKit.text(name_panel, "", &"HudLabel")
+	_lvl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_lvl_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# Always one line: on a narrow screen the name is shortened, never wrapped under the buttons.
-	_lvl_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	_lvl_label.clip_text = true
-	_lvl_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_lvl_label.autowrap_mode = TextServer.AUTOWRAP_OFF  # always one line
 	_sound_btn = UiKit.icon_button(bar, "ui/icon_sound_on")
 	_sound_btn.pressed.connect(func():
 		AudioManager.set_sound(not AudioManager.sound_on)

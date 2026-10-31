@@ -19,6 +19,8 @@ var chapters: Array = []
 var level_lists: Dictionary = {}
 var scenes: Dictionary = {}
 var cover_sizes: Dictionary = {}
+## The prototype's cover sizes, before geometry.json scales them: levels.json positions are measured with these.
+var kit_cover_sizes: Dictionary = {}
 var weapons: Array = []
 var weapons_by_id: Dictionary = {}
 var payouts: Array = []
@@ -42,6 +44,16 @@ func _ready() -> void:
 	trophies = _load("trophies")
 	avatar_options = _load("avatar_options")
 	geometry = JSON.parse_string(FileAccess.get_file_as_string(GEOMETRY))
+	# The painted scenes' ground lines and windows (geometry.json) replace the prototype's.
+	var overrides: Dictionary = geometry.get("scenes", {})
+	for key in overrides:
+		if scenes.has(key):
+			scenes[key].merge(overrides[key], true)
+	kit_cover_sizes = cover_sizes.duplicate(true)
+	# Cover at the painted plane's scale (geometry.json) replaces the prototype's sizes.
+	for key in geometry.get("cover_sizes", {}):
+		if cover_sizes.has(key):
+			cover_sizes[key] = geometry.cover_sizes[key]
 	for w in weapons:
 		weapons_by_id[w.id] = w
 

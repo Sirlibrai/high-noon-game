@@ -242,7 +242,7 @@
       "sign": 196,
       "tip": "That sign looks heavy.",
       "puzzle": true,
-      "hint": "Follow the rope above the wagon.",
+      "hint": "Follow the chains above the wagon.",
       "hintTarget": {
         "sign": true
       }

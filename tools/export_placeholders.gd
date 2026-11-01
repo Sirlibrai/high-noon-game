@@ -9,7 +9,9 @@ extends SceneTree
 ## unit, UI at 1×); save() multiplies every image by OUTPUT_SCALE for the
 ## 1280×720 base, so world art lands at 4 pixels per unit and UI at 2×.
 ## Kit sprites (art/sprites, art/guns) are copied at the same density. Main Street, its props,
-## the outlaw and the Peacemaker now use painted art (tools/import_painted.gd); their old recipes were removed.
+## the outlaw and the Peacemaker now use painted art (tools/import_painted.gd), as do the splash, bottles, hanging
+## hardware and most of the UI (tools/import_batch1.gd); their old recipes were removed. The code-drawn hearts,
+## bullets, stars, icons, buttons and panels stay as a fallback the manifest can point back to.
 ## Nothing here runs in the game.
 
 const OUT := "res://assets/placeholder/"
@@ -31,10 +33,9 @@ func _init() -> void:
 	_fx()
 	_duel()
 	_ui()
-	_splash()
+	_screens()
 	_home_ui()
 	_painted_ui()
-	_hangers()
 	_painted_cards()
 	_office_overlays()
 	print("Exported %d placeholder images to %s" % [written, OUT])
@@ -155,8 +156,7 @@ func _characters() -> void:
 			for cr in [[6, 9, 1, 2], [7, 10, 1, 2], [6, 12, 1, 1], [8, 9, 1, 1]]:
 				rect(plate, cr[0], cr[1], cr[2], cr[3], "#1E1A16")
 		save(plate, "iron_eli/armour_%s.png" % ("cracked" if cracked else "intact"))
-	for name in ["hostage", "bottle"]:
-		save(kit_image("art/sprites/%s.png" % name), "props/%s.png" % name)
+	save(kit_image("art/sprites/hostage.png"), "props/hostage.png")
 
 
 # ---------- guns (the kit's guns, plus the reload glint frame) ----------
@@ -174,7 +174,7 @@ func _guns() -> void:
 
 const PARTICLES := {
 	"blood": ["#B8323E", "#F4E2B8"], "dust_ground": ["#E6BC84", "#C9965A"], "dust_wall": ["#5A3A24", "#C08A54"],
-	"splinter": ["#C08A54", "#5A3A24"], "glass": ["#3FA45B", "#C8F2D2"], "smoke": ["#E6E6E6", "#BDBDC4"],
+	"splinter": ["#C08A54", "#5A3A24"], "smoke": ["#E6E6E6", "#BDBDC4"],
 	"blast": ["#FFD45E", "#FF8A1F", "#E2463B", "#3A2414", "#8A5A32"], "debris": ["#8A5A32", "#C08A54"],
 	"chain": ["#5A5F6A", "#9AA3B5"], "sign_dust": ["#E6BC84", "#8A5A32"], "ping": ["#FFFFFF", "#FFE9B0", "#9AA3B5"],
 	"armour": ["#9AA3B5", "#5A5F6A", "#FFFFFF"], "dynamite_blast": ["#FFD45E", "#FF8A1F", "#E2463B"]}
@@ -373,88 +373,8 @@ func vgrad(im: Image, x: int, y: int, w: int, h: int, top: String, bottom: Strin
 		rect(im, x, yy, w, 1, Color(top).lerp(Color(bottom), clampf((yy + 0.5 - y0) / (y1 - y0), 0, 1)))
 
 
-func silhouette_of(im: Image, col: String) -> Image:
-	var out := im.duplicate()
-	for y in out.get_height():
-		for x in out.get_width():
-			if out.get_pixel(x, y).a > 0:
-				out.set_pixel(x, y, Color(col))
-	return out
-
-
-func scaled(im: Image, k: int) -> Image:
-	var out := im.duplicate()
-	out.resize(im.get_width() * k, im.get_height() * k, Image.INTERPOLATE_NEAREST)
-	return out
-
-
-## The default bounty hunter (avatarSprite with the prototype's default avatar).
-func avatar_image() -> Image:
-	var pal := {"k": "#1E1A16", "h": "#4A3426", "b": "#2B1E14", "s": "#A0663F", "e": "#1E1A16", "d": "#B8323E", "c": "#5B4636", "v": "#7A5A3A", "p": "#3A3F5A"}
-	return rows(["...hhhhhhhh...", "...hhhhhhhh...", ".hhhbbbbbbhhh.", "hhhhhhhhhhhhhh", "....ssssss....", "....sesses....",
-		"....dddddd....", "...dddddddd...", "..cccvvvvccc..", ".ccccvvvvcccc.", ".cc.cvvvvc.cc.", ".cc.cvvvvc.cc.", ".ss.cvvvvc.ss.",
-		"....cccccc....", "....pppppp....", "....pp..pp....", "....pp..pp....", "....pp..pp....", "...kkk..kkk..."], pal)
-
-
-func _splash() -> void:
-	var ox := -BG_LEFT
-	var sky := img(BG_W, H)
-	vgrad(sky, 0, 0, BG_W, 112, "#F6EBC8", "#EBC489", 0, 112)
-	disc(sky, 250 + ox, 18, 6, "#FFF8E0")
-	save(sky, "splash/sky.png")
-	var far := img(BG_W, H)
-	for m in [[-80, 88, 80], [0, 86, 70], [54, 92, 50], [220, 84, 100], [330, 90, 70]]:
-		rect(far, m[0] + ox, m[1], m[2], 26, "#DDB07E")
-		rect(far, m[0] + 6 + ox, m[1] - 4, m[2] - 12, 4, "#DDB07E")
-	for m in [[-60, 80, 26, 32], [6, 76, 30, 36], [40, 84, 22, 28], [252, 78, 34, 34], [288, 86, 30, 26], [340, 80, 30, 32]]:
-		rect(far, m[0] + ox, m[1], m[2], m[3], "#B98457")
-		rect(far, m[0] + 3 + ox, m[1] - 4, m[2] - 6, 4, "#B98457")
-	save(far, "splash/far.png")
-	# The clock tower and its face; the minute hand and the bell move, so they are separate.
-	var tower := img(28, 92)  # world x 146..174, y 20..112
-	rect(tower, 2, 16, 24, 76, "#8E5E3A")
-	rect(tower, 0, 14, 28, 4, "#6E4526")
-	for i in 14:
-		rect(tower, 14 - i, i, i * 2, 1, "#5A3A24")
-	disc(tower, 14, 34, 10, "#2E1C10")
-	disc(tower, 14, 34, 8, "#F6EBC8")
-	for k in 12:
-		var a := k / 12.0 * TAU
-		rect(tower, roundf(14 + cos(a) * 7), roundf(34 + sin(a) * 7), 1, 1, "#2E1C10")
-	for r in 5:
-		rect(tower, 14, 34 - r, 1, 1, "#1E120A")
-	save(tower, "splash/tower.png")
-	var hand := img(8, 1)
-	rect(hand, 0, 0, 8, 1, "#1E120A")
-	save(hand, "splash/minute_hand.png")
-	var bell := img(6, 5)
-	rect(bell, 0, 0, 6, 5, "#C9A25A")
-	save(bell, "splash/bell.png")
-	var street := img(BG_W, H)
-	rect(street, 0, 112, BG_W, H - 112, "#D9A86C")
-	for i in 9:
-		rect(street, 0, roundf(118 + i * i * 0.8), BG_W, 1, "#C9965A")
-	save(street, "splash/street.png")
-	for f in 12:  # heat haze, one cycle
-		var haze := img(BG_W, 12)
-		var t := f / 12.0 * TAU / 4.0
-		for i in 6:
-			for x in range(0, BG_W, 2):
-				if sin((x - ox) * 0.12 + t * 4 + i) > 0.6:
-					rect(haze, x, i * 2, 2, 1, Color(1, 248 / 255.0, 224 / 255.0, 0.35))
-		save(haze, "splash/haze_%02d.png" % f)
-	# The two figures, as dark silhouettes three times the street size (drawn 42×57).
-	save(scaled(silhouette_of(avatar_image(), "#1E120A"), 3), "splash/hero.png")
-	var rival := silhouette_of(kit_image("art/sprites/iron_eli_idle.png"), "#1E120A")
-	rival.flip_x()
-	save(scaled(rival, 3), "splash/rival.png")
-	var shadow := img(34, 3)
-	rect(shadow, 0, 0, 34, 3, Color(30 / 255.0, 18 / 255.0, 10 / 255.0, 0.25))
-	save(shadow, "splash/shadow.png")
-	var flash := img(12, 14)
-	rect(flash, 0, 4, 12, 6, "#FFE9B0")
-	rect(flash, 4, 0, 4, 14, "#FFE9B0")
-	save(flash, "splash/muzzle_flash.png")
+## The full-screen white flash and black fade (the splash itself is painted art now: tools/import_batch1.gd).
+func _screens() -> void:
 	for kind in {"white": Color.WHITE, "black": Color.BLACK}:
 		var s := img(4, 4)
 		rect(s, 0, 0, 4, 4, {"white": Color.WHITE, "black": Color.BLACK}[kind])
@@ -604,69 +524,6 @@ func _painted_ui() -> void:
 		var d := Vector2((px - 64.0) / 62.0, (py - 16.0) / 14.0).length()
 		return Color(0.12, 0.06, 0.02, clampf(pow(maxf(0, 1 - d * d), 1.6) * 0.6, 0, 1))),
 		"ui_painted/contact_shadow.png")
-
-
-## Hanging objects (brief v2 §10): every hanging prop hangs from a beam on a post. The bucket is a
-## placeholder for painted art; post, beam and rope are stretched to fit (manifest anchors).
-func _hangers() -> void:
-	var wood := func(u: float, v: float, base: Color) -> Color:  # grain along v, lit from the left
-		var grain := sin(v * 0.9 + sin(v * 0.13) * 4.0 + u * 2.0) * 0.5 + 0.5
-		return base.lerp(base.lightened(0.35), clampf(0.7 - 0.6 * u, 0, 1) * 0.6 + grain * 0.25)
-	# A wooden bucket with iron bands and a wire bail: 18 by 20 units, the body (16 by 13) from pixel (4, 24).
-	save_exact(smooth(72, 80, func(px: float, py: float) -> Color:
-		var bail_c := Vector2(36, 26)
-		var bd := absf(Vector2((px - bail_c.x) / 30.0, (py - bail_c.y) / 22.0).length() - 1.0)
-		if py < 26 and bd < 0.06:
-			return Color("#3A3632").lerp(Color("#9A948A"), clampf(1 - bd / 0.06, 0, 1) * 0.6)
-		if py < 24 or py > 76:
-			return Color(0, 0, 0, 0)
-		var t := (py - 24.0) / 52.0  # 0 at the rim, 1 at the base
-		var half := lerpf(32.0, 27.0, t)  # a little narrower at the base
-		var u := (px - 36.0) / half
-		if absf(u) > 1:
-			return Color(0, 0, 0, 0)
-		if absf(u) > 0.93 or t < 0.05 or t > 0.95:
-			return Color("#2A1A10")
-		var c: Color = wood.call(u, px * 0.6, Color("#7A4A26"))
-		c = c.darkened(clampf(u * u * 0.35, 0, 0.4))
-		if absf(t - 0.22) < 0.05 or absf(t - 0.78) < 0.05:
-			c = Color("#2E2C2A").lerp(Color("#8A8680"), clampf(0.6 - 0.5 * u, 0, 1))
-		if int(px) % 12 == 0:
-			c = c.darkened(0.3)  # the staves
-		return c),
-		"props/bucket.png")
-	# Rope: a twisted strand, tiled by stretching (12 by 64 pixels, anchored at its top centre).
-	save_exact(smooth(12, 64, func(px: float, py: float) -> Color:
-		var u := (px - 6.0) / 4.5
-		if absf(u) > 1:
-			return Color(0, 0, 0, 0)
-		var twist := sin((py + u * 6.0) * 0.8) * 0.5 + 0.5
-		return Color("#6E5230").lerp(Color("#D2B07A"), clampf(0.75 - 0.6 * u, 0, 1) * 0.7 + twist * 0.3)),
-		"props/rope.png")
-	# A square wooden post, 6 by 90 units, anchored at its foot.
-	save_exact(smooth(24, 360, func(px: float, py: float) -> Color:
-		var u := (px - 12.0) / 12.0
-		if absf(u) > 0.92:
-			return Color("#2A1A10") if absf(u) <= 1 else Color(0, 0, 0, 0)
-		if py < 6:
-			return Color("#2A1A10")
-		return wood.call(u, py * 0.25, Color("#6A3E20"))),
-		"props/post.png")
-	# The beam across the top, 54 by 7 units, with an iron bracket and a ring at its far end.
-	save_exact(smooth(216, 32, func(px: float, py: float) -> Color:
-		var ring := absf(Vector2(px - 204.0, py - 24.0).length() - 5.0)
-		if ring < 1.6:
-			return Color("#2E2C2A").lerp(Color("#A09A90"), clampf(1 - ring / 1.6, 0, 1) * 0.6)
-		if py < 2 or py > 26 or px > 214:
-			return Color(0, 0, 0, 0)
-		var v := (py - 14.0) / 12.0
-		if absf(v) > 0.88 or px < 2 or px > 212:
-			return Color("#2A1A10")
-		var c: Color = wood.call(v, px * 0.25, Color("#6A3E20"))
-		if px < 30 and absf(v) > 0.55:
-			c = Color("#2E2C2A").lerp(Color("#8A8680"), 0.3)  # the iron bracket at the post
-		return c),
-		"props/beam.png")
 
 
 ## Signed distance to a five-pointed star pointing up (y up), outer radius r, inner ratio rf.

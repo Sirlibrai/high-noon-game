@@ -136,9 +136,9 @@ func _ready() -> void:
 				if not Assets.has("prop/" + kind):
 					missing.append("prop/" + kind)
 			if l.has("bucket"):
-				needed.append_array(["prop/bucket", "prop/rope"])
+				needed.append_array(["prop/bucket", "prop/hook"])
 			if l.has("bucket") or l.has("sign"):
-				needed.append_array(["prop/post", "prop/beam"])
+				needed.append_array(["prop/signpost", "prop/bracket", "prop/chain"])
 			if c == 0 and l.get("duel", false):
 				for pose in ["idle", "aim", "hit", "fall"]:
 					needed.append(G.BOSS_SPRITES[l.boss] + "/" + pose)
@@ -250,14 +250,15 @@ func _ready() -> void:
 	var pixel_ui: Array = ["ui/card", "ui/button", "ui/button_pressed", "ui/button_ghost", "ui/button_ghost_pressed", "ui/pill", "ui/star_on", "ui/star_off",
 		"ui/icon_pause", "ui/icon_restart", "ui/icon_sound_on", "ui/icon_sound_off", "ui/icon_music", "ui/icon_music_off", "ui/icon_lock",
 		"ui/plaque", "ui/plaque_soon", "ui/wallet", "ui/desk_plaque", "ui/poster_paper", "ui/telegram", "ui/stamp_box", "portrait/ch0"].filter(
-		func(n): return not Assets.texture(n).resource_path.contains("ui_painted"))
+		func(n): return not Assets.texture(n).resource_path.contains("painted/"))
 	ok("Cards, buttons, tags, stars, icons, plates and posters use the painted UI art", pixel_ui.is_empty(), ", ".join(pixel_ui))
 	ok("Every overlay screen sits on the painted wooden card", theme.get_stylebox("panel", "Card") is StyleBoxTexture and UiKit.card(Control.new()).get_parent().theme_type_variation == &"Card")
-	ok("The HUD's panels and buttons are wood", theme.get_stylebox("panel", "HudPanel") is StyleBoxTexture
-		and Assets.texture("ui/hud_panel").resource_path.contains("wood") and Assets.texture("ui/icon_button").resource_path.contains("wood"))
+	ok("The HUD's panel and round buttons are the painted wood, the level name on the brass plaque", theme.get_stylebox("panel", "HudPanel") is StyleBoxTexture
+		and Assets.texture("ui/hud_panel").resource_path.ends_with("painted/ui_panel_small.png") and Assets.texture("ui/icon_button").resource_path.ends_with("painted/ui_button_round.png")
+		and Assets.texture("ui/hud_plaque").resource_path.ends_with("painted/ui_plaque.png"))
 	ok("Hearts, bullets and draw rings are the painted versions",
 		["ui/heart_full", "ui/heart_empty", "ui/bullet_full", "ui/bullet_empty", "fx/draw_ring", "fx/draw_ring_urgent"].all(
-			func(n): return Assets.texture(n).resource_path.contains("ui_painted")))
+			func(n): return Assets.texture(n).resource_path.contains("painted/")))
 
 	# Bank job at the brief v2 scale: the hostage-taker leaning left overlaps the TNT barrel, and stands in front of it.
 	for case in ["captor", "barrel"]:
@@ -327,6 +328,7 @@ func _ready() -> void:
 	_playthroughs()
 	_puzzle_first()
 	_office()
+	_batch1()
 	_iron_eli_rules()
 
 	var passed := results.filter(func(x): return x[1]).size()
@@ -606,13 +608,13 @@ func _skins() -> void:
 	ok("The Standard skin leaves the final screen layer off (no shader)", Skins.final_material() == null)
 
 	var test_skin := {"id": "test", "name": "Test", "price": 0, "shader": "res://tests/fixtures/test_skin.gdshader", "overrides": {
-		"prop/barrel": "placeholder/props/bottle.png",
+		"prop/barrel": "placeholder/props/hostage.png",
 		"prop/tnt": "placeholder/props/no_such_file.png",
-		"no_such/name": "placeholder/props/bottle.png",
-		"outlaw/aim": {"frames": ["placeholder/props/bottle.png"]}}}
+		"no_such/name": "placeholder/props/hostage.png",
+		"outlaw/aim": {"frames": ["placeholder/props/hostage.png"]}}}
 	Skins.apply(test_skin)
-	ok("A skin's override is used first", Assets.texture("prop/barrel").resource_path.ends_with("placeholder/props/bottle.png")
-		and Assets.texture("outlaw/aim").resource_path.ends_with("placeholder/props/bottle.png"))
+	ok("A skin's override is used first", Assets.texture("prop/barrel").resource_path.ends_with("placeholder/props/hostage.png")
+		and Assets.texture("outlaw/aim").resource_path.ends_with("placeholder/props/hostage.png"))
 	ok("A missing override falls back to the standard art",
 		Assets.texture("prop/tnt").resource_path == plain["prop/tnt"][0] and Assets.skin_fallbacks.has("prop/tnt")
 		and Assets.skin_fallbacks.has("no_such/name (not in the manifest)"))
@@ -877,3 +879,104 @@ func _office() -> void:
 
 func _art_named(o: Office, prefix: String) -> Array:
 	return o._art.get_children().filter(func(c): return c is AssetSprite and c.asset.begins_with(prefix)).map(func(c): return c.asset)
+
+
+## Art batch 1: the painted splash, the walk cycle, Target Practice's bottles and bench, the hanging
+## hardware and the painted UI kit. Art only: hit areas stay where geometry.json puts them.
+func _batch1() -> void:
+	var G := GameState
+	# The splash: the painted clocktower, hands on the centre pin sweeping to twelve, the bell swinging.
+	var sp := Splash.new()
+	add_child(sp)
+	ok("The splash is the painted clocktower, not pixel art", Assets.scenes.splash.layers == ["splash/painted"]
+		and ["splash/painted", "splash/bell", "splash/minute", "splash/hour", "splash/hero"].all(func(n): return Assets.texture(n).resource_path.contains("assets/painted/")))
+	ok("The clock's hands pivot on the face's centre pin", sp._minute.position == Splash.CLOCK_PIN and sp._hour.position == Splash.CLOCK_PIN
+		and sp._minute.rotation < -1.0)
+	sp.tap()
+	sp._now += 4.0
+	sp._update_scene()
+	ok("The hands sweep to twelve as the bell tolls, and the bell swings", absf(sp._minute.rotation) < 0.01 and absf(sp._hour.rotation) < 0.01
+		and sp._tolled and absf(sp._bell.rotation) > 0.01)
+	var vis := get_viewport().get_visible_rect().size
+	var face_bottom: float = sp._art.position.y + (Splash.CLOCK_PIN.y + Splash.CLOCK_R) * sp._art.scale.y
+	ok("The title stamps in below the clock face", Splash.TITLE_TOP * vis.y > face_bottom, "title at %d, face to %d" % [Splash.TITLE_TOP * vis.y, face_bottom])
+	ok("Two dark figures face each other across the street", sp._hero.scale.x > 0 and sp._rival.scale.x < 0 and sp._hero.position.x < Splash.CLOCK_PIN.x and sp._rival.position.x > Splash.CLOCK_PIN.x)
+	sp.tap()
+	ok("Tap to draw fires", sp._shot_at >= 0)
+	remove_child(sp)
+	sp.free()
+
+	# The walk: two frames each way, one per stride, bobbing mid-step.
+	var lv := _new_level(2)  # Crossfire's walker
+	var w: Dictionary = lv.enemies.filter(func(e): return e.kind == "walker")[0]
+	var stride: float = G.geometry.walker.stride
+	w.state = "walk"
+	w.dir = 1.0
+	w.x = stride * 10
+	lv._sync_view()
+	var f0: int = w.run_node.frame
+	var y0: float = w.run_node.position.y
+	w.x = stride * 11.5
+	lv._sync_view()
+	ok("A walker walks: two painted frames each way, swapping every stride", w.run_node.asset == "outlaw/walk_right" and w.run_node.frame != f0
+		and Assets.frame_count("outlaw/walk_left") == 2 and Assets.frame_count("outlaw/walk_right") == 2)
+	ok("The walk bobs slightly mid-step", w.run_node.position.y < y0 and y0 - w.run_node.position.y <= float(G.geometry.walker.bob) * 4 + 0.5)
+	w.dir = -1.0
+	lv._sync_view()
+	ok("He faces the way he walks", w.run_node.asset == "outlaw/walk_left")
+	_drop(lv)
+
+	# Target Practice: bottles on benches, shattering in place; the bucket on a chain and hook from a signpost.
+	lv = _new_level(0)
+	ok("The bottles stand on painted benches", lv._benches.size() >= 1 and lv.bottles.all(func(b): return lv._benches.any(
+		func(r): return bottle_x(lv, b) > r.position.x and bottle_x(lv, b) < r.end.x and absf(r.position.y - b.y) < 0.01)))
+	ok("Each bottle is a painted bottle", lv.bottles.all(func(b): return b.node.asset.begins_with("bottle/whole")))
+	var bt: Dictionary = lv.bottles[2]
+	lv.shoot(lv.bottle_rect(bt).get_center(), true)
+	lv._sync_view()
+	ok("A hit bottle swaps to its shattered base and throws painted glass shards", bt.node.asset.begins_with("bottle/broken") and bt.node.visible
+		and lv.fx.parts.any(func(q): return q.node.asset == "fx/glass") and Assets.texture("fx/glass").resource_path.contains("assets/painted/"))
+	var cx: float = lv.bucket.x + lv.bucket.w / 2
+	var rope: Rect2 = lv.bucket_rects()[1]
+	var chain: Sprite2D = lv._sign_nodes.bucket_chain
+	ok("The bucket hangs from a signpost by a chain of repeated links and a hook", lv._posts.size() == 1 and chain.region_enabled
+		and chain.texture_repeat == CanvasItem.TEXTURE_REPEAT_ENABLED and lv._sign_nodes.hook.asset == "prop/hook")
+	ok("The chain is inside its hit area, which is unchanged (the bucket and the chain above it)",
+		absf(chain.position.y / lv.PPU - rope.position.y) < 0.01 and absf(chain.position.x / lv.PPU - rope.get_center().x) < 2.0
+		and rope == Rect2(cx - G.geometry.bucket.rope_width / 2.0, G.geometry.bucket.rope_top, G.geometry.bucket.rope_width, G.geometry.bucket.hang_y - G.geometry.bucket.rope_top))
+	ok("The signpost's arm reaches over the bucket", _arm_covers(lv, [cx]))
+	ok("The signpost stands clear of the benches", lv._benches.all(func(r): return lv._posts[0] < r.position.x or lv._posts[0] > r.end.x))
+	_drop(lv)
+
+	# Every hanging sign: two chains at the hit areas' points, from a signpost's arm, inside the screen.
+	for li in [3, 6, 8]:
+		lv = _new_level(li)
+		var xs: Array = lv.chain_rects().map(func(r): return r.get_center().x)
+		var chains: Array = lv._sign_nodes.chains
+		ok("%s: the INN sign hangs by two chains of links from a signpost" % G.levels_for(0)[li].name, chains.size() == 2
+			and absf(chains[0].position.x / lv.PPU - xs[0]) < 0.01 and absf(chains[1].position.x / lv.PPU - xs[1]) < 0.01
+			and lv._posts.size() == 1 and _arm_covers(lv, xs) and lv._posts[0] > G.geometry.hanging.post_room[0] and lv._posts[0] < G.geometry.hanging.post_room[1])
+		_drop(lv)
+
+	# The UI kit: off states are slashed versions, and a padlock marks locked levels and posters.
+	ok("Sound and music off are the painted icons with a slash", Assets.texture("ui/icon_sound_off").resource_path.ends_with("ui_icon_sound_off.png")
+		and Assets.texture("ui/icon_music_off").resource_path.ends_with("ui_icon_music_off.png"))
+	var locked := Office.wanted_poster(4, "locked", 200)
+	var captured := Office.wanted_poster(0, "captured", 200)
+	ok("Locked posters carry the padlock; captured ones the painted CAPTURED stamp", (locked.get_meta("stamp") as TextureRect).texture == Assets.texture("ui/icon_lock")
+		and (captured.get_meta("stamp") as TextureRect).texture == Assets.texture("ui/stamp_captured") and locked.disabled)
+	locked.free()
+	captured.free()
+
+
+func bottle_x(lv: Level, b: Dictionary) -> float:
+	return lv.bottle_rect(b).get_center().x
+
+
+## Whether the level's signpost arm (between its brace and its end) is over every x.
+func _arm_covers(lv: Level, xs: Array) -> bool:
+	var post: AssetSprite = lv._back_props.get_children().filter(func(c): return c is AssetSprite and c.asset == "prop/signpost")[0]
+	var k: float = post.scale.x
+	var a: float = lv._posts[0] + Assets.point("prop/signpost", "arm_from").x * k / lv.PPU
+	var b: float = lv._posts[0] + Assets.point("prop/signpost", "arm_to").x * k / lv.PPU
+	return xs.all(func(x): return x >= minf(a, b) - 0.01 and x <= maxf(a, b) + 0.01)

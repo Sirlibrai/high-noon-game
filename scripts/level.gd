@@ -108,6 +108,9 @@ var _duel_layer: Node2D
 var _tumble: AssetSprite
 var _arrow: AssetSprite
 var _sign_nodes := {}
+## Where the benches and signposts stand (units), so a new signpost finds clear ground.
+var _benches: Array[Rect2] = []
+var _posts: Array[float] = []
 var _duel_nodes := {}
 var _gun: AssetSprite
 var _muzzle_flash: AssetSprite
@@ -1424,17 +1427,83 @@ func _cast(x: float, y: float, width: float) -> AssetSprite:
 	return s
 
 
-## What a hanging object hangs from (brief v2 §10): a post standing on the street at post_x with a
-## beam at beam_y reaching to end_x. Both are stretched to fit.
-func _hanger(post_x: float, beam_y: float, end_x: float) -> void:
-	var post := AssetSprite.make("prop/post", _back_props)
-	post.extra_scale = Vector2(1, (GY - beam_y + 3) / (Assets.texture("prop/post").get_height() / PPU))
-	_place(post, Vector2(post_x, GY))
-	var beam := AssetSprite.make("prop/beam", _back_props)
-	var from_x := post_x - float(G.sign.post_width) / 2
-	beam.extra_scale = Vector2((end_x - from_x) / (Assets.texture("prop/beam").get_width() / PPU), 1)
-	_place(beam, Vector2(from_x, beam_y))
-	_cast(post_x, GY, 10)
+## What a hanging object hangs from (brief v2 §10): the painted signpost standing on the street beside
+## it, scaled so the underside of its arm is at beam_y, placed so the arm reaches over every hang point
+## (xs). It stands on the left of what it holds, or mirrored on the right when that would leave the
+## screen or stand on a bench or another post. If no signpost fits, a wall bracket holds the first point.
+func _hanger(beam_y: float, xs: Array) -> void:
+	var H: Dictionary = G.hanging
+	var arm_from := Assets.point("prop/signpost", "arm_from")
+	var arm_to := Assets.point("prop/signpost", "arm_to")
+	var k := (GY - beam_y) * PPU / -arm_to.y
+	var near_reach := arm_from.x * k / PPU
+	var far_reach := arm_to.x * k / PPU
+	var lo: float = xs.min()
+	var hi: float = xs.max()
+	for side in [-1.0, 1.0]:
+		for f in [0.95, 0.75, 0.55]:  # the furthest hang point this far along the arm
+			var reach: float = near_reach + (far_reach - near_reach) * f
+			var post_x: float = hi - reach if side < 0 else lo + reach
+			if (lo - post_x if side < 0 else post_x - hi) < near_reach:
+				continue  # the nearest point would be over the post's brace
+			if post_x < H.post_room[0] or post_x > H.post_room[1] or _post_blocked(post_x):
+				continue
+			var post := AssetSprite.make("prop/signpost", _back_props)
+			post.extra_scale = Vector2(-side * k, k)  # the art's arm points right
+			_place(post, Vector2(post_x, GY))
+			_cast(post_x, GY, 12)
+			_posts.append(post_x)
+			return
+	var bracket := AssetSprite.make("prop/bracket", _back_props)
+	bracket.extra_scale = Vector2.ONE * float(H.bracket_scale)
+	_place(bracket, Vector2(xs[0], beam_y))
+
+
+func _post_blocked(x: float) -> bool:
+	var half: float = G.hanging.post_width / 2.0
+	for r in _benches:
+		if x + half > r.position.x and x - half < r.end.x:
+			return true
+	return _posts.any(func(p): return absf(p - x) < half * 3)
+
+
+## A chain of repeated links hanging straight down at x, from top to bottom (units).
+func _chain(x: float, top: float, bottom: float) -> Sprite2D:
+	var c := Sprite2D.new()
+	c.texture = Assets.texture("prop/chain")
+	c.centered = false
+	c.region_enabled = true
+	c.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	c.scale = Vector2.ONE * float(Assets.meta("prop/chain", "scale", 1.0))
+	c.offset.x = -Assets.anchor("prop/chain").x
+	_back_props.add_child(c)
+	_set_chain(c, x, top, bottom)
+	return c
+
+
+func _set_chain(c: Sprite2D, x: float, top: float, bottom: float) -> void:
+	c.region_rect = Rect2(0, 0, c.texture.get_width(), maxf(0, bottom - top) * PPU / c.scale.y)
+	c.position = Vector2(x, top) * PPU
+
+
+## The benches the bottles stand on: one under each group of nearby bottles, its top at the rail,
+## narrowed to the group (never wider than the painting) so the bottles aren't lost on it.
+func _build_benches() -> void:
+	var xs: Array = bottles.map(func(b): return bottle_rect(b).get_center().x)
+	var w := Assets.texture("prop/bench").get_width() * float(Assets.meta("prop/bench", "scale", 1.0)) / PPU
+	var i := 0
+	while i < xs.size():
+		var j := i
+		while j + 1 < xs.size() and xs[j + 1] - xs[j] < w * 0.4:
+			j += 1
+		var mid: float = (xs[i] + xs[j]) / 2
+		var bw := minf(w, maxf(float(G.bottle.bench_min_width), xs[j] - xs[i] + float(G.bottle.bench_min_width) * 0.6))
+		var bench := AssetSprite.make("prop/bench", _back_props)
+		bench.extra_scale = Vector2(bw / w, 1)
+		_place(bench, Vector2(mid, float(G.bottle.rail_y)))
+		_cast(mid, GY, bw * 0.9)
+		_benches.append(Rect2(mid - bw / 2, G.bottle.rail_y, bw, GY - G.bottle.rail_y))
+		i = j + 1
 
 
 ## Iron Eli's last stage swaps the street for a duel: start the view again.
@@ -1444,6 +1513,8 @@ func _rebuild_view() -> void:
 		c.queue_free()
 	_window_clips.clear()
 	_sign_nodes = {}
+	_benches.clear()
+	_posts.clear()
 	_duel_nodes = {}
 	_arrow = null
 	_hint_glow = null
@@ -1466,23 +1537,35 @@ func _build_view() -> void:
 	for i in art.get("window_frames", []).size():  # painted streets have their window frames in the painting
 		_place(AssetSprite.make(art.window_frames[i], frames), Vector2(SC.windows[i].x, SC.windows[i].y))
 	_back_props = _layer()
-	for b in bottles:
-		b.node = AssetSprite.make("prop/bottle", _back_props)
+	_build_benches()
+	for i in bottles.size():  # the bottles take turns: tall, round, tall
+		var b: Dictionary = bottles[i]
+		b.look = i % 3
+		b.node = AssetSprite.make("bottle/whole%d" % b.look, _back_props)
 		b.shadow = _cast(bottle_rect(b).get_center().x, b.y, bottle_rect(b).size.x * 1.6)
 		_place(b.node, Vector2(bottle_rect(b).get_center().x, b.y))
 	if tut != null:
 		_arrow = AssetSprite.make("fx/tutorial_arrow", _back_props)
-	if hang_sign != null:
-		_hanger(hang_sign.x - 1, hang_sign.beam_y, hang_sign.x + hang_sign.w + 2)
-		_sign_nodes = {"board": AssetSprite.make("prop/sign", _back_props)}  # the painted sign includes its chains
-		_sign_nodes.board.extra_scale = Vector2.ONE * float(hang_sign.scale)
-	if bucket != null:
+	if hang_sign != null:  # the board hangs by two chains, at the points the hit areas use
+		var k: float = hang_sign.scale
+		var xs: Array = G.sign.chains_x.map(func(cx): return hang_sign.x + float(cx) * k)
+		_hanger(hang_sign.beam_y, xs)
+		_sign_nodes.chains = xs.map(func(x): return _chain(x, hang_sign.beam_y, hang_sign.y))
+		_sign_nodes.board = AssetSprite.make("prop/sign", _back_props)
+		_sign_nodes.board.extra_scale = Vector2.ONE * k
+	if bucket != null:  # the bucket's bail on a hook, on a chain from the arm
+		var H: Dictionary = G.hanging
 		var cx: float = bucket.x + bucket.w / 2
-		_hanger(bucket.x - 9, bucket.rope_top, cx + 4)
-		_sign_nodes.rope = AssetSprite.make("prop/rope", _back_props)
-		var bail := float(Assets.anchor("prop/bucket").y) / PPU  # the bail above the bucket's rim
-		_sign_nodes.rope.extra_scale = Vector2(1, (bucket.y - bail + 1 - bucket.rope_top) / (Assets.texture("prop/rope").get_height() / PPU))
-		_place(_sign_nodes.rope, Vector2(cx, bucket.rope_top))
+		_hanger(bucket.rope_top, [cx])
+		var bk := float(Assets.meta("prop/bucket", "scale", 1.0))
+		var bail_y: float = bucket.y + Assets.point("prop/bucket", "bail").y * bk / PPU
+		var catch := Assets.point("prop/hook", "catch") * float(Assets.meta("prop/hook", "scale", 1.0)) / PPU
+		var hk := minf(1.0, (bail_y - bucket.rope_top - float(H.hook_min_chain)) / catch.y)  # smaller if the drop is short
+		var eye := Vector2(cx - catch.x * hk, bail_y - catch.y * hk)
+		_sign_nodes.bucket_chain = _chain(eye.x, bucket.rope_top, eye.y + 0.5)
+		_sign_nodes.hook = AssetSprite.make("prop/hook", _back_props)
+		_sign_nodes.hook.extra_scale = Vector2.ONE * hk
+		_place(_sign_nodes.hook, eye)
 		_sign_nodes.bucket = AssetSprite.make("prop/bucket", _back_props)
 	# Street outlaws are clipped at the ground line, so they sink behind cover as they drop.
 	_actors = _clip(Rect2(-1000, -1000, 3000, 1000 + GY))
@@ -1549,9 +1632,8 @@ func _sync_view() -> void:
 		if dc.life <= 0:
 			dc.node.queue_free()
 	decals = decals.filter(func(dc): return dc.life > 0)
-	for b in bottles:
-		b.node.visible = b.alive
-		b.shadow.visible = b.alive
+	for b in bottles:  # a broken bottle leaves its shattered base on the bench
+		b.node.show_asset("bottle/%s%d" % ["whole" if b.alive else "broken", b.look])
 	if _arrow != null:
 		var first: Variant = null
 		for b in bottles:
@@ -1606,10 +1688,15 @@ func _sync_view() -> void:
 func _sync_sign() -> void:
 	var s: Variant = hang_sign
 	if s != null:
-		_place(_sign_nodes.board, Vector2(s.x + roundf(sin(frame * 0.2) * s.swing * 2), roundf(s.y)))
+		var sway := roundf(sin(frame * 0.2) * s.swing * 2)
+		_place(_sign_nodes.board, Vector2(s.x + sway, roundf(s.y)))
+		var xs: Array = G.sign.chains_x
+		for i in xs.size():  # the chains follow the board; once it drops, snapped ends hang from the arm
+			var x: float = s.x + float(xs[i]) * s.scale
+			var low: float = s.y if s.state == "hang" else s.beam_y + (G.sign.hang_y - G.sign.chain_top) * s.scale * 0.45
+			_set_chain(_sign_nodes.chains[i], x + (sway if s.state == "hang" else 0.0), s.beam_y, low)
 	if bucket != null:
-		_place(_sign_nodes.bucket, Vector2(bucket.x, roundf(bucket.y)))
-		_sign_nodes.rope.visible = bucket.state == "hang"
+		_place(_sign_nodes.bucket, Vector2(bucket.x + bucket.w / 2, roundf(bucket.y)))
 
 
 ## The layer that holds (and clips) an enemy.
@@ -1685,8 +1772,17 @@ func _sync_enemy(e: Dictionary) -> void:
 		e.run_node.visible = running
 		if running:
 			var to_right: bool = e.dir > 0 if e.kind == "walker" else covers[e.to].x > covers[e.from].x
-			e.run_node.show_asset(who + ("run_right" if to_right else "run_left"))
-			_place(e.run_node, Vector2(gm.x + _hitbox.x / 2, gm.y + _hitbox.y))
+			var at := Vector2(gm.x + _hitbox.x / 2, gm.y + _hitbox.y)
+			if e.kind == "walker" and Assets.has(who + "walk_right"):
+				# Two frames each way, one per stride walked, so the steps keep pace with his speed; a slight bob mid-step.
+				var W: Dictionary = G.walker
+				var steps := absf(e.x) / float(W.stride)
+				e.run_node.show_asset(who + ("walk_right" if to_right else "walk_left"))
+				e.run_node.show_frame(int(steps) % 2)
+				at.y -= sin(fposmod(steps, 1.0) * PI) * float(W.bob)
+			else:
+				e.run_node.show_asset(who + ("run_right" if to_right else "run_left"))
+			_place(e.run_node, at)
 			_place(e.run_shadow, Vector2(gm.x + _hitbox.x / 2, GY))
 		e.run_shadow.visible = running
 	n.visible = not running

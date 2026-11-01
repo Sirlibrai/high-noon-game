@@ -80,7 +80,7 @@ func _build_home_bar() -> void:
 
 func _refresh_home_bar() -> void:
 	_music_btn.icon = Assets.texture("ui/icon_music" if AudioManager.music_on else "ui/icon_music_off")
-	_wallet.text = "$%s  ›" % _money(int(GameState.progress.bucks))
+	_wallet.text = "%s  ›" % _money(int(GameState.progress.bucks))
 
 
 ## Centres the stage and keeps the HUD inside the safe area (notch, Dynamic Island).
@@ -291,6 +291,11 @@ func show_chapter(c: int) -> void:
 		b.custom_minimum_size = Vector2(176, 0)
 		b.tooltip_text = lv.name
 		b.disabled = not GameState.level_open(c, i)
+		if b.disabled:
+			b.text = ""
+			b.icon = Assets.texture("ui/icon_lock")
+			b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			b.add_theme_constant_override("icon_max_width", 30)
 		b.pressed.connect(show_intro.bind(c, i))
 		UiKit.stars(cell, GameState.stars_in(GameState.progress, c, i), 32)
 	var settings := UiKit.row(card)
@@ -324,7 +329,7 @@ func soon(kind: String) -> void:
 	var holder := CenterContainer.new()
 	holder.add_child(stamp)
 	card.add_child(holder)
-	UiKit.button(UiKit.row(card), "Back").pressed.connect(show_home)
+	UiKit.button(UiKit.row(card), "Back", &"GhostButton").pressed.connect(show_home)
 
 
 ## The trophy cabinet: one trophy for each bounty captured.
@@ -344,7 +349,7 @@ func show_trophies() -> void:
 			UiKit.image(cell, "trophy_office/ch%d" % i, Vector2(72, 84))
 			UiKit.text(cell, GameState.chapters[i].who, &"Hint")
 		UiKit.text(card, "%d of %d outlaws captured" % [got.size(), GameState.chapters.size()], &"Tip")
-	UiKit.button(UiKit.row(card), "Back").pressed.connect(show_home)
+	UiKit.button(UiKit.row(card), "Back", &"GhostButton").pressed.connect(show_home)
 
 
 ## The Gunsmith and Profile screens are not part of this build yet.
@@ -353,11 +358,12 @@ func _not_yet(title: String, body: String) -> void:
 	var card := _open_overlay()
 	UiKit.text(card, title, &"Heading")
 	UiKit.text(card, body, &"", 840)
-	UiKit.button(UiKit.row(card), "Back").pressed.connect(show_home)
+	UiKit.button(UiKit.row(card), "Back", &"GhostButton").pressed.connect(show_home)
 
 
 func _wallet_button(parent: Node) -> Button:
-	var b := UiKit.button(parent, "$%s  ›" % _money(int(GameState.progress.bucks)), &"Wallet")
+	var b := UiKit.button(parent, "%s  ›" % _money(int(GameState.progress.bucks)), &"Wallet")
+	b.icon = Assets.texture("ui/coin")  # Bounty Dollars
 	b.tooltip_text = "Bounty Dollars. Spend them at the Gunsmith."
 	b.pressed.connect(_on_office_act.bind("gunsmith"))
 	return b
@@ -483,7 +489,9 @@ func _on_won(res: Dictionary) -> void:
 	if level.L.has("story"):  # brief v2: the next story beat on the result screen
 		UiKit.text(card, level.L.story.result, &"Hint", 840)
 	if res.pay:
-		UiKit.text(card, "+$%d" % res.pay, &"Pay")
+		var pay := UiKit.row(card)
+		UiKit.image(pay, "ui/coin", Vector2(40, 40))
+		UiKit.text(pay, "+%s" % _money(res.pay), &"Pay")
 	var buttons := UiKit.row(card)
 	if res.last:
 		# The stamp lands on the poster when the office next opens (officeFresh).
@@ -542,7 +550,7 @@ func _show_fail(reason: String, offer: Variant) -> void:
 	var retry_label := "Try again"
 	if offer != null:
 		retry_label = "Start over, free" if L.get("eli", false) else "Retry level, free"
-	UiKit.button(buttons, retry_label, &"GhostButton" if offer != null else &"").pressed.connect(restart)
+	UiKit.button(buttons, retry_label, &"GhostButton").pressed.connect(restart)
 	UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
 
 
@@ -589,7 +597,7 @@ func _build_hud() -> void:
 	var bar := HBoxContainer.new()
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hud_box.add_child(bar)
-	# Wooden panels (theme "HudPanel"): hearts and bullets on one, the level name on another.
+	# Hearts and bullets on a wooden panel (theme "HudPanel"), the level name on a brass plaque ("HudPlaque").
 	var left := PanelContainer.new()
 	left.theme_type_variation = &"HudPanel"
 	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -612,11 +620,11 @@ func _build_hud() -> void:
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(spacer)
 	var name_panel := PanelContainer.new()
-	name_panel.theme_type_variation = &"HudPanel"
+	name_panel.theme_type_variation = &"HudPlaque"
 	name_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_panel.size_flags_horizontal = Control.SIZE_SHRINK_END
 	bar.add_child(name_panel)
-	_lvl_label = UiKit.text(name_panel, "", &"HudLabel")
+	_lvl_label = UiKit.text(name_panel, "", &"HudPlaqueLabel")
 	_lvl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_lvl_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_lvl_label.autowrap_mode = TextServer.AUTOWRAP_OFF  # always one line
@@ -693,7 +701,9 @@ func _open_overlay() -> VBoxContainer:
 	_overlay = Control.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay_layer.add_child(_overlay)
-	return UiKit.card(UiKit.overlay(_overlay))
+	var center := UiKit.overlay(_overlay)
+	center.offset_bottom = -_safe_lrb.z  # centred in the safe area, above the home indicator
+	return UiKit.card(center)
 
 
 func _close_overlay() -> void:

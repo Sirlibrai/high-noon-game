@@ -1,21 +1,34 @@
 class_name Splash
 extends Node2D
-## The splash standoff (the prototype's titleScreen / enter / drawStandoff):
-## "Tap to begin" wakes the town and starts the music; the clock's minute hand
-## sweeps to noon and the bell tolls; "Tap to draw" fires, the rival falls and
-## the scene fades to the sheriff's office. Every picture is a manifest asset.
+## The splash standoff on the painted clocktower: "Tap to begin" wakes the town and starts the music;
+## the clock's hands sweep to noon on the face's centre pin and the bell swings as it tolls; heat haze
+## shimmers over the street between two dark figures; "Tap to draw" fires, the rival falls and the scene
+## fades to the sheriff's office. The painting covers the screen (trimmed at the sides on wide phones);
+## everything on it is placed in its pixels. Every picture is a manifest asset.
 
 signal finished
 
-var PPU: float = GameState.geometry.pixels_per_unit
+const ART_SIZE := Vector2(1915, 821)
+const CLOCK_PIN := Vector2(958, 288)  # the face's centre pin
+const CLOCK_R := 57.0  # the face's radius, to its brass rim
+const BELL_AT := Vector2(958, 126)  # the top of the bell's yoke, where it hangs
+const HERO_AT := Vector2(440, 804)  # the figures' feet
+const RIVAL_AT := Vector2(1475, 804)
+const FIGURE_SCALE := 2.1
+const HAZE := Rect2(0, 430, 1915, 230)  # the street from the far buildings to the middle distance
+const TUMBLE_Y := 792
+const TITLE_TOP := 0.435  # of the screen's height: between the clock face and the figures' hats
 
 var _t0 := -1.0  # seconds since "begin"; -1 until the first tap
 var _shot_at := -1.0
 var _tolled := false
-var _tumble_x := -20.0
+var _tumble_x := -60.0
 var _now := 0.0
-var _hand: AssetSprite
+var _art: Node2D
+var _minute: AssetSprite
+var _hour: AssetSprite
 var _bell: AssetSprite
+var _hero: AssetSprite
 var _rival: AssetSprite
 var _flash: AssetSprite
 var _tumble: AssetSprite
@@ -27,21 +40,32 @@ var _tap: Label
 
 
 func _ready() -> void:
+	var vis := get_viewport().get_visible_rect().size
+	var k := maxf(vis.y / ART_SIZE.y, vis.x / ART_SIZE.x)  # cover the screen
+	_art = Node2D.new()
+	_art.scale = Vector2.ONE * k
+	_art.position = (vis - ART_SIZE * k) / 2
+	add_child(_art)
 	for layer in Assets.scenes.splash.layers:
-		AssetSprite.make(layer, self)
-	_place(AssetSprite.make("splash/haze", self), Vector2(0, 108))
-	_place(AssetSprite.make("splash/tower", self), Vector2(146, 20))
-	_hand = AssetSprite.make("splash/minute_hand", self)
-	_place(_hand, Vector2(160, 54))
-	_bell = AssetSprite.make("splash/bell", self)
-	_place(AssetSprite.make("splash/shadow", self), Vector2(44, 160))
-	_place(AssetSprite.make("splash/shadow", self), Vector2(232, 160))
-	_place(AssetSprite.make("splash/hero", self), Vector2(61, 160))
-	_rival = AssetSprite.make("splash/rival", self)
-	_place(_rival, Vector2(270, 160))
-	_tumble = AssetSprite.make("prop/tumbleweed", self)
-	_flash = AssetSprite.make("splash/muzzle_flash", self)
-	_place(_flash, Vector2(80, 118))
+		AssetSprite.make(layer, _art)
+	var haze := ColorRect.new()
+	haze.material = ShaderMaterial.new()
+	haze.material.shader = load("res://ui/heat_haze.gdshader")
+	haze.position = HAZE.position
+	haze.size = HAZE.size
+	haze.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_art.add_child(haze)
+	_bell = _at(AssetSprite.make("splash/bell", _art), BELL_AT)
+	_hour = _at(AssetSprite.make("splash/hour", _art), CLOCK_PIN)
+	_minute = _at(AssetSprite.make("splash/minute", _art), CLOCK_PIN)
+	_tumble = AssetSprite.make("prop/tumbleweed", _art)
+	_tumble.extra_scale = Vector2.ONE * 1.4
+	_hero = _at(AssetSprite.make("splash/hero", _art), HERO_AT)
+	_hero.extra_scale = Vector2.ONE * FIGURE_SCALE
+	_rival = _at(AssetSprite.make("splash/rival", _art), RIVAL_AT)
+	_rival.extra_scale = Vector2(-FIGURE_SCALE, FIGURE_SCALE)  # facing the hero
+	_flash = _at(AssetSprite.make("fx/muzzle_flash", _art), HERO_AT + Vector2(80, -140))
+	_flash.extra_scale = Vector2.ONE * 1.6
 	_flash.visible = false
 
 	var ui := CanvasLayer.new()
@@ -51,8 +75,8 @@ func _ready() -> void:
 	_black = _screen(ui, "fx/screen_black")
 	_title = UiKit.text(ui, "HIGH NOON", &"InkTitle")
 	_title.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	_title.anchor_top = 0.47
-	_title.anchor_bottom = 0.47
+	_title.anchor_top = TITLE_TOP
+	_title.anchor_bottom = TITLE_TOP
 	_title.modulate.a = 0.0
 	_title.rotation = deg_to_rad(-4)
 	_tap = UiKit.text(ui, "TAP TO DRAW", &"TapPrompt")
@@ -78,8 +102,10 @@ func _screen(parent: Node, asset: String) -> TextureRect:
 	return r
 
 
-func _place(n: Node2D, at: Vector2) -> void:
-	n.position = at * PPU
+## Puts a sprite's anchor on a pixel of the painting.
+func _at(n: AssetSprite, p: Vector2) -> AssetSprite:
+	n.position = p
+	return n
 
 
 ## Taps go: begin, then draw.
@@ -113,20 +139,23 @@ func _process(delta: float) -> void:
 
 func _update_scene() -> void:
 	var t := _now - _t0 if _t0 >= 0 else -1.0
+	# A quarter to noon, then the hands sweep to twelve; the bell tolls as they arrive.
 	var p := clampf((t - 0.6) / 2.6, 0, 1) if t >= 0 else 0.0
 	var ease := 1 - pow(1 - p, 3)
-	_hand.rotation = -PI + ease * PI / 2
-	var sw := sin((t - 3.2) * 6) * maxf(0, 1.6 - (t - 3.2)) * 2 if t > 3.2 else 0.0
-	_place(_bell, Vector2(157 + roundf(sw), 27))
+	_minute.rotation = (ease - 1) * PI / 2
+	_hour.rotation = (ease - 1) * PI / 24
+	var since := t - 3.2
+	_bell.rotation = sin(since * 6) * maxf(0, 1.6 - since) * 0.09 if since > 0 else 0.0
 	if t > 3.2 and not _tolled:
 		_tolled = true
 		AudioManager.sfx("bell")
-	_tumble_x += 0.5 * 60 * get_process_delta_time()
-	if _tumble_x > 340:
-		_tumble_x = -20
-	_place(_tumble, Vector2(roundf(_tumble_x) + 5, 164 - absf(roundf(sin(_tumble_x * 0.08) * 4))))
+	_tumble_x += 60 * get_process_delta_time()
+	if _tumble_x > ART_SIZE.x + 60:
+		_tumble_x = -60
+	_tumble.position = Vector2(_tumble_x, TUMBLE_Y - absf(sin(_tumble_x * 0.02)) * 14)
+	_tumble.rotation = _tumble_x * 0.03
 	var f := _now - _shot_at if _shot_at >= 0 else -1.0
-	_rival.rotation = minf(1, f / 0.6) * 1.45 if f >= 0 else 0.0
+	_rival.rotation = -minf(1, f / 0.6) * 1.45 if f >= 0 else 0.0  # falls back, away from the hero
 	_flash.visible = f >= 0 and f < 0.12
 	_white.modulate.a = maxf(0, 0.7 - f * 2.8) if f >= 0 and f < 0.25 else 0.0
 	if f < 0.9:  # the closing fade is a tween once the shot has landed

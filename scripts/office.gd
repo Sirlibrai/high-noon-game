@@ -155,21 +155,23 @@ static func wanted_poster(i: int, state: String, width: float, compact := false)
 	var pg: Dictionary = GameState.progress
 	var open := state == "open" or state == "captured"
 	var b := Button.new()
-	b.theme_type_variation = &"Poster"
+	b.theme_type_variation = &"Poster"  # the painted poster: WANTED is in the art
 	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = Vector2(width, 0)
 	b.disabled = not open
+	b.theme = load(Assets.THEME)  # so its wrapped text measures at the theme's sizes before it is on screen
+	var sb: StyleBox = b.theme.get_stylebox("normal", b.theme_type_variation)
+	var inner := width - sb.content_margin_left - sb.content_margin_right
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 2)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(v)
-	UiKit.text(v, "WANTED", &"PosterWanted")
-	var pic := UiKit.image(v, "portrait/ch%d" % i, Vector2(100, 92))
+	var pic := UiKit.image(v, "portrait/ch%d" % i, Vector2(minf(100, inner), minf(78, inner * 0.78)))
 	if not open:
 		pic.modulate = Color(0, 0, 0, 0.75)
 	if not compact:
-		UiKit.text(v, ch.who, &"PosterName", width - 24)
-		UiKit.text(v, ch.crime, &"PosterCrime", width - 20)
+		UiKit.text(v, ch.who, &"PosterName", inner)
+		UiKit.text(v, ch.crime, &"PosterCrime", inner)
 	UiKit.text(v, ch.reward, &"PosterReward")
 	if not compact:
 		if open:
@@ -179,19 +181,33 @@ static func wanted_poster(i: int, state: String, width: float, compact := false)
 	for c in v.get_children():
 		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	v.offset_top = 16
-	b.custom_minimum_size.y = v.get_combined_minimum_size().y + 32
+	v.offset_left = sb.content_margin_left
+	v.offset_right = -sb.content_margin_right
+	v.offset_top = sb.content_margin_top
+	b.custom_minimum_size.y = v.get_combined_minimum_size().y + sb.content_margin_top + sb.content_margin_bottom
+	v.minimum_size_changed.connect(func():  # wrapped text settles its height once laid out
+		b.custom_minimum_size.y = maxf(b.custom_minimum_size.y, v.get_combined_minimum_size().y + sb.content_margin_top + sb.content_margin_bottom))
 	if state != "open":
-		var stamp := PanelContainer.new()
-		stamp.theme_type_variation = &"Stamp"
-		stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		UiKit.text(stamp, {"captured": "CAPTURED", "locked": "LOCKED", "soon": "COMING SOON"}[state], &"StampLabel")
-		b.add_child(stamp)
+		# Captured: the painted CAPTURED stamp. Locked: a padlock. Coming soon: an inked stamp.
+		var stamp: Control
+		var tilt := -14.0
+		match state:
+			"captured":
+				stamp = UiKit.image(b, "ui/stamp_captured", Vector2(width * 0.86, width * 0.47))
+			"locked":
+				stamp = UiKit.image(b, "ui/icon_lock", Vector2(inner * 0.5, inner * 0.62))
+				tilt = 0.0
+			_:
+				stamp = PanelContainer.new()
+				stamp.theme_type_variation = &"Stamp"
+				stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				UiKit.text(stamp, "COMING SOON", &"StampLabel")
+				b.add_child(stamp)
 		var sz := stamp.get_combined_minimum_size()
 		stamp.size = sz
-		stamp.position = Vector2((width - sz.x) / 2, 66)  # across the portrait, clear of the name
+		stamp.position = Vector2((width - sz.x) / 2, sb.content_margin_top + pic.custom_minimum_size.y / 2 - sz.y / 2)  # across the portrait
 		stamp.pivot_offset = sz / 2
-		stamp.rotation = deg_to_rad(-14)
+		stamp.rotation = deg_to_rad(tilt)
 		b.set_meta("stamp", stamp)
 	return b
 
@@ -214,11 +230,12 @@ func _hang(c: int, spot: Array, w: float, compact: bool, pg: Dictionary, pt: boo
 	p.scale = Vector2.ONE * s
 	p.pivot_offset = Vector2.ZERO
 	p.position = Vector2(spot[0], spot[1]) - p.size * s / 2
+	p.minimum_size_changed.connect(func():
+		p.size = p.custom_minimum_size
+		p.position = Vector2(spot[0], spot[1]) - p.size * s / 2)
 	p.rotation = spot[2]
 	if p.has_meta("stamp"):
 		_poster_stamps[c] = p.get_meta("stamp")
-	var pin := AssetSprite.make("poster/pin", _art)
-	pin.position = Vector2(spot[0], spot[1] - p.size.y * s / 2 + 5)
 
 
 func _build_rack(pg: Dictionary) -> void:
@@ -336,7 +353,7 @@ func _build_coach() -> void:
 	v.add_theme_constant_override("separation", 0)
 	p.add_child(v)
 	UiKit.text(v, "TELEGRAM", &"DeskKey")
-	UiKit.text(v, "Welcome, partner. Tap anything with a brass plate.", &"TelegramText", 440)
+	UiKit.text(v, "Welcome, partner. Tap anything with a brass plate.", &"TelegramText", 300)  # wrapped, so the parchment keeps about its own proportions
 	add_child(p)
 	var sz := p.get_combined_minimum_size()
 	p.size = sz

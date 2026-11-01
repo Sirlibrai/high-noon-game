@@ -17,14 +17,15 @@ variation_opentype = {
 }
 
 [sub_resource type="StyleBoxTexture" id="card"]
-content_margin_left = 52.0
-content_margin_top = 36.0
-content_margin_right = 52.0
+content_margin_left = 56.0
+content_margin_top = 40.0
+content_margin_right = 56.0
 content_margin_bottom = 40.0
-texture_margin_left = 40.0
-texture_margin_top = 40.0
-texture_margin_right = 40.0
-texture_margin_bottom = 40.0
+texture_margin_left = 52.0
+texture_margin_top = 52.0
+texture_margin_right = 52.0
+texture_margin_bottom = 52.0
+axis_stretch_vertical = 2
 
 [sub_resource type="StyleBoxTexture" id="button"]
 content_margin_left = 40.0
@@ -71,20 +72,20 @@ content_margin_left = 12.0
 content_margin_top = 12.0
 content_margin_right = 12.0
 content_margin_bottom = 12.0
-texture_margin_left = 16.0
-texture_margin_top = 16.0
-texture_margin_right = 16.0
-texture_margin_bottom = 16.0
+texture_margin_left = 34.0
+texture_margin_top = 34.0
+texture_margin_right = 34.0
+texture_margin_bottom = 34.0
 
 [sub_resource type="StyleBoxTexture" id="icon_button_pressed"]
 content_margin_left = 12.0
 content_margin_top = 14.0
 content_margin_right = 12.0
 content_margin_bottom = 10.0
-texture_margin_left = 16.0
-texture_margin_top = 16.0
-texture_margin_right = 16.0
-texture_margin_bottom = 16.0
+texture_margin_left = 34.0
+texture_margin_top = 34.0
+texture_margin_right = 34.0
+texture_margin_bottom = 34.0
 
 [sub_resource type="StyleBoxTexture" id="pill"]
 content_margin_left = 24.0
@@ -115,46 +116,46 @@ texture_margin_right = 8.0
 texture_margin_bottom = 8.0
 
 [sub_resource type="StyleBoxTexture" id="hud_panel"]
-content_margin_left = 18.0
+content_margin_left = 20.0
 content_margin_top = 10.0
-content_margin_right = 18.0
+content_margin_right = 20.0
 content_margin_bottom = 10.0
-texture_margin_left = 16.0
-texture_margin_top = 16.0
-texture_margin_right = 16.0
-texture_margin_bottom = 16.0
+texture_margin_left = 18.0
+texture_margin_top = 18.0
+texture_margin_right = 18.0
+texture_margin_bottom = 18.0
 
 [sub_resource type="StyleBoxEmpty" id="empty"]
 
 [sub_resource type="StyleBoxTexture" id="plaque"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 12.0
-texture_margin_left = 12.0
-texture_margin_top = 12.0
-texture_margin_right = 12.0
-texture_margin_bottom = 12.0
+content_margin_left = 22.0
+content_margin_top = 6.0
+content_margin_right = 22.0
+content_margin_bottom = 9.0
+texture_margin_left = 24.0
+texture_margin_top = 18.0
+texture_margin_right = 24.0
+texture_margin_bottom = 18.0
 
 [sub_resource type="StyleBoxTexture" id="plaque_pressed"]
-content_margin_left = 18.0
-content_margin_top = 12.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-texture_margin_left = 12.0
-texture_margin_top = 12.0
-texture_margin_right = 12.0
-texture_margin_bottom = 12.0
+content_margin_left = 22.0
+content_margin_top = 8.0
+content_margin_right = 22.0
+content_margin_bottom = 7.0
+texture_margin_left = 24.0
+texture_margin_top = 18.0
+texture_margin_right = 24.0
+texture_margin_bottom = 18.0
 
 [sub_resource type="StyleBoxTexture" id="plaque_soon"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 12.0
-texture_margin_left = 12.0
-texture_margin_top = 12.0
-texture_margin_right = 12.0
-texture_margin_bottom = 12.0
+content_margin_left = 22.0
+content_margin_top = 6.0
+content_margin_right = 22.0
+content_margin_bottom = 9.0
+texture_margin_left = 24.0
+texture_margin_top = 18.0
+texture_margin_right = 24.0
+texture_margin_bottom = 18.0
 
 [sub_resource type="StyleBoxTexture" id="wallet"]
 content_margin_left = 24.0
@@ -197,34 +198,34 @@ texture_margin_right = 14.0
 texture_margin_bottom = 16.0
 
 [sub_resource type="StyleBoxTexture" id="poster"]
-content_margin_left = 16.0
-content_margin_top = 20.0
-content_margin_right = 16.0
-content_margin_bottom = 16.0
-texture_margin_left = 16.0
-texture_margin_top = 16.0
-texture_margin_right = 16.0
-texture_margin_bottom = 16.0
+content_margin_left = 20.0
+content_margin_top = 70.0
+content_margin_right = 20.0
+content_margin_bottom = 24.0
+texture_margin_left = 20.0
+texture_margin_top = 69.0
+texture_margin_right = 20.0
+texture_margin_bottom = 27.0
 
 [sub_resource type="StyleBoxTexture" id="poster_locked"]
-content_margin_left = 16.0
-content_margin_top = 20.0
-content_margin_right = 16.0
-content_margin_bottom = 16.0
-texture_margin_left = 16.0
-texture_margin_top = 16.0
-texture_margin_right = 16.0
-texture_margin_bottom = 16.0
+content_margin_left = 20.0
+content_margin_top = 70.0
+content_margin_right = 20.0
+content_margin_bottom = 24.0
+texture_margin_left = 20.0
+texture_margin_top = 69.0
+texture_margin_right = 20.0
+texture_margin_bottom = 27.0
 
 [sub_resource type="StyleBoxTexture" id="telegram"]
-content_margin_left = 24.0
-content_margin_top = 12.0
-content_margin_right = 24.0
-content_margin_bottom = 16.0
-texture_margin_left = 16.0
-texture_margin_top = 16.0
-texture_margin_right = 16.0
-texture_margin_bottom = 16.0
+content_margin_left = 40.0
+content_margin_top = 26.0
+content_margin_right = 40.0
+content_margin_bottom = 30.0
+texture_margin_left = 36.0
+texture_margin_top = 36.0
+texture_margin_right = 36.0
+texture_margin_bottom = 36.0
 
 [sub_resource type="StyleBoxTexture" id="stamp"]
 content_margin_left = 16.0
@@ -235,6 +236,16 @@ texture_margin_left = 12.0
 texture_margin_top = 12.0
 texture_margin_right = 12.0
 texture_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxTexture" id="hud_plaque"]
+content_margin_left = 28.0
+content_margin_top = 6.0
+content_margin_right = 28.0
+content_margin_bottom = 9.0
+texture_margin_left = 24.0
+texture_margin_top = 18.0
+texture_margin_right = 24.0
+texture_margin_bottom = 18.0
 
 [resource]
 Card/base_type = &"PanelContainer"
@@ -276,6 +287,7 @@ GhostButton/styles/pressed = SubResource("ghost_pressed")
 SmallGhostButton/base_type = &"GhostButton"
 SmallGhostButton/font_sizes/font_size = 28
 IconButton/base_type = &"Button"
+IconButton/constants/icon_max_width = 46
 IconButton/styles/hover = SubResource("icon_button")
 IconButton/styles/normal = SubResource("icon_button")
 IconButton/styles/pressed = SubResource("icon_button_pressed")
@@ -333,6 +345,7 @@ Plaque/colors/font_hover_color = Color(0.164706, 0.101961, 0.0627451, 1)
 Plaque/colors/font_pressed_color = Color(0.164706, 0.101961, 0.0627451, 1)
 Plaque/font_sizes/font_size = 26
 Plaque/constants/h_separation = 8
+Plaque/constants/icon_max_width = 24
 Plaque/styles/normal = SubResource("plaque")
 Plaque/styles/hover = SubResource("plaque")
 Plaque/styles/pressed = SubResource("plaque_pressed")
@@ -346,6 +359,8 @@ Hotspot/styles/hover = SubResource("empty")
 Hotspot/styles/pressed = SubResource("empty")
 Hotspot/styles/disabled = SubResource("empty")
 Wallet/base_type = &"Button"
+Wallet/constants/icon_max_width = 34
+Wallet/constants/h_separation = 8
 Wallet/colors/font_color = Color(0.94902, 0.709804, 0.266667, 1)
 Wallet/colors/font_hover_color = Color(0.94902, 0.709804, 0.266667, 1)
 Wallet/colors/font_pressed_color = Color(0.94902, 0.709804, 0.266667, 1)
@@ -412,3 +427,10 @@ StampLabel/colors/font_color = Color(0.721569, 0.196078, 0.243137, 1)
 StampLabel/font_sizes/font_size = 26
 HudPanel/base_type = &"PanelContainer"
 HudPanel/styles/panel = SubResource("hud_panel")
+HudPlaque/base_type = &"PanelContainer"
+HudPlaque/styles/panel = SubResource("hud_plaque")
+HudPlaqueLabel/base_type = &"HudLabel"
+HudPlaqueLabel/colors/font_color = Color(0.243137, 0.137255, 0.0705882, 1)
+HudPlaqueLabel/colors/font_shadow_color = Color(1, 0.909804, 0.635294, 0.45)
+HudPlaqueLabel/constants/shadow_offset_y = 2
+HudPlaqueLabel/font_sizes/font_size = 28

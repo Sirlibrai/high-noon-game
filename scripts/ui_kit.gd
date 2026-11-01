@@ -75,10 +75,14 @@ static func pill(parent: Node, s: String) -> PanelContainer:
 	return p
 
 
+## An image at `size`, or at its own size times its manifest scale (painted icons are stored at twice the size they show).
 static func image(parent: Node, asset: String, size := Vector2.ZERO) -> TextureRect:
 	var t := TextureRect.new()
 	t.texture = Assets.texture(asset)
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var k := float(Assets.meta(asset, "scale", 1.0))
+	if size == Vector2.ZERO and k != 1.0:
+		size = (t.texture.get_size() * k).round()
 	if size != Vector2.ZERO:
 		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

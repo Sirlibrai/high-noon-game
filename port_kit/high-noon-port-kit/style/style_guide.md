@@ -2,16 +2,20 @@
 
 ## Direction
 
-A painted storybook look for everything: soft painterly backgrounds with warm sunset light and hazy distance, painted characters and props, in place of the earlier pixel art.
+The final style is a bold cartoon: **thick dark outlines, flat bright colours with one or two hard-edged shade steps, chunky simplified shapes and big-headed characters**. It reads like a modern mobile cartoon rather than a painting. It replaces the earlier painted storybook look and the pixel art before it.
 
-- `chosen_style_painted_train.png`: **the chosen style.** The train level painted in the storybook look, with the game's HUD over it.
-- `concept_gameplay.png`: the earlier target for levels (pixel art). Still right for the colours and light. Warm sunset light, long shadows, red saloon against a faded blue-green bank, first-person revolver in the bottom-right.
-- `concept_office.png`: the target look for the sheriff's office home screen.
-- `concept_portraits.png`: the target look for wanted posters, boss introductions and the player's profile.
-- `concept_flat_stage_town_and_train.png`: **the approved gameplay layout.** Iron Eli's stage 1 on Main Street and the train level, both as flat side-on stages.
-- `concept_storyboard_depth_version.png`: an earlier test with real depth. Kept for reference only; see "Layout" below for why it was not adopted.
+- `assets/incoming/Sunset Showdown on Main Street.png`: **the reference.** Chain Reaction on Main Street with the HUD over it: the saloon and bank, the INN sign on its signpost, three outlaws and the TNT keg on the ground line, and the revolver in the corner.
+- `concept_flat_stage_town_and_train.png`: still **the approved gameplay layout** (a flat side-on stage).
+- `concept_gameplay.png`, `concept_office.png`, `concept_portraits.png`, `chosen_style_painted_train.png` and `concept_storyboard_depth_version.png`: earlier looks, kept for layout and colour reference only.
 
-These images are AI-generated concepts. Use them as direction, not as final assets.
+### The look
+
+- **Outlines:** every character, prop and UI piece has a thick, dark brown (not black) outline, heavier on the outside edge than on inner details.
+- **Colour:** flat fills in saturated warm colours (brick red, sunset orange, honey gold, cream, leather browns), with dusty lavender, slate blue and teal as the cool accents. Shading is one or two hard-edged steps, not soft gradients; a warm highlight runs along the sunlit edge.
+- **Shapes:** chunky and simplified. Planks, rivets and nail heads are drawn as clear graphic shapes, not textures. Wood grain is a few bold strokes.
+- **Characters:** big heads (roughly a third of the body), big hats, big boots, short legs, readable from a distance on a phone. Faces are simple: angry eyebrows, a red bandana over the mouth.
+- **Backgrounds:** the same outlines and flat colour as the foreground but with lower contrast, a sunset sky (lilac to blue, peach clouds) and pink-purple mesas, so the outlaws and props stay the brightest, crispest things on screen.
+- **Shadows:** the game adds its own soft contact shadows, so sheets must not have ground shadows painted under figures or props (`tools/cut.gd` removes any that do).
 
 ## Resolution
 
@@ -43,7 +47,7 @@ Small and low in the bottom-right corner, as in the flat-stage concept. It must 
 
 ## Readability rules (more important than beauty)
 
-- Outlaws must stand out from the background on a 6-inch phone: give them a warm rim light or a subtle outline, and keep backgrounds softer and hazier with distance. Dark clothing against dark wood is the main risk.
+- Outlaws must stand out from the background on a 6-inch phone: their bold outlines and bright flat colours do most of the work; keep backgrounds lower in contrast. Dark clothing against dark wood is the main risk.
 - Only one or two outlaws should be exposed at once in normal play, even if the concepts show more.
 - Interactive props (TNT, sign ropes, coupling pins) need distinct shapes and colours.
 - The gun must never cover targets.
@@ -58,19 +62,9 @@ Small and low in the bottom-right corner, as in the flat-stage concept. It must 
 | Cole Haggerty | Soot-smudged, black hat with a gold band, coal-stained coat, carries a lantern |
 | The bounty hunter (player) | Customisable: hat, hat colour, skin tone, bandana, coat and facial hair (`data/avatar_options.json`) |
 
-### Cut-out characters
+### Pose sheets
 
-Outlaws and bosses are cut-out puppets, not frame-by-frame sprites. Paint each character as separate parts:
-
-| Part | Notes |
-|---|---|
-| Head | With the hat; pivots at the neck |
-| Torso | Pivots at the hips; Iron Eli's breastplate is a separate overlay part |
-| Back arm, front arm | Pivot at the shoulders, hanging relaxed |
-| Gun hand | Both hands on the revolver, pointing at the player; shown while he aims |
-| Legs | Standing, plus a running pose |
-
-The joints and the simple clips (pop-up, aim, flinch, fall, run, idle) are set in `assets/manifest.json` under `rigs` and `rig_animations`, so new parts or timing need no code. Leave a little overlap at each joint so rotating parts don't show gaps.
+Each character is drawn as whole poses on a sheet, with the same outline and colour on every pose. The outlaw has: idle, aim, hit, crouch (peeking over cover), lean (side peek; mirrored for the other side), run left and right, fall (with the hat drawn on its own so it can spin away), and an 8-frame walk to the right (mirrored for the left). `tools/import_painted.gd` and `tools/import_batch1.gd` cut the sheets in `assets/incoming`, size each piece to match the art it replaces, and print the anchors for `assets/manifest.json` (`tools/set_anchors.pl` copies them in).
 
 ## Placeholder art in this kit
 

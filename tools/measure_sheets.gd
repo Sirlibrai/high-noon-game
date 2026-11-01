@@ -5,11 +5,13 @@ extends SceneTree
 
 const DIR := "res://assets/incoming/"
 const STEP := 4  # analyse at quarter size for speed
+## Whole paintings, not sheets of pieces.
+const BACKGROUNDS := ["High Noon Western Main Street.png", "Sunset Clocktower Western Town.png", "Sunset Gunsmith Office Workshop.png", "Sunset Showdown on Main Street.png"]
 
 
 func _init() -> void:
 	for f in DirAccess.get_files_at(DIR):
-		if f.ends_with(".png") and f != "Golden Hour Western Main Street.png":
+		if f.ends_with(".png") and not f in BACKGROUNDS:
 			_report(f)
 	quit()
 

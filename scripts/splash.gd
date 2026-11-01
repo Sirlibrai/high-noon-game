@@ -8,10 +8,10 @@ extends Node2D
 
 signal finished
 
-const ART_SIZE := Vector2(1915, 821)
-const CLOCK_PIN := Vector2(958, 288)  # the face's centre pin
-const CLOCK_R := 57.0  # the face's radius, to its brass rim
-const BELL_AT := Vector2(958, 126)  # the top of the bell's yoke, where it hangs
+const ART_SIZE := Vector2(1916, 821)
+const CLOCK_PIN := Vector2(960, 291)  # the face's centre pin
+const CLOCK_R := 55.0  # the face's radius, to its brass rim
+const BELL_AT := Vector2(957, 133)  # the top of the bell's yoke, where it hangs
 const HERO_AT := Vector2(440, 804)  # the figures' feet
 const RIVAL_AT := Vector2(1475, 804)
 const FIGURE_SCALE := 2.1

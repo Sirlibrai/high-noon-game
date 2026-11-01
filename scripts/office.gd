@@ -18,29 +18,31 @@ const ART_SIZE := Vector2(1672, 941)
 ## Hotspots in painting pixels: the box you tap (its painted object), and where its brass plate hangs
 ## (top centre). Plates are kept inside the safe area.
 const SPOTS := [
-	{"act": "duelsoon", "label": "Duel", "box": [28, 72, 220, 430], "plate": [137, 452], "soon": true},
-	{"act": "daily", "label": "Daily Bounty", "box": [300, 172, 146, 196], "plate": [372, 314], "soon": true},
-	{"act": "survival", "label": "Survival", "box": [312, 376, 136, 130], "plate": [380, 470], "soon": true},
-	{"act": "board", "label": "Bounty board", "box": [498, 116, 578, 344], "plate": [786, 428]},
-	{"act": "profile", "label": "Profile", "box": [1096, 174, 180, 252], "plate": [1186, 398]},
-	{"act": "trophies", "label": "Trophies", "box": [490, 484, 604, 224], "plate": [786, 590]},
-	{"act": "gunsmith", "label": "Gunsmith", "box": [1298, 84, 346, 622], "plate": [1470, 640]},
+	{"act": "duelsoon", "label": "Duel", "box": [20, 50, 235, 490], "plate": [137, 470], "soon": true},
+	{"act": "daily", "label": "Daily Bounty", "box": [330, 165, 145, 180], "plate": [401, 312], "soon": true},
+	{"act": "survival", "label": "Survival", "box": [336, 352, 140, 145], "plate": [405, 474], "soon": true},
+	{"act": "board", "label": "Bounty board", "box": [512, 132, 582, 342], "plate": [802, 440]},
+	{"act": "profile", "label": "Profile", "box": [1115, 180, 178, 256], "plate": [1204, 408]},
+	{"act": "trophies", "label": "Trophies", "box": [490, 495, 618, 230], "plate": [800, 560]},
+	{"act": "gunsmith", "label": "Gunsmith", "box": [1305, 84, 345, 645], "plate": [1478, 652]},
 ]
 ## The cork board: the big poster in the middle, two small ones each side ([x, y] centre, tilt).
-const BIG_SPOT := [787, 290, -0.02]
-const SMALL_SPOTS := [[620, 218, -0.07], [620, 352, 0.05], [955, 218, 0.06], [955, 352, -0.04]]
+const BIG_SPOT := [803, 305, -0.02]
+const SMALL_SPOTS := [[636, 235, -0.07], [636, 369, 0.05], [970, 235, 0.06], [970, 369, -0.04]]
 const BIG_W := 136.0
 const SMALL_W := 96.0
 ## The gilt frame's empty canvas, the cabinet's top shelf (trophy bases), the rack's pegs.
-const FRAME_IN := Rect2(1129, 206, 113, 186)
-const TROPHY_AT := [Vector2(590, 566), Vector2(655, 566), Vector2(720, 566), Vector2(885, 566), Vector2(980, 566)]
-const RACK_AT := {"repeater": Vector2(1475, 338), "coach": Vector2(1475, 362), "peacemaker": Vector2(1438, 386),
-	"quickdraw": Vector2(1504, 386), "longbarrel": Vector2(1440, 410), "legend": Vector2(1508, 410)}
+const FRAME_IN := Rect2(1147, 218, 115, 180)
+const TROPHY_AT := [Vector2(595, 588), Vector2(660, 588), Vector2(725, 588), Vector2(880, 588), Vector2(965, 588)]
+const RACK_AT := {"repeater": Vector2(1462, 352), "coach": Vector2(1462, 374), "peacemaker": Vector2(1428, 396),
+	"quickdraw": Vector2(1494, 396), "longbarrel": Vector2(1430, 418), "legend": Vector2(1496, 418)}
 const RACK_SCALE := 1.0
 ## The gunsmith's stool: the foot of its front-left leg, and the doorway he is seen through.
-const STOOL_FOOT := Vector2(1465, 634)
-const DOORWAY := Rect2(1356, 200, 282, 505)
-const LAMPS := [[Vector2(808, 98), 2.4], [Vector2(1475, 262), 1.1]]
+const STOOL_FOOT := Vector2(1448, 662)
+const DOORWAY := Rect2(1348, 214, 294, 515)
+const LAMPS := [[Vector2(805, 108), 2.4], [Vector2(1478, 281), 1.1]]
+## The row of rivets along the desk's front edge: the ledger sits on the desk above it.
+const DESK_RIVETS := 900.0
 const IDLE_POSE_TIME := 2.6
 
 ## The safe area's insets in screen pixels (left, right, bottom), set by Main on phones.
@@ -298,7 +300,7 @@ func _build_ledger() -> void:
 		var btn := Button.new()
 		btn.theme_type_variation = &"DeskPlaque"
 		btn.focus_mode = Control.FOCUS_NONE
-		btn.pressed.connect(_on_act.bind("hunt", Rect2(600, 740, 540, 150)))
+		btn.pressed.connect(_on_act.bind("hunt", Rect2(610, 745, 540, 160)))
 		box = btn
 	else:
 		box = PanelContainer.new()
@@ -338,8 +340,8 @@ func _build_ledger() -> void:
 		margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	box.size = sz
 	var vis := get_viewport().get_visible_rect().size
-	var x := _origin.x + 870 * _k - sz.x / 2
-	var y := minf(_origin.y + 760 * _k, vis.y - safe_lrb.z - 12 - sz.y)
+	var x := _origin.x + 880 * _k - sz.x / 2
+	var y := minf(_origin.y + DESK_RIVETS * _k - sz.y, vis.y - safe_lrb.z - 12 - sz.y)  # on the desk, above its rivets
 	box.position = Vector2(x, y) - global_position
 	ledger = box
 
@@ -357,7 +359,7 @@ func _build_coach() -> void:
 	add_child(p)
 	var sz := p.get_combined_minimum_size()
 	p.size = sz
-	p.position = _to_local_px(Vector2(787, 132)) - Vector2(sz.x / 2, 0)
+	p.position = _to_local_px(Vector2(803, 150)) - Vector2(sz.x / 2, 0)
 	p.rotation = deg_to_rad(-1.2)
 	_coach = p
 

@@ -836,8 +836,8 @@ func _office() -> void:
 	for s in Office.SPOTS:
 		spots[s.act] = Rect2(s.box[0], s.box[1], s.box[2], s.box[3])
 	# Each hotspot covers its painted object (centres measured on assets/painted/office.png).
-	var objects := {"duelsoon": Vector2(137, 290), "daily": Vector2(372, 268), "survival": Vector2(380, 440), "board": Vector2(786, 288),
-		"profile": Vector2(1186, 298), "trophies": Vector2(790, 595), "gunsmith": Vector2(1470, 430)}
+	var objects := {"duelsoon": Vector2(132, 290), "daily": Vector2(401, 255), "survival": Vector2(405, 425), "board": Vector2(802, 302),
+		"profile": Vector2(1204, 308), "trophies": Vector2(798, 610), "gunsmith": Vector2(1478, 420)}
 	ok("Every hotspot sits on its painted object: window, calendar, target, board, frame, cabinet, doorway",
 		objects.keys().all(func(a): return spots.has(a) and spots[a].has_point(objects[a]) and art.encloses(spots[a])), str(spots.keys()))
 	var boxes: Array = spots.values()
@@ -909,17 +909,17 @@ func _batch1() -> void:
 	# The walk: two frames each way, one per stride, bobbing mid-step.
 	var lv := _new_level(2)  # Crossfire's walker
 	var w: Dictionary = lv.enemies.filter(func(e): return e.kind == "walker")[0]
-	var stride: float = G.geometry.walker.stride
+	var step: float = G.geometry.walker.frame_step
 	w.state = "walk"
 	w.dir = 1.0
-	w.x = stride * 10
+	w.x = step * 8  # the start of a step: no bob
 	lv._sync_view()
 	var f0: int = w.run_node.frame
 	var y0: float = w.run_node.position.y
-	w.x = stride * 11.5
+	w.x = step * 10  # mid-step
 	lv._sync_view()
-	ok("A walker walks: two painted frames each way, swapping every stride", w.run_node.asset == "outlaw/walk_right" and w.run_node.frame != f0
-		and Assets.frame_count("outlaw/walk_left") == 2 and Assets.frame_count("outlaw/walk_right") == 2)
+	ok("A walker walks: an 8-frame cycle each way, paced by the distance walked", w.run_node.asset == "outlaw/walk_right" and f0 == 0 and w.run_node.frame == 2
+		and Assets.frame_count("outlaw/walk_left") == 8 and Assets.frame_count("outlaw/walk_right") == 8)
 	ok("The walk bobs slightly mid-step", w.run_node.position.y < y0 and y0 - w.run_node.position.y <= float(G.geometry.walker.bob) * 4 + 0.5)
 	w.dir = -1.0
 	lv._sync_view()

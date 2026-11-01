@@ -26,10 +26,10 @@
     "street": {
       "GY": 156,
       "windows": [
-        {"x": 27.1, "y": 58.8, "w": 14.5, "h": 16.4},
-        {"x": 72.1, "y": 58.8, "w": 14.5, "h": 16.4},
-        {"x": 236.5, "y": 58.8, "w": 14.3, "h": 16.4},
-        {"x": 277.1, "y": 58.8, "w": 14.7, "h": 16.4}
+        {"x": 25.5, "y": 60.3, "w": 14.5, "h": 16.4},
+        {"x": 71.2, "y": 60.3, "w": 14.5, "h": 16.4},
+        {"x": 234.6, "y": 60.3, "w": 14.3, "h": 16.4},
+        {"x": 278.1, "y": 60.3, "w": 14.7, "h": 16.4}
       ]
     }
   },
@@ -128,7 +128,7 @@
     "duel": {"boss": "BOSS_B", "hp": 2, "react": [0.6, 0.55, 0.5], "fakes": true, "lastStand": true}
   },
   "bucket": {"_about": "Target Practice: a bucket hanging from a beam on a post. A shot at it or its rope drops it; it breaks the bottles under it.", "size": [16, 13], "hang_y": 80, "rope_top": 66, "rope_width": 3, "hit_pad": {"touch": 4, "mouse": 2}, "gravity": 0.3, "break_margin": 1},
-  "walker": {"_about": "Outlaws on a fixed route (brief v2 patrols): speed comes from the level, in units a second. The walk shows one frame per stride (units walked), with a bob (units) at mid-step: art only.", "stride": 6, "bob": 0.6},
+  "walker": {"_about": "Outlaws on a fixed route (brief v2 patrols): speed comes from the level, in units a second. The walk cycle (two steps) shows one frame per frame_step units walked, with a bob (units) at mid-step: art only.", "frame_step": 1.5, "bob": 0.6},
   "hanging": {"_about": "Art only: how hanging things are hung. A signpost stands beside what it holds (mirrored to the other side when it would leave the screen or stand on a bench), with the hang point along its arm; a wall bracket holds it if no signpost fits. Chains are repeated links; the bucket hangs from a hook.", "post_room": [6, 314], "post_width": 8, "bracket_scale": 0.5, "hook_min_chain": 2.5},
   "tumbleweed": {"speed": 0.7, "above_ground": -14, "bounce": 4}
 }

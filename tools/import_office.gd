@@ -8,12 +8,13 @@ extends SceneTree
 
 const IN := "res://assets/incoming/"
 const OUT := "res://assets/painted/"
-const OFFICE := "Golden Frontier Sheriff’s Office-2.png"
-const SMITH := "Three Poses of a Cheerful Craftsman.png"
+const OFFICE := "Sunset Gunsmith Office Workshop.png"
+const SMITH := "Three Poses of a Western Craftsman.png"
 const POSES := ["polish", "hammer", "tip"]
-## The painted stool is 82 office pixels tall; his is 223 sheet pixels. Stored at twice that
+const Cut := preload("res://tools/cut.gd")
+## The painted stool is 101 office pixels tall; his is 197 sheet pixels. Stored at twice that
 ## density (drawn at scale 0.5) so he stays sharp when the office is zoomed for wide phones.
-const SMITH_K := 82.0 / 223.0 * 2.0
+const SMITH_K := 101.0 / 197.0 * 2.0
 
 
 func _init() -> void:
@@ -28,6 +29,8 @@ func _init() -> void:
 	for i in 3:
 		var box := _bbox(sheet, spans[i])
 		var pose := sheet.get_region(box)
+		Cut.remove_shadow(pose)  # the game adds its own contact shadow
+		pose = pose.get_region(pose.get_used_rect())
 		var leg := _stool_leg(pose)
 		pose.resize(int(pose.get_width() * SMITH_K), int(pose.get_height() * SMITH_K), Image.INTERPOLATE_LANCZOS)
 		pose.save_png(ProjectSettings.globalize_path(OUT + "gunsmith_%s.png" % POSES[i]))

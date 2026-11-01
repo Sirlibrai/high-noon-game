@@ -17,17 +17,17 @@ const Cut := preload("res://tools/cut.gd")
 const IN := "res://assets/incoming/"
 const OUT := "res://assets/painted/"
 const D := 8.0  # output pixels per gameplay unit, as in import_painted.gd
-const SPLASH := "High Noon Clocktower in a Western Frontier Town.png"
-const WALK := "Four Walking Outlaw Poses.png"
-const BOTTLES := "Rustic Bottles, Glass, Bench and Bucket.png"
-const HARDWARE := "Western-Style Sign Hanging Hardware Sheet.png"
-const UI := "Western Game UI Asset Kit.png"
-const ICONS := "Hand-Painted Western Game Icon Sheet.png"
-## The walking outlaw is drawn at the same size as the standing poses (import_painted.gd OUTLAW_K).
-const OUTLAW_K := 20.0 * D / 724.0
+const SPLASH := "Sunset Clocktower Western Town.png"
+const WALK := "High Noon Cowboy Walk Cycle.png"
+const BOTTLES := "Bottles, Bottle Shards, Bench and Bucket.png"
+const HARDWARE := "High Noon Hanging Hardware Set.png"
+const UI := "High Noon Western UI Asset Sheet.png"
+const ICONS := "Western Wanted Poster Icon Sheet.png"
+## The walking outlaw's first frame is this tall (output pixels): the standing pose's 160, less his bent knee.
+const WALK_PX := 156.0
 ## Where the painting's clock and bell are, in its pixels (measured by eye, refined below).
-const CLOCK_NEAR := Vector2i(960, 288)
-const BELL_BOX := Rect2i(916, 114, 86, 80)
+const CLOCK_NEAR := Vector2i(958, 290)
+const BELL_BOX := Rect2i(914, 122, 88, 75)
 
 var _sheets := {}
 var G: Dictionary
@@ -52,10 +52,18 @@ func _sheet(name: String) -> Image:
 	return _sheets[name]
 
 
-## A piece of a transparent sheet: its halo trimmed, and only its main shape kept unless keep is "all".
-func _piece(sheet: String, box: Rect2i, keep := "largest") -> Image:
-	var im := _sheet(sheet).get_region(box)
-	Cut.defringe(im)
+## A piece of a sheet: its plain cream background (if any) and ground shadow (if `shadow`) removed, its halo
+## trimmed, and only its main shape kept unless keep is "all".
+func _piece(sheet: String, box: Rect2i, keep := "largest", shadow := false) -> Image:
+	var src := _sheet(sheet)
+	var im := src.get_region(box)
+	var cream := src.detect_alpha() == Image.ALPHA_NONE
+	if shadow:
+		Cut.remove_shadow(im, im.get_pixel(0, 0) if cream else null, 0.18, 0.45 if cream else 0.16)
+	if cream:
+		Cut.remove_cream(im)
+	else:
+		Cut.defringe(im)
 	if keep != "all":
 		Cut.keep(im, keep)
 	return im
@@ -135,6 +143,26 @@ func _splash() -> void:
 			stack.append(p + d)
 	_fill_holes(mask, B.size)
 	_open_top(mask, B.size, 2, int(B.size.y * 0.6))  # the brace stubs touching its shoulders
+	for y in B.size.y:  # its dark mouth: everything across each row between its sides
+		var x0 := -1
+		var x1 := -1
+		for x in B.size.x:
+			if mask[y * B.size.x + x]:
+				x1 = x
+				if x0 < 0:
+					x0 = x
+		for x in range(maxi(x0, 0), x1 + 1):
+			mask[y * B.size.x + x] = 1
+	var wide := Vector3i(0, 0, -1)  # its lip: the widest row (span x0, x1, at y)
+	for y in B.size.y:
+		var xs := range(B.size.x).filter(func(x): return mask[y * B.size.x + x])
+		if xs.size() > wide.y - wide.x:
+			wide = Vector3i(xs[0], xs[-1], y)
+	for y in range(wide.z + 1, B.size.y):  # below it, the dark front of the rim and the clapper: all but the sky
+		for x in range(wide.x, wide.y + 1):
+			var c := src.get_pixel(B.position.x + x, B.position.y + y)
+			if c.b < c.r:
+				mask[y * B.size.x + x] = 1
 	var grown := _grow(mask, B.size, 2)
 	var bell := Image.create_empty(B.size.x, B.size.y, false, Image.FORMAT_RGBA8)
 	var top := B.size.y
@@ -303,32 +331,44 @@ func _silhouette() -> void:
 # --- The walk -----------------------------------------------------------------------------------
 
 func _walk() -> void:
-	var boxes := [Rect2i(52, 4, 488, 716), Rect2i(612, 8, 416, 712), Rect2i(1088, 8, 508, 712), Rect2i(1628, 8, 472, 712)]
+	# Eight frames walking right (their boxes overlap: each keeps only its own figure); the left walk mirrors them.
+	var boxes := [Rect2i(0, 100, 340, 540), Rect2i(282, 100, 274, 540), Rect2i(552, 100, 276, 540), Rect2i(812, 108, 284, 532),
+		Rect2i(1084, 112, 272, 528), Rect2i(1348, 112, 276, 528), Rect2i(1608, 104, 276, 536), Rect2i(1872, 104, 300, 536)]
 	var frames: Array[Image] = []
 	var anchors: Array[Vector2i] = []
+	var k := 0.0
 	for box in boxes:
-		var im := Cut.scale(_piece(WALK, box, "figure"), OUTLAW_K)
+		var raw := _piece(WALK, box, "largest", true)
+		if k == 0.0:
+			k = WALK_PX / raw.get_used_rect().size.y
+		var im := Cut.scale(raw, k)
 		frames.append(im)
 		anchors.append(Vector2i(roundi(_mid_x(im, 0.38, 0.48)), _lowest_row(im) + 1))  # the belt, over the soles
 	var left := 0
 	var right := 0
 	var up := 0
-	for i in 4:
+	for i in frames.size():
 		left = maxi(left, anchors[i].x)
 		right = maxi(right, frames[i].get_width() - anchors[i].x)
 		up = maxi(up, anchors[i].y)
-	var names := ["walk_left_0", "walk_left_1", "walk_right_0", "walk_right_1"]  # the sheet: two going left, two going right
-	for i in 4:
-		_save("outlaw_" + names[i], _pad(frames[i], Vector2i(left + right, up), anchors[i], Vector2i(left, up)))
-	print('    "outlaw/walk_left" / "outlaw/walk_right": anchor [%d, %d], scale 1.0' % [left, up])
+	var files: Array[Array] = [[], []]
+	for i in frames.size():
+		var im := _pad(frames[i], Vector2i(left + right, up), anchors[i], Vector2i(left, up))
+		_save("outlaw_walk_right_%d" % i, im)
+		im.flip_x()
+		_save("outlaw_walk_left_%d" % i, im)
+		files[0].append('"painted/outlaw_walk_left_%d.png"' % i)
+		files[1].append('"painted/outlaw_walk_right_%d.png"' % i)
+	print('    "outlaw/walk_left": {"frames": [%s], "anchor": [%d, %d], "scale": 1.0},' % [", ".join(files[0]), right, up])
+	print('    "outlaw/walk_right": {"frames": [%s], "anchor": [%d, %d], "scale": 1.0},' % [", ".join(files[1]), left, up])
 
 
 # --- Target Practice ----------------------------------------------------------------------------
 
 func _bottles() -> void:
-	var k := 15.0 * D / 364.0  # the tall bottles are the bottle's 15-unit hit area
-	var whole := [Rect2i(64, 180, 124, 388), Rect2i(208, 240, 156, 328), Rect2i(388, 176, 124, 392)]
-	var broken := [Rect2i(500, 300, 216, 276), Rect2i(716, 300, 184, 276), Rect2i(900, 300, 168, 276)]
+	var whole := [Rect2i(56, 192, 136, 384), Rect2i(204, 264, 164, 312), Rect2i(380, 188, 132, 388)]
+	var broken := [Rect2i(548, 330, 176, 252), Rect2i(724, 330, 176, 252), Rect2i(900, 330, 180, 252)]
+	var k := 15.0 * D / _piece(BOTTLES, whole[0]).get_used_rect().size.y  # the tall bottle is the 15-unit hit area
 	for i in 3:
 		for pair in [["whole", whole[i], "largest", 0.0, 1.0], ["broken", broken[i], "all", 0.2, 0.75]]:
 			var im := Cut.scale(_piece(BOTTLES, pair[1], pair[2]), k)
@@ -336,7 +376,7 @@ func _bottles() -> void:
 			_save(file, im)
 			_say("bottle/%s%d" % [pair[0], i], file, Vector2i(roundi(_mid_x(im, pair[3], pair[4])), _lowest_row(im) + 1), ', "scale": 0.5')
 	# Shards for the glass burst: one per frame, each centred on the same small canvas.
-	var shards := [Rect2i(548, 492, 48, 36), Rect2i(568, 516, 76, 48), Rect2i(744, 520, 76, 56), Rect2i(940, 524, 68, 48), Rect2i(1000, 512, 64, 52), Rect2i(676, 516, 44, 28)]
+	var shards := [Rect2i(560, 528, 80, 44), Rect2i(744, 532, 80, 48), Rect2i(944, 532, 68, 48), Rect2i(1012, 520, 64, 52)]
 	var files: Array[String] = []
 	for i in shards.size():
 		var s := Cut.scale(_piece(BOTTLES, shards[i]), 0.48)
@@ -344,7 +384,7 @@ func _bottles() -> void:
 		files.append('"painted/glass_%d.png"' % i)
 	print('    "fx/glass": {"frames": [%s], "anchor": "center", "scale": 0.5},' % ", ".join(files))
 	# The bench: its top board at the bottles' rail, its feet on the street.
-	var bench := _piece(BOTTLES, Rect2i(1112, 228, 704, 376))
+	var bench := _piece(BOTTLES, Rect2i(1108, 232, 712, 376))
 	var top := 0
 	while _row_count(bench, top) < bench.get_width() * 0.6:
 		top += 1
@@ -358,7 +398,7 @@ func _bottles() -> void:
 	_save("prop_bench", b)
 	_say("prop/bench", "prop_bench", Vector2i(b.get_width() / 2, btop + roundi(3 * kb)), ', "scale": 0.5')
 	# The bucket: its body the hit area's height, anchored at the middle of its rim; the bail's top is a point.
-	var raw := _piece(BOTTLES, Rect2i(1852, 188, 300, 384))
+	var raw := _piece(BOTTLES, Rect2i(1844, 168, 312, 428))
 	var widest := 0
 	for y in raw.get_height():
 		widest = maxi(widest, _row_count(raw, y))
@@ -382,7 +422,7 @@ func _bottles() -> void:
 
 func _hardware() -> void:
 	# The signpost: anchored at the foot of the post; points along the underside of its arm.
-	var post := Cut.scale(_piece(HARDWARE, Rect2i(140, 8, 556, 808)), 0.75)
+	var post := Cut.scale(_piece(HARDWARE, Rect2i(92, 12, 632, 800)), 0.75)
 	var ground := _lowest_row(post) + 1
 	var px := roundi(_mid_x(post, 0.8, 0.9))
 	var arm_end := 0
@@ -402,9 +442,10 @@ func _hardware() -> void:
 	_say("prop/signpost", "prop_signpost", Vector2i(px, ground), ', "points": {"arm_from": [%d, %d], "arm_to": [%d, %d]}' % [
 		post_right - px + 24, under - ground, arm_end - 10 - px, under - ground])
 	# The wall bracket: anchored at the bottom of its ring, where a chain hooks on.
-	var br := Cut.scale(_piece(HARDWARE, Rect2i(468, 328, 416, 292)), 0.75)
-	var rx0 := roundi((755 - 468) * 0.75)
-	var rx1 := roundi((812 - 468) * 0.75)
+	var bbox := Rect2i(432, 324, 420, 312)
+	var br := Cut.scale(_piece(HARDWARE, bbox), 0.75)
+	var rx0 := roundi((722 - bbox.position.x) * 0.75)  # the ring, below the arm (sheet x 722 to 790)
+	var rx1 := roundi((790 - bbox.position.x) * 0.75)
 	var ring := Vector2i(0, 0)
 	for x in range(rx0, rx1):
 		for y in range(br.get_height() - 1, -1, -1):
@@ -423,10 +464,11 @@ func _hardware() -> void:
 	var board_top := 0
 	while _row_count(sign, board_top) < sign.get_width() / 2:
 		board_top += 1
-	_save("prop_sign_board", sign.get_region(Rect2i(0, board_top - 2, sign.get_width(), sign.get_height() - board_top + 2)))
-	_say("prop/sign", "prop_sign_board", Vector2i(0, 2), ', "scale": 0.85')
+	var from := maxi(0, board_top - 2)
+	_save("prop_sign_board", sign.get_region(Rect2i(0, from, sign.get_width(), sign.get_height() - from)))
+	_say("prop/sign", "prop_sign_board", Vector2i(0, board_top - from), ', "scale": 0.85')
 	var kc := 0.3
-	var chain := Cut.scale(_piece(HARDWARE, Rect2i(1012, 280, 80, 444), "all"), kc)
+	var chain := Cut.scale(_piece(HARDWARE, Rect2i(984, 268, 84, 496), "all"), kc)
 	var prof: Array[int] = []
 	for y in chain.get_height():
 		prof.append(_row_count(chain, y))
@@ -452,7 +494,7 @@ func _hardware() -> void:
 	_save("prop_chain", tile)
 	print('    "prop/chain": {"frames": ["painted/prop_chain.png"], "anchor": [%d, 0], "scale": 0.5},  # period %d px' % [tile.get_width() / 2, best])
 	# The hook: hangs from its eye; the bucket's bail sits in the bottom of the J.
-	var hook := Cut.scale(_piece(HARDWARE, Rect2i(1224, 368, 116, 240)), kc)
+	var hook := Cut.scale(_piece(HARDWARE, Rect2i(1184, 356, 136, 276)), kc)
 	var low := _lowest_row(hook)
 	var lx := 0
 	for x in hook.get_width():
@@ -478,39 +520,39 @@ static func _column_count(im: Image, x: int) -> int:
 # --- The UI kit ---------------------------------------------------------------------------------
 
 func _ui() -> void:
-	var panel := _piece(UI, Rect2i(24, 12, 920, 304))
+	var panel := _piece(UI, Rect2i(24, 12, 916, 304))
 	_save("ui_panel", Cut.scale(panel, 0.75))  # its planks tile down a tall card
 	_save("ui_panel_small", Cut.scale(panel, 0.25))
-	_save("ui_parchment", Cut.scale(_piece(UI, Rect2i(1000, 12, 580, 308)), 0.5))
+	_save("ui_parchment", Cut.scale(_piece(UI, Rect2i(984, 4, 644, 320)), 0.5))
 	var kb := 72.0 / 136.0
-	_save("ui_button_wood", Cut.scale(_piece(UI, Rect2i(24, 356, 416, 152)), kb))
-	_save("ui_button_wood_pressed", Cut.scale(_piece(UI, Rect2i(24, 512, 416, 148)), kb))
-	_save("ui_button_gold", Cut.scale(_piece(UI, Rect2i(468, 360, 412, 148)), kb))
-	_save("ui_button_gold_pressed", Cut.scale(_piece(UI, Rect2i(464, 512, 420, 148)), kb))
-	var round := Cut.scale(_piece(UI, Rect2i(188, 680, 204, 204)), 0.36)
+	_save("ui_button_wood", Cut.scale(_piece(UI, Rect2i(24, 348, 416, 156)), kb))
+	_save("ui_button_wood_pressed", Cut.scale(_piece(UI, Rect2i(24, 512, 416, 140)), kb))
+	_save("ui_button_gold", Cut.scale(_piece(UI, Rect2i(460, 348, 416, 156)), kb))
+	_save("ui_button_gold_pressed", Cut.scale(_piece(UI, Rect2i(460, 512, 416, 140)), kb))
+	var round := Cut.scale(_piece(UI, Rect2i(172, 664, 216, 220)), 0.34)
 	_save("ui_button_round", round)
 	var pressed: Image = round.duplicate()
 	pressed.adjust_bcs(0.82, 1.0, 1.0)
 	_save("ui_button_round_pressed", pressed)
-	var poster := _piece(UI, Rect2i(892, 332, 400, 520))
+	var poster := _piece(UI, Rect2i(896, 324, 396, 540))
 	_erase_frame_box(poster)  # the text runs the poster's full width
 	var p := Cut.scale(poster, 0.46)
 	_save("ui_poster", p)
 	var dark: Image = p.duplicate()
 	dark.adjust_bcs(0.55, 1.0, 0.45)
 	_save("ui_poster_locked", dark)
-	_save("ui_stamp_captured", Cut.scale(_piece(UI, Rect2i(1288, 448, 484, 272), "all"), 0.64))
+	_save("ui_stamp_captured", Cut.scale(_piece(UI, Rect2i(1298, 448, 472, 268), "all"), 0.66))
 	for f in ["ui_panel", "ui_panel_small", "ui_parchment", "ui_button_wood", "ui_button_gold", "ui_button_round", "ui_stamp_captured"]:
 		print("    %s %s" % [f, Image.load_from_file(ProjectSettings.globalize_path(OUT + f + ".png")).get_size()])
 
 
 func _icons() -> void:
-	_icon_pair("heart_full", Rect2i(68, 72, 256, 228), "heart_empty", Rect2i(360, 72, 248, 228), 0.41)
-	_icon_pair("bullet_full", Rect2i(696, 60, 128, 244), "bullet_empty", Rect2i(936, 56, 140, 244), 0.38)
-	_icon_pair("star_on", Rect2i(1156, 56, 248, 240), "star_off", Rect2i(1452, 56, 248, 244), 0.65)
-	_save("ui_icon_lock", Cut.scale(_piece(ICONS, Rect2i(84, 352, 216, 272)), 0.27))
-	_save("ui_coin", Cut.scale(_piece(ICONS, Rect2i(480, 640, 236, 240)), 0.31))
-	var plaque := Cut.scale(_piece(ICONS, Rect2i(796, 672, 476, 168)), 0.32)
+	_icon_pair("heart_full", Rect2i(48, 36, 284, 264), "heart_empty", Rect2i(356, 36, 276, 264), Vector2(105, 93))
+	_icon_pair("bullet_full", Rect2i(676, 28, 180, 276), "bullet_empty", Rect2i(908, 24, 188, 280), Vector2(53, 93))
+	_icon_pair("star_on", Rect2i(1148, 20, 264, 284), "star_off", Rect2i(1456, 24, 256, 280), Vector2(161, 157))
+	_save("ui_icon_lock", _fit(_icon(Rect2i(48, 312, 260, 304)), Vector2(58, 73)))
+	_save("ui_coin", _fit(_icon(Rect2i(436, 616, 264, 268)), Vector2(73, 74)))
+	var plaque := _fit(_icon(Rect2i(760, 648, 512, 216)), Vector2(152, 54))
 	_save("ui_plaque", plaque)
 	var plaque_dark: Image = plaque.duplicate()
 	plaque_dark.adjust_bcs(0.8, 1.0, 1.0)
@@ -518,25 +560,38 @@ func _icons() -> void:
 	var plaque_soon: Image = plaque.duplicate()
 	plaque_soon.adjust_bcs(0.7, 1.0, 0.35)
 	_save("ui_plaque_soon", plaque_soon)
-	var k := 88.0 / 248.0
-	var pause := _outlined(Cut.scale(_piece(ICONS, Rect2i(348, 368, 248, 256)), k))
-	_save("ui_icon_pause", pause)
-	var restart := _outlined(Cut.scale(_piece(ICONS, Rect2i(1184, 384, 228, 232)), k))
-	_save("ui_icon_restart", restart)
-	var sound := _outlined(Cut.scale(_piece(ICONS, Rect2i(628, 384, 248, 224), "all"), k))
+	var box := Vector2(88, 88)  # the control icons, before their outline
+	_save("ui_icon_pause", _outlined(_fit(_icon(Rect2i(332, 332, 272, 280)), box)))
+	_save("ui_icon_restart", _outlined(_fit(_icon(Rect2i(1176, 348, 248, 260)), box)))
+	var sound := _outlined(_fit(_icon(Rect2i(628, 352, 248, 248), "all"), box))
 	_save("ui_icon_sound_on", sound)
 	_save("ui_icon_sound_off", _slashed(sound))
-	var music := _outlined(Cut.scale(_piece(ICONS, Rect2i(908, 376, 216, 232)), k))
+	var music := _outlined(_fit(_icon(Rect2i(896, 340, 232, 264)), box))
 	_save("ui_icon_music", music)
 	_save("ui_icon_music_off", _slashed(music))
 	for f in ["ui_heart_full", "ui_bullet_full", "ui_star_on", "ui_icon_lock", "ui_coin", "ui_plaque", "ui_icon_pause", "ui_icon_sound_on", "ui_icon_music"]:
 		print("    %s %s" % [f, Image.load_from_file(ProjectSettings.globalize_path(OUT + f + ".png")).get_size()])
 
 
-## Two icons that swap in place (full and empty) on canvases of the same size, centred.
-func _icon_pair(a: String, box_a: Rect2i, b: String, box_b: Rect2i, k: float) -> void:
-	var ia := Cut.scale(_piece(ICONS, box_a), k)
-	var ib := Cut.scale(_piece(ICONS, box_b), k)
+## An icon from the icon sheet, without the soft shadow painted under it.
+func _icon(box: Rect2i, keep := "largest") -> Image:
+	return _piece(ICONS, box, keep, true)
+
+
+## Scaled down to fit inside `size` (output pixels), keeping its shape.
+static func _fit(im: Image, size: Vector2) -> Image:
+	var used := im.get_used_rect().size
+	return Cut.scale(im, minf(size.x / used.x, size.y / used.y))
+
+
+## Two icons that swap in place (full and empty) on canvases of the same size, centred; both at one
+## scale, set so the first fits inside `fit`.
+func _icon_pair(a: String, box_a: Rect2i, b: String, box_b: Rect2i, fit: Vector2) -> void:
+	var ra := _icon(box_a)
+	var used := ra.get_used_rect().size
+	var k := minf(fit.x / used.x, fit.y / used.y)
+	var ia := Cut.scale(ra, k)
+	var ib := Cut.scale(_icon(box_b), k)
 	var size := Vector2i(maxi(ia.get_width(), ib.get_width()), maxi(ia.get_height(), ib.get_height()))
 	_save("ui_" + a, _pad(ia, size, ia.get_size() / 2, size / 2))
 	_save("ui_" + b, _pad(ib, size, ib.get_size() / 2, size / 2))
@@ -612,17 +667,17 @@ static func _erase_frame_box(im: Image) -> void:
 		return
 	var box := Rect2i(cols[0], rows[0], cols[-1] - cols[0] + 1, rows[-1] - rows[0] + 1)
 	var src: Image = im.duplicate()
-	for y in range(box.position.y - 2, box.end.y + 2):
-		for x in range(box.position.x - 2, box.end.x + 2):
+	for y in range(box.position.y - 4, box.end.y + 4):
+		for x in range(box.position.x - 4, box.end.x + 4):
 			var near_v := mini(absi(x - box.position.x), absi(x - box.end.x + 1))
 			var near_h := mini(absi(y - box.position.y), absi(y - box.end.y + 1))
-			if mini(near_v, near_h) > 4:
+			if mini(near_v, near_h) > 7:  # the line and its soft edges
 				continue
 			var off := Vector2i.ZERO  # towards the paper outside the box
 			if near_v <= near_h:
-				off.x = -9 if absi(x - box.position.x) <= 4 else 9
+				off.x = -14 if absi(x - box.position.x) <= 7 else 14
 			else:
-				off.y = -9 if absi(y - box.position.y) <= 4 else 9
+				off.y = -14 if absi(y - box.position.y) <= 7 else 14
 			var q := Vector2i(x, y) + off
 			if q.x >= 0 and q.y >= 0 and q.x < w and q.y < h:
 				im.set_pixel(x, y, src.get_pixel(q.x, q.y))

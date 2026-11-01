@@ -6,54 +6,56 @@ extends SceneTree
 ## Boxes come from tools/measure_sheets.gd. For each piece it:
 ##   - removes plain cream backgrounds by flooding in from the box's edges, and
 ##     trims the faint matte halo on sheets that already have transparency;
+##   - removes the ground shadow painted under it (the game adds its own contact shadows);
 ##   - keeps the figure itself (the fall pose without its flying hat, the hat on its own);
-##   - scales to the game's size: outlaws so the standing pose matches the
-##     19-unit hitbox, props to their cover sizes in cover_sizes.json;
+##   - scales it to the size the game already draws it at: outlaws so the standing pose is
+##     160 pixels tall, props to a set height or width (the art they replace);
 ##   - trims to the opaque pixels and measures the foot (or base) anchor.
-## Output is at 8 pixels per gameplay unit, drawn at scale 0.5 on the 1280×720
-## base (4 px per unit), so the art stays sharp on a phone screen.
+## Outlaws are stored at 8 pixels per gameplay unit; props at their manifest scale.
 
 const IN := "res://assets/incoming/"
 const OUT := "res://assets/painted/"
 const D := 8.0  # output pixels per gameplay unit
-const POSES := "Four Poses of a Dusty Outlaw.png"
-const ACTION := "Western Outlaw Action Sprite Sheet.png"
-const PROPS := "Wild West Props Asset Sheet.png"
-const GUN := "Western Revolver in Hand.png"
-const STREET := "Golden Hour Western Main Street.png"
-## The idle pose's full height (724 sheet pixels) becomes 20 units: about the 19-unit hitbox, plus the hat brim.
-const OUTLAW_K := 20.0 * D / 724.0
+const POSES := "Stylised Western Outlaw Pose Collection.png"
+const ACTION := "Angular Cowboy Outlaw Pose Sheet.png"
+const PROPS := "Western Town Essentials_ Barrels, Crates and Wagon.png"
+const GUN := "Stylised Western Revolver Close-Up.png"
+const STREET := "High Noon Western Main Street.png"
+## The idle pose's full height becomes 20 units (160 pixels): about the hitbox, plus the hat brim.
+const IDLE_PX := 20.0 * D
 
-## [name, sheet, box, scale (output px per sheet px), anchor rule, keep rule]
+## [name, sheet, box, size, anchor rule, keep rule, ground shadow to remove]
+## size: "outlaw" (the outlaw's common scale, set by the idle pose), or ["h", px] / ["w", px] for the output height or width.
 ## anchor: "feet" (between the feet, at the soles), "base" (bottom centre: used for the runs and the lean so the
 ## body sits over its hit area), "center", "sign" (board's top-left).
 ## keep: "figure" (the main shape and its small specks), "largest" (only the biggest shape).
 var CUTS := [
-	["outlaw/idle", POSES, Rect2i(40, 64, 412, 732), OUTLAW_K, "feet", "figure"],
-	["outlaw/aim", POSES, Rect2i(476, 72, 460, 724), OUTLAW_K, "feet", "figure"],
-	["outlaw/hit", POSES, Rect2i(936, 128, 472, 668), OUTLAW_K, "feet", "figure"],
-	["outlaw/crouch", POSES, Rect2i(1420, 320, 384, 476), OUTLAW_K, "feet", "figure"],
-	["outlaw/run_left", ACTION, Rect2i(16, 40, 564, 652), OUTLAW_K, "base", "figure"],
-	["outlaw/run_right", ACTION, Rect2i(596, 40, 584, 652), OUTLAW_K, "base", "figure"],
-	["outlaw/lean", ACTION, Rect2i(1212, 36, 372, 672), OUTLAW_K, "base", "figure"],
-	["outlaw/fall", ACTION, Rect2i(1644, 112, 524, 552), OUTLAW_K, "base", "largest"],
-	["fx/hat", ACTION, Rect2i(1624, 20, 180, 152), OUTLAW_K, "center", "largest"],
-	["prop/barrel", PROPS, Rect2i(36, 200, 248, 320), 18.0 * D / 312.0, "base", "largest"],
-	["prop/crate", PROPS, Rect2i(316, 160, 328, 356), 22.0 * D / 348.0, "base", "largest"],
-	["prop/tnt", PROPS, Rect2i(680, 120, 232, 396), 18.0 * D / 312.0, "base", "figure"],
-	["prop/wagon", PROPS, Rect2i(972, 20, 936, 520), 50.0 * D / 928.0, "base", "largest"],
-	["prop/trough", PROPS, Rect2i(36, 600, 820, 192), 12.0 * D / 184.0, "base", "largest"],
-	["prop/sign", PROPS, Rect2i(916, 496, 484, 288), 22.0 * D / 476.0, "sign", "largest"],
-	["prop/tumbleweed", PROPS, Rect2i(1488, 556, 280, 248), 10.0 * D / 272.0, "base", "largest"],
+	["outlaw/idle", POSES, Rect2i(44, 16, 348, 692), "outlaw", "feet", "figure", false],
+	["outlaw/aim", POSES, Rect2i(408, 20, 392, 688), "outlaw", "feet", "figure", false],
+	["outlaw/hit", POSES, Rect2i(796, 48, 494, 660), "outlaw", "feet", "figure", false],
+	["outlaw/crouch", POSES, Rect2i(1284, 208, 424, 500), "outlaw", "feet", "largest", false],
+	["outlaw/lean", POSES, Rect2i(1708, 92, 452, 616), "outlaw", "base", "figure", false],
+	["outlaw/run_left", ACTION, Rect2i(44, 40, 516, 664), "outlaw", "base", "figure", true],
+	["outlaw/run_right", ACTION, Rect2i(564, 40, 560, 664), "outlaw", "base", "figure", true],
+	["outlaw/fall", ACTION, Rect2i(1620, 104, 548, 600), "outlaw", "base", "largest", true],
+	["fx/hat", ACTION, Rect2i(1580, 24, 200, 160), "outlaw", "center", "largest", false],
+	["prop/barrel", PROPS, Rect2i(36, 184, 268, 344), ["h", 148], "base", "largest", true],
+	["prop/crate", PROPS, Rect2i(316, 148, 344, 380), ["h", 178], "base", "largest", true],
+	["prop/tnt", PROPS, Rect2i(676, 90, 252, 436), ["h", 165], "base", "figure", true],
+	["prop/wagon", PROPS, Rect2i(972, 12, 924, 516), ["w", 403], "base", "largest", true],
+	["prop/trough", PROPS, Rect2i(40, 568, 836, 244), ["w", 427], "base", "largest", true],
+	["prop/sign", PROPS, Rect2i(930, 540, 484, 272), ["w", 179], "sign", "largest", false],
+	["prop/tumbleweed", PROPS, Rect2i(1464, 540, 356, 276), ["h", 72], "base", "largest", true],
 ]
 const Cut := preload("res://tools/cut.gd")
 var _sheets := {}
+var _outlaw_k := 0.0  # output px per sheet px for every outlaw piece, from the idle pose
 
 
 func _init() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
 	for c in CUTS:
-		_cut(c[0], c[1], c[2], c[3], c[4], c[5])
+		_cut(c[0], c[1], c[2], c[3], c[4], c[5], c[6])
 	_gun()
 	_street()
 	quit()
@@ -67,69 +69,28 @@ func _sheet(name: String) -> Image:
 	return _sheets[name]
 
 
-func _cut(name: String, sheet: String, box: Rect2i, k: float, anchor_rule: String, keep: String) -> void:
+func _cut(name: String, sheet: String, box: Rect2i, size: Variant, anchor_rule: String, keep: String, shadow: bool) -> void:
 	var src := _sheet(sheet)
 	var im := src.get_region(box)
-	if src.detect_alpha() == Image.ALPHA_NONE:
-		_remove_cream(im)
+	var cream := src.detect_alpha() == Image.ALPHA_NONE
+	if shadow:
+		Cut.remove_shadow(im, im.get_pixel(0, 0) if cream else null, 0.18, 0.45 if cream else 0.16)  # flat cream sheets: a wider match for its soft edge
+	if cream:
+		Cut.remove_cream(im)
 	else:
 		Cut.defringe(im)
 	Cut.keep(im, keep)
+	var used := im.get_used_rect()
+	var k: float
+	if size is String:  # the outlaw: one scale for all his pieces, set by the standing pose
+		if _outlaw_k == 0.0:
+			_outlaw_k = IDLE_PX / used.size.y
+		k = _outlaw_k
+	else:
+		k = float(size[1]) / (used.size.y if size[0] == "h" else used.size.x)
 	var out := Cut.scale(im, k)
 	_save(name, out, anchor_rule)
 
-
-## Floods the cream background in from the edges; light areas inside the figure stay.
-func _remove_cream(im: Image) -> void:
-	var w := im.get_width()
-	var h := im.get_height()
-	var bg := im.get_pixel(0, 0)
-	var seen := PackedByteArray()
-	seen.resize(w * h)
-	var stack: Array[Vector2i] = []
-	for x in w:
-		stack.append(Vector2i(x, 0))
-		stack.append(Vector2i(x, h - 1))
-	for y in h:
-		stack.append(Vector2i(0, y))
-		stack.append(Vector2i(w - 1, y))
-	while not stack.is_empty():
-		var p: Vector2i = stack.pop_back()
-		if p.x < 0 or p.y < 0 or p.x >= w or p.y >= h or seen[p.y * w + p.x]:
-			continue
-		var c := im.get_pixel(p.x, p.y)
-		var d := absf(c.r - bg.r) + absf(c.g - bg.g) + absf(c.b - bg.b)
-		if d > 0.22:
-			continue
-		seen[p.y * w + p.x] = 1
-		# Soft edge: nearly-background pixels vanish, slightly tinted ones fade.
-		im.set_pixel(p.x, p.y, Color(c, clampf((d - 0.10) / 0.12, 0, 1) * 0.6) if d > 0.10 else Color(0, 0, 0, 0))
-		stack.append(p + Vector2i.RIGHT)
-		stack.append(p + Vector2i.LEFT)
-		stack.append(p + Vector2i.DOWN)
-		stack.append(p + Vector2i.UP)
-	# Cream pockets the flood can't reach (between the legs), and pale dust at the boots.
-	var solid_bottom := h - 1
-	for y in range(h - 1, -1, -1):
-		var dark := false
-		for x in w:
-			if im.get_pixel(x, y).get_luminance() < 0.4 and im.get_pixel(x, y).a > 0.5:
-				dark = true
-				break
-		if dark:
-			solid_bottom = y
-			break
-	var dust_from := solid_bottom - int(h * 0.07)
-	for y in h:
-		for x in w:
-			var c := im.get_pixel(x, y)
-			if c.a == 0:
-				continue
-			var d := absf(c.r - bg.r) + absf(c.g - bg.g) + absf(c.b - bg.b)
-			if d < 0.12 or (y >= dust_from and c.get_luminance() > 0.5 and d < 0.6) or y > solid_bottom + 1:
-				im.set_pixel(x, y, Color(0, 0, 0, 0))
-			elif d < 0.22:
-				im.set_pixel(x, y, Color(c, minf(c.a, (d - 0.12) / 0.10)))
 
 func _save(name: String, im: Image, rule: String, extra := "") -> void:
 	var w := im.get_width()
@@ -173,22 +134,26 @@ func _row_count(im: Image, y: int) -> int:
 
 ## The first-person revolver: the gloved hand and gun, with the coat sleeve cut away.
 func _gun() -> void:
-	var box := Rect2i(560, 150, 760, 800)
+	var box := Rect2i(470, 130, 830, 894)
 	var im := _sheet(GUN).get_region(box)
-	_remove_cream(im)
+	Cut.remove_cream(im)
 	# Everything right of the glove's cuff (the shirt cuff and coat sleeve) goes.
-	var a := Vector2(690, 440)
-	var b := Vector2(552, 800)
+	var a := Vector2(1290, 672) - Vector2(box.position)
+	var b := Vector2(1103, 1024) - Vector2(box.position)
 	for y in im.get_height():
 		for x in im.get_width():
 			if (b.x - a.x) * (y - a.y) - (b.y - a.y) * (x - a.x) < 0:
 				im.set_pixel(x, y, Color(0, 0, 0, 0))
+			elif x + box.position.x > 1120 and y + box.position.y > 650:  # the light shirt cuff curving under the glove's edge
+				var c := im.get_pixel(x, y)
+				if c.r > 0.8 and c.g > 0.55 and c.b > 0.35:
+					im.set_pixel(x, y, Color(0, 0, 0, 0))
 	Cut.keep(im, "largest")
-	var k := 300.0 / 800.0  # drawn about 150 base pixels tall: small, in the corner
+	var k := 300.0 / box.size.y  # drawn 150 base pixels tall (about a fifth of the screen), in the corner
 	var out := Cut.scale(im, k, false)  # untrimmed, so the pivot and muzzle below stay put
 	# The pivot is the glove's cuff, which goes in the screen's corner; the muzzle is the barrel's tip.
-	var pivot := Vector2i(roundi(560 * k), roundi(780 * k))
-	var muzzle := Vector2i(roundi(12 * k), roundi(75 * k))
+	var pivot := Vector2i(roundi(680 * k), roundi(870 * k))
+	var muzzle := Vector2i(roundi(25 * k), roundi(83 * k))
 	var file := "gun_peacemaker.png"
 	out.save_png(ProjectSettings.globalize_path(OUT + file))
 	print('    gun %dx%d: anchor %s, muzzle %s from the anchor' % [out.get_width(), out.get_height(), pivot, muzzle - pivot])

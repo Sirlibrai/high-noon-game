@@ -1774,12 +1774,15 @@ func _sync_enemy(e: Dictionary) -> void:
 			var to_right: bool = e.dir > 0 if e.kind == "walker" else covers[e.to].x > covers[e.from].x
 			var at := Vector2(gm.x + _hitbox.x / 2, gm.y + _hitbox.y)
 			if e.kind == "walker" and Assets.has(who + "walk_right"):
-				# Two frames each way, one per stride walked, so the steps keep pace with his speed; a slight bob mid-step.
+				# The walk cycle (two steps), one frame per frame_step units walked so it keeps pace with his speed;
+				# a slight bob mid-step.
 				var W: Dictionary = G.walker
-				var steps := absf(e.x) / float(W.stride)
-				e.run_node.show_asset(who + ("walk_right" if to_right else "walk_left"))
-				e.run_node.show_frame(int(steps) % 2)
-				at.y -= sin(fposmod(steps, 1.0) * PI) * float(W.bob)
+				var anim: String = who + ("walk_right" if to_right else "walk_left")
+				var frames := Assets.frame_count(anim)
+				var f := absf(e.x) / float(W.frame_step)
+				e.run_node.show_asset(anim)
+				e.run_node.show_frame(int(f) % frames)
+				at.y -= sin(fposmod(f / (frames / 2.0), 1.0) * PI) * float(W.bob)
 			else:
 				e.run_node.show_asset(who + ("run_right" if to_right else "run_left"))
 			_place(e.run_node, at)

@@ -80,3 +80,106 @@ static func scale(im: Image, k: float, trim := true) -> Image:
 	return out.get_region(used.grow(1).intersection(Rect2i(Vector2i.ZERO, out.get_size())))
 
 
+
+
+## Removes the ground shadow painted under a figure or prop: the soft ellipse its lowest rows show.
+## Its colour is read from the lowest pixels that aren't background; everything joined to them in that
+## colour within the bottom part of the piece goes (transparent, or `bg` on a cream sheet so the cream
+## flood then clears it).
+static func remove_shadow(im: Image, bg: Variant = null, band := 0.18, tol := 0.16) -> void:
+	var w := im.get_width()
+	var h := im.get_height()
+	var is_bg := func(c: Color) -> bool:
+		return c.a < 0.25 if bg == null else absf(c.r - bg.r) + absf(c.g - bg.g) + absf(c.b - bg.b) < 0.2
+	var low := -1
+	for y in range(h - 1, -1, -1):
+		for x in w:
+			if not is_bg.call(im.get_pixel(x, y)):
+				low = y
+				break
+		if low >= 0:
+			break
+	if low < 0:
+		return
+	var sum := Color(0, 0, 0, 0)
+	var n := 0
+	var stack: Array[Vector2i] = []
+	for y in [low, low - 1, low - 2]:
+		for x in w:
+			var c := im.get_pixel(x, y)
+			if not is_bg.call(c):
+				sum += c
+				n += 1
+				stack.append(Vector2i(x, y))
+	var shade := sum / n
+	var top := int(h * (1.0 - band))
+	var seen := PackedByteArray()
+	seen.resize(w * h)
+	var clear := Color(bg, 1.0) if bg != null else Color(0, 0, 0, 0)
+	while not stack.is_empty():
+		var p: Vector2i = stack.pop_back()
+		if p.x < 0 or p.y < top or p.x >= w or p.y >= h or seen[p.y * w + p.x]:
+			continue
+		seen[p.y * w + p.x] = 1
+		var c := im.get_pixel(p.x, p.y)
+		var soft := bg == null and c.a < 0.96  # on a transparent sheet the shadow is see-through; the art is not
+		if is_bg.call(c) or not (soft or absf(c.r - shade.r) + absf(c.g - shade.g) + absf(c.b - shade.b) <= tol):
+			continue
+		im.set_pixel(p.x, p.y, clear)
+		stack.append(p + Vector2i.RIGHT)
+		stack.append(p + Vector2i.LEFT)
+		stack.append(p + Vector2i.DOWN)
+		stack.append(p + Vector2i.UP)
+
+
+## Floods the cream background in from the edges; light areas inside the figure stay.
+static func remove_cream(im: Image) -> void:
+	var w := im.get_width()
+	var h := im.get_height()
+	var bg := im.get_pixel(0, 0)
+	var seen := PackedByteArray()
+	seen.resize(w * h)
+	var stack: Array[Vector2i] = []
+	for x in w:
+		stack.append(Vector2i(x, 0))
+		stack.append(Vector2i(x, h - 1))
+	for y in h:
+		stack.append(Vector2i(0, y))
+		stack.append(Vector2i(w - 1, y))
+	while not stack.is_empty():
+		var p: Vector2i = stack.pop_back()
+		if p.x < 0 or p.y < 0 or p.x >= w or p.y >= h or seen[p.y * w + p.x]:
+			continue
+		var c := im.get_pixel(p.x, p.y)
+		var d := absf(c.r - bg.r) + absf(c.g - bg.g) + absf(c.b - bg.b)
+		if d > 0.22:
+			continue
+		seen[p.y * w + p.x] = 1
+		# Soft edge: nearly-background pixels vanish, slightly tinted ones fade.
+		im.set_pixel(p.x, p.y, Color(c, clampf((d - 0.10) / 0.12, 0, 1) * 0.6) if d > 0.10 else Color(0, 0, 0, 0))
+		stack.append(p + Vector2i.RIGHT)
+		stack.append(p + Vector2i.LEFT)
+		stack.append(p + Vector2i.DOWN)
+		stack.append(p + Vector2i.UP)
+	# Cream pockets the flood can't reach (between the legs), and pale dust at the boots.
+	var solid_bottom := h - 1
+	for y in range(h - 1, -1, -1):
+		var dark := false
+		for x in w:
+			if im.get_pixel(x, y).get_luminance() < 0.4 and im.get_pixel(x, y).a > 0.5:
+				dark = true
+				break
+		if dark:
+			solid_bottom = y
+			break
+	var dust_from := solid_bottom - int(h * 0.07)
+	for y in h:
+		for x in w:
+			var c := im.get_pixel(x, y)
+			if c.a == 0:
+				continue
+			var d := absf(c.r - bg.r) + absf(c.g - bg.g) + absf(c.b - bg.b)
+			if d < 0.12 or (y >= dust_from and c.get_luminance() > 0.5 and d < 0.6) or y > solid_bottom + 1:
+				im.set_pixel(x, y, Color(0, 0, 0, 0))
+			elif d < 0.22:
+				im.set_pixel(x, y, Color(c, minf(c.a, (d - 0.12) / 0.10)))

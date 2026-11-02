@@ -839,10 +839,12 @@ func _office() -> void:
 	for s in Office.SPOTS:
 		spots[s.act] = Rect2(s.box[0], s.box[1], s.box[2], s.box[3])
 	# Each hotspot covers its painted object (centres measured on assets/painted/office.png).
-	var objects := {"duelsoon": Vector2(132, 290), "daily": Vector2(401, 255), "survival": Vector2(405, 425), "board": Vector2(802, 302),
-		"profile": Vector2(1204, 308), "trophies": Vector2(798, 610), "gunsmith": Vector2(1478, 420)}
+	var objects := {"duelsoon": Vector2(205, 300), "daily": Vector2(428, 368), "survival": Vector2(428, 481), "board": Vector2(805, 320),
+		"profile": Vector2(1215, 226), "trophies": Vector2(800, 665), "gunsmith": Vector2(1498, 430)}
 	ok("Every hotspot sits on its painted object: window, calendar, target, board, frame, cabinet, doorway",
 		objects.keys().all(func(a): return spots.has(a) and spots[a].has_point(objects[a]) and art.encloses(spots[a])), str(spots.keys()))
+	ok("The parchment on the desk is the Continue Hunt hotspot", Office.PARCHMENT.has_point(Vector2(835, 836)) and Office.PARCHMENT.encloses(Office.WRITING)
+		and not spots.values().any(func(b): return b.intersects(Office.PARCHMENT)))
 	var boxes: Array = spots.values()
 	var overlaps := 0
 	for i in boxes.size():
@@ -850,13 +852,51 @@ func _office() -> void:
 			if boxes[i].intersects(boxes[j]):
 				overlaps += 1
 	ok("No two office hotspots overlap", overlaps == 0, "%d overlaps" % overlaps)
+	var tags_ok := true
+	for t in o.plates:  # in painting pixels: beside its own object, over none
+		var r := Rect2((t.position + o.global_position - o._origin) / o._k, t.size / o._k)
+		var own: Rect2 = t.get_meta("box")
+		tags_ok = tags_ok and not boxes.any(func(b): return b.intersects(r)) and not r.intersects(Office.PARCHMENT) and own.grow(70).intersects(r)
+	ok("Each object has a small tag beside it, covering no object", o.plates.size() == Office.SPOTS.size() and tags_ok
+		and o.plates.all(func(t): return t.theme_type_variation in [&"OfficeTag", &"OfficeTagSoon"] and t.size.y <= 30))
+	ok("Locked destinations show a padlock on their tag; open ones don't", o.plates.all(func(t): return (t.icon == Assets.texture("ui/icon_lock")) == (t.theme_type_variation == &"OfficeTagSoon"))
+		and o.plates.filter(func(t): return t.icon != null).map(func(t): return t.text) == ["Duel", "Daily Bounty", "Survival"])
 	var hung: Array = o._art.get_children().filter(func(c): return c is Button and c.has_meta("art"))
-	ok("Five painted wanted posters on the cork board (the Bounty board's, smaller), the current hunt in the middle",
-		hung.size() == 5 and hung.all(func(b): return (b.get_meta("art") as TextureRect).texture.resource_path.contains("painted/poster_ch"))
-		and (hung[4].get_meta("art") as TextureRect).texture == Assets.texture("poster/ch0") and hung[4].scale.x < 1)
+	var cork := Rect2(622, 140, 340, 385)  # the cork's clear middle, between the painted maps and notes
+	var poster_boxes: Array = hung.map(func(p): return Rect2(p.position + p.size / 2 - p.size * p.scale / 2, p.size * p.scale).grow(absf(p.rotation) * p.size.y * p.scale.y / 2))
+	var apart := true
+	for i in poster_boxes.size():
+		for j in range(i + 1, poster_boxes.size()):
+			apart = apart and not poster_boxes[i].intersects(poster_boxes[j])
+	ok("Five painted wanted posters pinned in the cork's clear middle, none overlapping, the current hunt's big in the centre",
+		hung.size() == 5 and apart and poster_boxes.all(func(b): return cork.encloses(b))
+		and hung.all(func(b): return (b.get_meta("art") as TextureRect).texture.resource_path.contains("painted/poster_ch"))
+		and (hung[4].get_meta("art") as TextureRect).texture == Assets.texture("poster/ch0") and hung[4].get_meta("hunt")
+		and absf(poster_boxes[4].get_center().x - spots.board.get_center().x) < 4, str(poster_boxes))
 	ok("The new save's office: no trophies, the Peacemaker alone on the rack, the gunsmith polishing",
 		_art_named(o, "trophy_office/").is_empty() and _art_named(o, "rack/") == ["rack/peacemaker"] and o._smith.asset.begins_with("gunsmith/"))
-	ok("The hunter's portrait fills the gilt frame", _art_named(o, "office/portrait").size() == 1)
+	var pic: TextureRect = o._art.get_node("Portrait")
+	ok("The hunter's portrait fills the gilt frame's canvas", pic.position == Office.FRAME_IN.position and pic.size == Office.FRAME_IN.size
+		and pic.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_COVERED and spots.profile.encloses(Office.FRAME_IN))
+	var kids: Array = o._art.get_children()
+	var front: Node = kids.filter(func(c): return c is AssetSprite and c.asset == "office/doorway_front")[0]
+	var smith_k: float = Assets.meta("gunsmith/polish", "scale", 1.0)
+	var stool_h: float = preload("res://tools/import_office.gd").SMITH_K * 197.0 * smith_k  # his stool, drawn: its sheet height scaled
+	var seated: float = Assets.texture("gunsmith/polish").get_height() * smith_k
+	ok("The gunsmith sits on his stool over the painted one, behind the doorframe, crate and barrel",
+		o._smith.position == Office.STOOL_FOOT and Office.DOORWAY.has_point(Office.STOOL_FOOT) and kids.find(front) > kids.find(o._smith)
+		and stool_h >= 0.85 * 124 and stool_h <= 124 and seated > Office.DOORWAY.size.y * 0.55 and seated < Office.DOORWAY.size.y * 0.7, "stool %.0f, seated %.0f" % [stool_h, seated])
+	var fp := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/office_doorway_front.png"))
+	ok("The doorway's front layer is clear in the opening and solid on the frame, crate and barrel",
+		fp.get_pixelv(Vector2i(1500, 400) - Vector2i(Office.DOOR_AT)).a == 0 and fp.get_pixelv(Vector2i(1330, 400) - Vector2i(Office.DOOR_AT)).a == 1
+		and fp.get_pixelv(Vector2i(1375, 700) - Vector2i(Office.DOOR_AT)).a == 1 and fp.get_pixelv(Vector2i(1640, 680) - Vector2i(Office.DOOR_AT)).a == 1)
+	var ink: Array = o.ledger.find_children("*", "Label", true, false).map(func(l): return l.text)
+	ok("Continue Hunt is written on the parchment: the next level's name and the bounty's reward",
+		ink == ["CONTINUE THE HUNT", "Level 1: Target Practice", "BOUNTY", "$2,500"] and o.ledger.find_children("*", "Label", true, false)[1].theme_type_variation == &"ParchmentTitle", str(ink))
+	var writing := Rect2(o._to_local_px(Office.PARCHMENT.position), Office.PARCHMENT.size * o._k)
+	ok("The writing stays on the parchment", writing.encloses(o.ledger.get_rect()), str(o.ledger.get_rect()))
+	ok("The office light only adds a light vignette and the chosen glow; the room isn't dimmed",
+		(o._shade.material as ShaderMaterial).shader.code.contains("vignette") and not (o._shade.material as ShaderMaterial).shader.code.contains("uniform float dim"))
 	o._smith_t = Office.IDLE_POSE_TIME + 0.1
 	o._physics_process(0.0)
 	var idle2: String = o._smith.asset
@@ -877,6 +917,11 @@ func _office() -> void:
 	add_child(o2)
 	ok("Captured bounties put trophies in the cabinet; owned guns go on the rack",
 		_art_named(o2, "trophy_office/") == ["trophy_office/ch0", "trophy_office/ch1"] and _art_named(o2, "rack/").size() == G.weapons.size())
+	var note: Array = o2.ledger.find_children("*", "Label", true, false).map(func(l): return l.text)
+	var sheet: Button = o2.get_children().filter(func(c): return c is Button and c.size.is_equal_approx(Office.PARCHMENT.size * o2._k))[0]
+	sheet.pressed.emit()
+	ok("Nothing left to hunt: the parchment says so, names the next outlaw, and opens the Bounty board",
+		note == ["All available bounties captured", "DIGGER MCCALL ARRIVES SOON"] and o2._lit.name == "board", str(note))
 	remove_child(o2)
 	o2.free()
 	SaveManager.data.progress = keep

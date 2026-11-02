@@ -1,11 +1,11 @@
 extends SceneTree
-## Makes the Bounty board wall from the office's notice board (assets/painted/office.png), so the two
-## match: a seamless cork tile (the board's cork, its lamp-light gradient evened out, mirrored so it
-## repeats without seams), the board's wooden frame rail (repeating sideways, for the top and the
-## bottom edge):
+## Makes the Bounty board wall from the notice board in the first office painting (assets/incoming/
+## Sunset Gunsmith Office Workshop.png), so the two match: a seamless cork tile (the board's cork, its
+## lamp-light gradient evened out, mirrored so it repeats without seams) and the board's wooden frame
+## rail (repeating sideways, for the top and the bottom edge):
 ##   Godot --headless --path . -s res://tools/make_wall.gd
 
-const OFFICE := "res://assets/painted/office.png"
+const OFFICE := "res://assets/incoming/Sunset Gunsmith Office Workshop.png"
 const OUT := "res://assets/painted/"
 const CORK := Rect2i(600, 196, 400, 220)  # inside the frame, clear of its edges
 const RAIL := Rect2i(560, 138, 480, 27)  # the frame's top rail, between its corner blocks

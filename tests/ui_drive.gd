@@ -118,6 +118,17 @@ func _check_office(tag: String) -> void:
 		for c in boxes:
 			if b[0] < c[0] and b[1].intersects(c[1]):
 				problems.append("%s office: %s overlaps %s" % [tag, b[0], c[0]])
+	var sheet := Rect2(o._to_local_px(Office.PARCHMENT.position) + o.global_position, Office.PARCHMENT.size * o._k)
+	if not sheet.encloses(o.ledger.get_global_rect()):
+		problems.append("%s office: the writing %s is off the parchment %s" % [tag, o.ledger.get_global_rect(), sheet])
+	for p in o.plates:  # tags beside their objects, never over one
+		for sp in Office.SPOTS:
+			var box := Rect2(o._to_local_px(Vector2(sp.box[0], sp.box[1])) + o.global_position, Vector2(sp.box[2], sp.box[3]) * o._k)
+			if box.intersects(p.get_global_rect()):
+				problems.append("%s office: the %s tag covers the %s" % [tag, p.text, sp.label])
+	var top: Array = main._home_box.find_children("*", "Control", true, false).filter(func(c): return c.visible and (c is Label or c is Button))
+	if top.size() != 1 or top[0] != main._wallet:
+		problems.append("%s office: the top bar has more than the wallet: %s" % [tag, top])
 	for h in o.get_children():
 		if h is Button and h.theme_type_variation == &"Hotspot" and (h.size.x < 44 * k or h.size.y < 44 * k):
 			problems.append("%s office: hotspot %s is %s, under 44 points" % [tag, h.tooltip_text, h.size / k])

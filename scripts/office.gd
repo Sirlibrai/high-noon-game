@@ -2,54 +2,65 @@ class_name Office
 extends Node2D
 ## The sheriff's office home screen: the painted office (assets/painted/office.png) with the parts
 ## that change laid over it, each placed in the painting's own pixels:
-##   - the wanted posters pinned to the empty cork board, the current hunt big in the middle;
+##   - the wanted posters pinned to the cork board, side by side, the current hunt's in the middle;
 ##   - the bounty hunter's portrait in the empty gilt frame;
-##   - a trophy on the cabinet's top shelf for each captured bounty;
-##   - the owned guns resting across the pegs of the rack inside the gunsmith's doorway;
-##   - the gunsmith on the stool at his workbench, polishing and hammering, tipping his cap when called;
-##   - lamp glow, dust in the window light, and the Continue Hunt ledger on the desk.
-## The painting covers the screen (16:9 shows all of it; wider phones trim a little ceiling and desk).
-## The room is softly dim; a tapped object lights up warmly for a moment before its screen opens
-## (one tap, no hover). Emits `act`: board, hunt, gunsmith, profile, trophies, daily, survival, duelsoon.
+##   - a trophy on the cabinet's shelf for each captured bounty;
+##   - the owned guns on the rack in the workshop;
+##   - the gunsmith on the stool at his bench, seen through the doorway (its frame, the crate and the
+##     barrel are drawn over him), polishing and hammering, tipping his cap when called;
+##   - the next hunt written on the blank parchment on the desk;
+##   - a gentle lamp flicker, dust in the window light, and a light vignette.
+## The painting covers the screen (16:9 shows all of it; wider phones trim some ceiling and a little
+## desk). Each object has a small tag beside it (a padlock on locked ones); a tapped object glows
+## warmly for a moment before its screen opens (one tap, no hover).
+## Emits `act`: board, hunt, gunsmith, profile, trophies, daily, survival, duelsoon.
 
 signal act(name: String)
 
 const ART_SIZE := Vector2(1672, 941)
-## Hotspots in painting pixels: the box you tap (its painted object), and where its brass plate hangs
-## (top centre). Plates are kept inside the safe area.
+## On screens wider than the painting, how much of the trimmed height comes off the top (the rest off
+## the bottom): mostly ceiling, so the parchment on the desk stays in view.
+const CROP_TOP := 0.55
+## Hotspots in painting pixels: the box you tap (its painted object), and the centre of its tag, beside
+## the object and never over it. Tags are kept inside the safe area.
 const SPOTS := [
-	{"act": "duelsoon", "label": "Duel", "box": [20, 50, 235, 490], "plate": [137, 470], "soon": true},
-	{"act": "daily", "label": "Daily Bounty", "box": [330, 165, 145, 180], "plate": [401, 312], "soon": true},
-	{"act": "survival", "label": "Survival", "box": [336, 352, 140, 145], "plate": [405, 474], "soon": true},
-	{"act": "board", "label": "Bounty board", "box": [512, 132, 582, 342], "plate": [802, 440]},
-	{"act": "profile", "label": "Profile", "box": [1115, 180, 178, 256], "plate": [1204, 408]},
-	{"act": "trophies", "label": "Trophies", "box": [490, 495, 618, 230], "plate": [800, 560]},
-	{"act": "gunsmith", "label": "Gunsmith", "box": [1305, 84, 345, 645], "plate": [1478, 652]},
+	{"act": "duelsoon", "label": "Duel", "box": [92, 88, 225, 447], "tag": [205, 588], "soon": true},
+	{"act": "daily", "label": "Daily Bounty", "box": [376, 315, 106, 109], "tag": [403, 294], "soon": true},
+	{"act": "survival", "label": "Survival", "box": [374, 425, 108, 112], "tag": [420, 556], "soon": true},
+	{"act": "board", "label": "Bounty board", "box": [490, 82, 635, 478], "tag": [805, 582]},
+	{"act": "profile", "label": "Profile", "box": [1133, 125, 165, 203], "tag": [1215, 346]},
+	{"act": "trophies", "label": "Trophies", "box": [495, 603, 610, 129], "tag": [1170, 714]},
+	{"act": "gunsmith", "label": "Gunsmith", "box": [1351, 127, 294, 613], "tag": [1372, 762]},
 ]
-## The cork board: the big poster in the middle, two small ones each side ([x, y] centre, tilt).
-const BIG_SPOT := [803, 305, -0.02]
-const SMALL_SPOTS := [[636, 235, -0.07], [636, 369, 0.05], [970, 235, 0.06], [970, 369, -0.04]]
-const BIG_W := 126.0
-const SMALL_W := 96.0
-## The gilt frame's empty canvas, the cabinet's top shelf (trophy bases), the rack's pegs.
-const FRAME_IN := Rect2(1147, 218, 115, 180)
-const TROPHY_AT := [Vector2(595, 588), Vector2(660, 588), Vector2(725, 588), Vector2(880, 588), Vector2(965, 588)]
-const RACK_AT := {"repeater": Vector2(1462, 352), "coach": Vector2(1462, 374), "peacemaker": Vector2(1428, 396),
-	"quickdraw": Vector2(1494, 396), "longbarrel": Vector2(1430, 418), "legend": Vector2(1496, 418)}
-const RACK_SCALE := 1.0
-## The gunsmith's stool: the foot of its front-left leg, and the doorway he is seen through.
-const STOOL_FOOT := Vector2(1448, 662)
-const DOORWAY := Rect2(1348, 214, 294, 515)
-const LAMPS := [[Vector2(805, 108), 2.4], [Vector2(1478, 281), 1.1]]
-## The row of rivets along the desk's front edge: the ledger sits on the desk above it.
-const DESK_RIVETS := 900.0
+## The blank parchment on the desk (Continue Hunt), and the part of it the writing stays within.
+const PARCHMENT := Rect2(515, 750, 645, 172)
+const WRITING := Rect2(625, 764, 410, 144)
+## The cork board's clear middle (between the painted maps and notes): the current hunt's poster in
+## the centre, two smaller ones each side, none overlapping ([x, y] centre, tilt).
+const BIG_SPOT := [805, 330, -0.02]
+const SMALL_SPOTS := [[694, 250, -0.03], [694, 410, 0.025], [915, 250, 0.03], [915, 410, -0.025]]
+const BIG_W := 116.0
+const SMALL_W := 88.0
+## The gilt frame's empty canvas, the cabinet's middle shelf (trophy bases), the rack's hooks.
+const FRAME_IN := Rect2(1158, 150, 117, 152)
+const TROPHY_AT := [Vector2(565, 663), Vector2(640, 663), Vector2(715, 663), Vector2(910, 663), Vector2(1010, 663)]
+const RACK_AT := {"repeater": Vector2(1585, 380), "coach": Vector2(1585, 400), "peacemaker": Vector2(1560, 420),
+	"quickdraw": Vector2(1614, 420), "longbarrel": Vector2(1566, 440), "legend": Vector2(1612, 440)}
+const RACK_SCALE := 0.8
+## The gunsmith's stool: the foot of its front-left leg, over the painted stool's. The doorway's front
+## layer (frame, crate, barrel) is drawn over him from DOOR_AT.
+const STOOL_FOOT := Vector2(1404, 673)
+const DOORWAY := Rect2(1351, 127, 294, 613)
+const DOOR_AT := Vector2(1290, 76)
+## The lamps (flame or bulb, glow size): ceiling, wall lantern, desk lantern, workshop.
+const LAMPS := [[Vector2(832, 118), 1.8], [Vector2(427, 223), 0.9], [Vector2(322, 690), 1.2], [Vector2(1502, 318), 0.7]]
 const IDLE_POSE_TIME := 2.6
 
 ## The safe area's insets in screen pixels (left, right, bottom), set by Main on phones.
 var safe_lrb := Vector3.ZERO
 ## A chapter just captured: its stamp lands with a thump when the office opens.
 var fresh_capture: Variant = null
-## The brass plates and the ledger, for the layout tests.
+## The tags and the parchment's writing, for the layout tests.
 var plates: Array[Control] = []
 var ledger: Control
 
@@ -66,7 +77,6 @@ var _smith_t := 0.0
 var _tipping := false
 var _shade: ColorRect
 var _lit := {"t": -1.0, "name": ""}
-var _hunt_glow: NinePatchRect
 var _stamp_anim: Variant = null
 var _shake := 0
 var _coach: Control
@@ -78,7 +88,8 @@ func _ready() -> void:
 	_status = GameState.desk_status(pg, pt)
 	var vis := get_viewport().get_visible_rect().size
 	_k = maxf(vis.y / ART_SIZE.y, vis.x / ART_SIZE.x)  # cover the screen
-	_origin = (vis - ART_SIZE * _k) / 2
+	var spare := vis - ART_SIZE * _k
+	_origin = Vector2(spare.x / 2, spare.y * CROP_TOP)
 	_art = Node2D.new()
 	_art.scale = Vector2.ONE * _k
 	add_child(_art)
@@ -91,47 +102,37 @@ func _ready() -> void:
 		g.scale = Vector2.ONE * lamp[1]
 		_glows.append(g)
 	_build_posters(pg, pt)
-	var portrait := AssetSprite.make("office/portrait", _art)
+	var portrait := TextureRect.new()  # the hunter's portrait fills the canvas, cropped to its shape
+	portrait.texture = Assets.texture("office/portrait")
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	portrait.position = FRAME_IN.position
-	portrait.extra_scale = FRAME_IN.size / Assets.texture("office/portrait").get_size()
+	portrait.size = FRAME_IN.size
+	portrait.name = "Portrait"
+	_art.add_child(portrait)
 	for k in 5:  # the trophy cabinet: one trophy per captured bounty
 		if GameState.collected_in(pg, k):
 			var t := AssetSprite.make("trophy_office/ch%d" % k, _art)
 			t.position = TROPHY_AT[k]
 			t.modulate = Color(0.92, 0.88, 0.8)  # seen through the cabinet glass
 	_build_rack(pg)
-	var clip := Control.new()  # the gunsmith is seen through the doorway, behind its posts
-	clip.clip_contents = true
-	clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	clip.position = DOORWAY.position
-	clip.size = DOORWAY.size
-	_art.add_child(clip)
-	_smith = AssetSprite.make("gunsmith/polish", clip)
-	_smith.position = STOOL_FOOT - DOORWAY.position
+	_smith = AssetSprite.make("gunsmith/polish", _art)
+	_smith.position = STOOL_FOOT
+	_smith.modulate = Color(0.96, 0.9, 0.82)  # in the workshop's lamplight
+	AssetSprite.make("office/doorway_front", _art).position = DOOR_AT  # the doorframe in front of him
 	for i in 9:
 		_motes.append(AssetSprite.make("office/mote", _art))
-	_shade = ColorRect.new()  # the room is softly dim; a chosen object lights up
+	_shade = ColorRect.new()  # a light vignette; a chosen object glows
 	_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_shade.material = ShaderMaterial.new()
 	_shade.material.shader = load("res://ui/office_light.gdshader")
+	_shade.material.set_shader_parameter("screen", vis)
 	_shade.size = vis
 	add_child(_shade)
 	_shade.global_position = Vector2.ZERO
-	_hunt_glow = NinePatchRect.new()
-	_hunt_glow.texture = Assets.texture("fx/hint_glow")
-	var m: int = Assets.meta("fx/hint_glow", "nine_patch", 2)
-	_hunt_glow.patch_margin_left = m
-	_hunt_glow.patch_margin_top = m
-	_hunt_glow.patch_margin_right = m
-	_hunt_glow.patch_margin_bottom = m
-	_hunt_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hunt_glow.visible = _status.hunting
-	var big := _big_rect()
-	_hunt_glow.position = _to_local_px(big.position) - Vector2(6, 6)
-	_hunt_glow.size = big.size * _k + Vector2(12, 12)
-	add_child(_hunt_glow)
 	_build_hotspots()
-	_build_ledger()
+	_build_parchment()
 	if not pg.get("seenOffice", false):
 		_build_coach()
 	if fresh_capture != null and _poster_stamps.has(fresh_capture):
@@ -139,14 +140,15 @@ func _ready() -> void:
 		_poster_stamps[fresh_capture].visible = false
 
 
-## A painting pixel in this node's coordinates (for the unscaled plates and ledger).
+## A painting pixel in this node's coordinates (for the unscaled tags and writing).
 func _to_local_px(p: Vector2) -> Vector2:
 	return _origin + p * _k - global_position
 
 
-func _big_rect() -> Rect2:
-	var h := BIG_W * BountyWall.POSTER.y / BountyWall.POSTER.x
-	return Rect2(BIG_SPOT[0] - BIG_W / 2, BIG_SPOT[1] - h / 2, BIG_W, h)
+## The part of the screen inside the safe area, in this node's coordinates.
+func _safe_rect() -> Rect2:
+	var vis := get_viewport().get_visible_rect().size
+	return Rect2(Vector2(safe_lrb.x, 0) - global_position, Vector2(vis.x - safe_lrb.x - safe_lrb.y, vis.y - safe_lrb.z))
 
 
 func _build_posters(pg: Dictionary, pt: bool) -> void:
@@ -165,9 +167,10 @@ func _hang(c: int, spot: Array, w: float, pg: Dictionary, pt: bool) -> void:
 	p.size = p.custom_minimum_size
 	var s := w / design
 	p.scale = Vector2.ONE * s
-	p.pivot_offset = Vector2.ZERO
-	p.position = Vector2(spot[0], spot[1]) - p.size * s / 2
+	p.pivot_offset = p.size / 2
+	p.position = Vector2(spot[0], spot[1]) - p.size / 2
 	p.rotation = spot[2]
+	p.set_meta("hunt", w == BIG_W)
 	if p.has_meta("stamp"):
 		_poster_stamps[c] = p.get_meta("stamp")
 
@@ -175,110 +178,103 @@ func _hang(c: int, spot: Array, w: float, pg: Dictionary, pt: bool) -> void:
 func _build_rack(pg: Dictionary) -> void:
 	for w in GameState.weapons:
 		if not pg.inv.guns.get(w.id, false) or not RACK_AT.has(w.id):
-			continue  # an empty place shows the painted pegs
-		if pg.inv.equip.gun == w.id:  # the gun in use glows softly
-			var g := AssetSprite.make("office/glow", _art)
-			g.position = RACK_AT[w.id]
-			g.scale = Vector2(0.9, 0.35)
-			g.modulate.a = 0.6
+			continue  # an empty place shows the painted hooks
 		var gun := AssetSprite.make("rack/" + w.id, _art)
 		gun.position = RACK_AT[w.id]
 		gun.scale = Vector2.ONE * RACK_SCALE
-		gun.modulate = Color(1.0, 0.84, 0.66)  # in the workshop's lamplight
+		gun.modulate = Color(1.0, 0.86, 0.7) if pg.inv.equip.gun == w.id else Color(0.9, 0.76, 0.62)  # the gun in use catches the lamp
 
 
 func _build_hotspots() -> void:
-	var vis := get_viewport().get_visible_rect().size
+	var safe := _safe_rect()
 	for s in SPOTS:
 		var box := Rect2(s.box[0], s.box[1], s.box[2], s.box[3])
+		var soon: bool = s.get("soon", false)
 		var b := Button.new()
 		b.theme_type_variation = &"Hotspot"
 		b.focus_mode = Control.FOCUS_NONE
 		b.position = _to_local_px(box.position)
 		b.size = box.size * _k
-		b.tooltip_text = s.label + (", coming soon" if s.get("soon", false) else "")
+		b.tooltip_text = s.label + (", coming soon" if soon else "")
 		b.pressed.connect(_on_act.bind(s.act, box))
 		add_child(b)
-		var plate := Button.new()
-		plate.theme_type_variation = &"PlaqueSoon" if s.get("soon", false) else &"Plaque"
-		plate.focus_mode = Control.FOCUS_NONE
-		plate.text = s.label + ("" if s.get("soon", false) else "  ›")
-		if s.get("soon", false):
-			plate.icon = Assets.texture("ui/icon_lock")
-		plate.pressed.connect(_on_act.bind(s.act, box))
-		add_child(plate)
-		var sz := plate.get_combined_minimum_size()
-		plate.size = sz
-		var at := _origin + Vector2(s.plate[0], s.plate[1]) * _k - Vector2(sz.x / 2, 0)
-		at.x = clampf(at.x, safe_lrb.x + 8, vis.x - safe_lrb.y - 8 - sz.x)  # inside the safe area
-		plate.position = at - global_position
-		plates.append(plate)
-	if _status.hunting:  # the big poster continues the hunt
-		var big := _big_rect()
-		var h := Button.new()
-		h.theme_type_variation = &"Hotspot"
-		h.focus_mode = Control.FOCUS_NONE
-		h.position = _to_local_px(big.position)
-		h.size = big.size * _k
-		h.pressed.connect(_on_act.bind("hunt", big))
-		add_child(h)
+		var tag := Button.new()  # a small tag beside the object; a padlock if it is locked
+		tag.theme_type_variation = &"OfficeTagSoon" if soon else &"OfficeTag"
+		tag.focus_mode = Control.FOCUS_NONE
+		tag.text = s.label
+		tag.tooltip_text = b.tooltip_text
+		if soon:
+			tag.icon = Assets.texture("ui/icon_lock")
+		tag.pressed.connect(_on_act.bind(s.act, box))
+		add_child(tag)
+		var sz := tag.get_combined_minimum_size()
+		tag.size = sz
+		var at := _to_local_px(Vector2(s.tag[0], s.tag[1])) - sz / 2
+		at.x = clampf(at.x, safe.position.x + 6, safe.end.x - 6 - sz.x)
+		at.y = clampf(at.y, safe.position.y + 6, safe.end.y - 6 - sz.y)
+		tag.position = at
+		tag.set_meta("box", box)
+		plates.append(tag)
 
 
-## The desk ledger: continue the hunt, or every available bounty captured. It sits on the clear
-## middle of the desk, above the bottom of the safe area.
-func _build_ledger() -> void:
-	var box: Control
+## Continue Hunt, written in ink on the blank parchment: the next level's name and the bounty's
+## reward. When every available bounty is captured: that, and the next outlaw's name, opening the
+## Bounty board. The whole parchment is the button; the writing is kept on it and inside the safe area.
+func _build_parchment() -> void:
+	var name := "hunt" if _status.hunting else "board"
+	var b := Button.new()
+	b.theme_type_variation = &"Hotspot"
+	b.focus_mode = Control.FOCUS_NONE
+	b.position = _to_local_px(PARCHMENT.position)
+	b.size = PARCHMENT.size * _k
+	b.tooltip_text = "Continue hunt" if _status.hunting else "Bounty board"
+	b.pressed.connect(_on_act.bind(name, PARCHMENT))
+	add_child(b)
+	var ink := HBoxContainer.new()
+	ink.alignment = BoxContainer.ALIGNMENT_CENTER
+	ink.add_theme_constant_override("separation", 26)
+	ink.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(ink)
+	var lines: Array[Label] = []
 	if _status.hunting:
-		var btn := Button.new()
-		btn.theme_type_variation = &"DeskPlaque"
-		btn.focus_mode = Control.FOCUS_NONE
-		btn.pressed.connect(_on_act.bind("hunt", Rect2(610, 745, 540, 160)))
-		box = btn
+		var left := _ink_column(ink)
+		UiKit.text(left, "CONTINUE THE HUNT", &"ParchmentKey")
+		lines.append(UiKit.text(left, _status.subtitle, &"ParchmentTitle"))
+		var right := _ink_column(ink)
+		UiKit.text(right, "BOUNTY", &"ParchmentKey")
+		lines.append(UiKit.text(right, _status.reward, &"ParchmentValue"))
 	else:
-		box = PanelContainer.new()
-		box.theme_type_variation = &"DeskLedger"
-	add_child(box)
-	var margin := MarginContainer.new()
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 0 if box is PanelContainer else 12)
-	box.add_child(margin)
-	var row := HBoxContainer.new()
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_child(row)
-	UiKit.image(row, "ui/star_on", Vector2(44, 44))
-	var text := VBoxContainer.new()
-	text.add_theme_constant_override("separation", 0)
-	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(text)
-	UiKit.text(text, _status.title, &"DeskTitle").horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	UiKit.text(text, _status.subtitle, &"DeskSub").horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	var tally := VBoxContainer.new()
-	tally.add_theme_constant_override("separation", 0)
-	tally.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(tally)
-	UiKit.text(tally, "CAPTURED", &"DeskKey")
-	UiKit.text(tally, "%d of 5" % _status.caught, &"DeskValue")
-	if _status.reward != null:
-		UiKit.text(tally, "BOUNTY", &"DeskKey")
-		UiKit.text(tally, _status.reward, &"DeskValue")
-	for c in [text, tally, row]:
-		for l in c.get_children():
-			if l is Control:
-				l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sz := box.get_combined_minimum_size()
-	if box is Button:  # a Button does not size itself to child controls
-		sz = margin.get_combined_minimum_size()
-		margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	box.size = sz
-	var vis := get_viewport().get_visible_rect().size
-	var x := _origin.x + 880 * _k - sz.x / 2
-	var y := minf(_origin.y + DESK_RIVETS * _k - sz.y, vis.y - safe_lrb.z - 12 - sz.y)  # on the desk, above its rivets
-	box.position = Vector2(x, y) - global_position
-	ledger = box
+		var only := _ink_column(ink)
+		lines.append(UiKit.text(only, _status.title, &"ParchmentTitle"))
+		UiKit.text(only, _status.subtitle.to_upper(), &"ParchmentKey")
+	for l in ink.find_children("*", "Control", true, false):
+		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# As big as the parchment allows: smaller type for a long level name.
+	var room := WRITING.size * _k
+	var size := 26
+	while size > 15 and ink.get_combined_minimum_size().x > room.x:
+		size -= 1
+		for l in lines:
+			l.add_theme_font_size_override("font_size", size)
+	var sz := ink.get_combined_minimum_size()
+	ink.size = sz
+	var safe := _safe_rect()
+	var top := _to_local_px(WRITING.position).y
+	var at := _to_local_px(WRITING.get_center()) - sz / 2
+	at.y = clampf(at.y, top, maxf(top, safe.end.y - 6 - sz.y))  # on the parchment, above the home indicator
+	ink.position = at
+	ledger = ink
 
 
-## The first visit's telegram: "Tap anything with a brass plate."
+func _ink_column(parent: Control) -> VBoxContainer:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", -2)
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	parent.add_child(v)
+	return v
+
+
+## The first visit's telegram: "Tap anything with a tag."
 func _build_coach() -> void:
 	var p := PanelContainer.new()
 	p.theme_type_variation = &"Telegram"
@@ -287,16 +283,17 @@ func _build_coach() -> void:
 	v.add_theme_constant_override("separation", 0)
 	p.add_child(v)
 	UiKit.text(v, "TELEGRAM", &"DeskKey")
-	UiKit.text(v, "Welcome, partner. Tap anything with a brass plate.", &"TelegramText", 300)  # wrapped, so the parchment keeps about its own proportions
+	UiKit.text(v, "Welcome, partner. Tap the board, the doorway, or anything with a tag.", &"TelegramText", 300)  # wrapped, so the parchment keeps about its own proportions
 	add_child(p)
 	var sz := p.get_combined_minimum_size()
 	p.size = sz
-	p.position = _to_local_px(Vector2(803, 150)) - Vector2(sz.x / 2, 0)
+	p.position = _to_local_px(Vector2(805, 603)) - Vector2(sz.x / 2, 0)  # over the cabinet, clear of the posters
 	p.rotation = deg_to_rad(-1.2)
 	_coach = p
 
 
-## One tap: the chosen object lights up warmly, then its screen opens. The gunsmith tips his cap first.
+## One tap: the chosen object glows warmly, then its screen opens. The gunsmith turns and tips his
+## cap first.
 func _on_act(name: String, box: Rect2) -> void:
 	if _lit.t >= 0:
 		return  # already on its way
@@ -338,26 +335,25 @@ static func _hash(n: int) -> int:
 
 func _physics_process(delta: float) -> void:
 	_frame += 1
-	# The lamps flicker a little.
+	# The lamps flicker gently.
 	for i in _glows.size():
-		_glows[i].modulate.a = 0.85 + sin(_frame * (0.013 + i * 0.004) + i) * 0.12
+		_glows[i].modulate.a = 0.5 + sin(_frame * (0.05 + i * 0.013) + i) * 0.05 + sin(_frame * (0.17 + i * 0.02)) * 0.03
 	# Dust drifts down through the light from the window.
 	for i in _motes.size():
 		var h := _hash(i * 31)
 		var t2 := fmod(_frame * 0.25 * (1 + i % 3) + h % 400, 400.0)
-		_motes[i].position = Vector2(170 + t2 * 0.7 + h % 60, 140 + t2 * 1.1 + sin(_frame * 0.02 + i) * 6)
-		_motes[i].modulate.a = sin(t2 / 400.0 * PI) * 0.8
+		_motes[i].position = Vector2(110 + t2 * 0.35 + h % 70, 110 + t2 * 1.0 + sin(_frame * 0.02 + i) * 6)
+		_motes[i].modulate.a = sin(t2 / 400.0 * PI) * 0.7
 	# The gunsmith works away: polishing, then hammering, slowly.
 	if not _tipping:
 		_smith_t += delta
 		_smith.show_asset("gunsmith/polish" if int(_smith_t / IDLE_POSE_TIME) % 2 == 0 else "gunsmith/hammer")
-	# A chosen object lights up.
+	# A chosen object glows.
 	var lit := 0.0
 	if _lit.t >= 0:
 		_lit.t += delta
 		lit = minf(1.0, _lit.t / 0.15)
 	_shade.material.set_shader_parameter("lit", lit)
-	_hunt_glow.modulate.a = 0.35 + sin(_frame * 0.06) * 0.25
 	if _stamp_anim != null:
 		_step_stamp()
 	position = Vector2(randi_range(-4, 4), randi_range(-4, 4)) if _shake > 0 else Vector2.ZERO

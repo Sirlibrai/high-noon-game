@@ -23,7 +23,6 @@ var _screen: Node2D  # the splash or the office, when no level is running
 var _fresh_capture: Variant = null
 var _home_bar: CanvasLayer
 var _home_box: MarginContainer
-var _music_btn: Button
 var _wallet: Button
 var _hud: CanvasLayer
 var _hud_box: MarginContainer
@@ -58,7 +57,8 @@ func _ready() -> void:
 	show_splash()
 
 
-## The office's top bar: the High Noon logo, the music switch and the wallet.
+## The office's top bar: only the Bounty Dollars wallet, in the top right corner. (Music is in the pause
+## menu and on each bounty's hunt screen.)
 func _build_home_bar() -> void:
 	_home_bar = CanvasLayer.new()
 	_home_bar.layer = 5
@@ -71,17 +71,15 @@ func _build_home_bar() -> void:
 	var bar := HBoxContainer.new()
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_home_box.add_child(bar)
-	UiKit.text(bar, "High Noon", &"Logo")
-	_music_btn = UiKit.icon_button(bar, "ui/icon_music")
-	_music_btn.pressed.connect(func():
-		AudioManager.set_music(not AudioManager.music_on)
-		_refresh_home_bar())
+	var gap := Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_child(gap)
 	_wallet = _wallet_button(bar)
 	_home_bar.visible = false
 
 
 func _refresh_home_bar() -> void:
-	_music_btn.icon = Assets.texture("ui/icon_music" if AudioManager.music_on else "ui/icon_music_off")
 	_wallet.text = "%s  ›" % _money(int(GameState.progress.bucks))
 
 
@@ -333,6 +331,10 @@ func show_chapter(c: int) -> void:
 	var snd := UiKit.button(settings, "Sound: " + ("on" if AudioManager.sound_on else "off"), &"SmallGhostButton")
 	snd.pressed.connect(func():
 		AudioManager.set_sound(not AudioManager.sound_on)
+		show_chapter(c))
+	var mus := UiKit.button(settings, "Music: " + ("on" if AudioManager.music_on else "off"), &"SmallGhostButton")
+	mus.pressed.connect(func():
+		AudioManager.set_music(not AudioManager.music_on)
 		show_chapter(c))
 
 

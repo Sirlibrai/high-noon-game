@@ -57,8 +57,8 @@ func _ready() -> void:
 	show_splash()
 
 
-## The office's top bar: only the Bounty Dollars wallet, in the top right corner. (Music is in the pause
-## menu and on each bounty's hunt screen.)
+## The office's top bar: only the Bounty Dollars wallet, in the top left corner, clear of the GUNSMITH
+## sign. (Music is in the pause menu and on each bounty's hunt screen.)
 func _build_home_bar() -> void:
 	_home_bar = CanvasLayer.new()
 	_home_bar.layer = 5
@@ -71,10 +71,6 @@ func _build_home_bar() -> void:
 	var bar := HBoxContainer.new()
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_home_box.add_child(bar)
-	var gap := Control.new()
-	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bar.add_child(gap)
 	_wallet = _wallet_button(bar)
 	_home_bar.visible = false
 
@@ -226,15 +222,14 @@ func _on_office_act(name: String) -> void:
 			soon(name)
 
 
-## Continue the hunt: the next uncaptured bounty, at its furthest unlocked level.
+## Continue the hunt: the next unfinished level of the current hunt; the Bounty board when no built
+## bounty has levels left.
 func hunt() -> void:
-	var st := GameState.desk_status(GameState.progress, GameState.playtest())
-	if not st.hunting:
+	var next: Variant = GameState.next_unfinished(GameState.progress, GameState.playtest())
+	if next == null:
+		show_board()
 		return
-	if not GameState.is_built(st.ch, st.level):
-		_not_yet(GameState.chapters[st.ch].name, "%s’s levels arrive with the next build." % GameState.chapters[st.ch].who)
-		return
-	show_intro(st.ch, st.level)
+	show_intro(next.ch, next.level)
 
 
 ## The HUD's cartridges: big enough to count at a glance on a phone.

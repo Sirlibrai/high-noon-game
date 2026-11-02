@@ -8,10 +8,10 @@ extends Node2D
 ##   - the owned guns on the rack in the workshop;
 ##   - the gunsmith on the stool at his bench, seen through the doorway (its frame, the crate and the
 ##     barrel are drawn over him), polishing and hammering, tipping his cap when called;
-##   - the next hunt written on the blank parchment on the desk;
+##   - CONTINUE HUNT lettered on the blank parchment on the desk;
 ##   - a gentle lamp flicker, dust in the window light, and a light vignette.
 ## The painting covers the screen (16:9 shows all of it; wider phones trim some ceiling and a little
-## desk). Each object has a small tag beside it (a padlock on locked ones); a tapped object glows
+## desk). Most objects have a small tag beside them (a padlock on locked ones); a tapped object glows
 ## warmly for a moment before its screen opens (one tap, no hover).
 ## Emits `act`: board, hunt, gunsmith, profile, trophies, daily, survival, duelsoon.
 
@@ -22,15 +22,16 @@ const ART_SIZE := Vector2(1672, 941)
 ## the bottom): mostly ceiling, so the parchment on the desk stays in view.
 const CROP_TOP := 0.55
 ## Hotspots in painting pixels: the box you tap (its painted object), and the centre of its tag, beside
-## the object and never over it. Tags are kept inside the safe area.
+## the object and never over it. Tags are kept inside the safe area. The cabinet has no tag, and the
+## doorway's is the painted GUNSMITH sign.
 const SPOTS := [
 	{"act": "duelsoon", "label": "Duel", "box": [92, 88, 225, 447], "tag": [205, 588], "soon": true},
 	{"act": "daily", "label": "Daily Bounty", "box": [376, 315, 106, 109], "tag": [403, 294], "soon": true},
 	{"act": "survival", "label": "Survival", "box": [374, 425, 108, 112], "tag": [420, 556], "soon": true},
 	{"act": "board", "label": "Bounty board", "box": [490, 82, 635, 478], "tag": [805, 582]},
 	{"act": "profile", "label": "Profile", "box": [1133, 125, 165, 203], "tag": [1215, 346]},
-	{"act": "trophies", "label": "Trophies", "box": [495, 603, 610, 129], "tag": [1170, 714]},
-	{"act": "gunsmith", "label": "Gunsmith", "box": [1351, 127, 294, 613], "tag": [1372, 762]},
+	{"act": "trophies", "label": "Trophies", "box": [495, 603, 610, 129]},
+	{"act": "gunsmith", "label": "Gunsmith", "box": [1351, 127, 294, 613]},
 ]
 ## The blank parchment on the desk (Continue Hunt), and the part of it the writing stays within.
 const PARCHMENT := Rect2(515, 750, 645, 172)
@@ -50,7 +51,7 @@ const RACK_SCALE := 0.8
 ## The gunsmith's stool: the foot of its front-left leg, at the painted stool's (he hides it). He is
 ## drawn small enough for the rack behind him to show above and beside his head; the doorway's front
 ## layer (frame, crate, barrel) is drawn over him from DOOR_AT.
-const STOOL_FOOT := Vector2(1404, 673)
+const STOOL_FOOT := Vector2(1408, 675)
 const DOORWAY := Rect2(1351, 127, 294, 613)
 const DOOR_AT := Vector2(1290, 76)
 ## The lamps (flame or bulb, glow size): ceiling, wall lantern, desk lantern, workshop.
@@ -61,7 +62,7 @@ const IDLE_POSE_TIME := 2.6
 var safe_lrb := Vector3.ZERO
 ## A chapter just captured: its stamp lands with a thump when the office opens.
 var fresh_capture: Variant = null
-## The tags and the parchment's writing, for the layout tests.
+## The tags and the parchment's lettering, for the layout tests.
 var plates: Array[Control] = []
 var ledger: Control
 
@@ -69,7 +70,6 @@ var _k := 1.0
 var _origin := Vector2.ZERO
 var _art: Node2D
 var _frame := 0
-var _status: Dictionary
 var _poster_stamps := {}
 var _motes: Array[AssetSprite] = []
 var _glows: Array[AssetSprite] = []
@@ -86,7 +86,6 @@ var _coach: Control
 func _ready() -> void:
 	var pg: Dictionary = GameState.progress
 	var pt := GameState.playtest()
-	_status = GameState.desk_status(pg, pt)
 	var vis := get_viewport().get_visible_rect().size
 	_k = maxf(vis.y / ART_SIZE.y, vis.x / ART_SIZE.x)  # cover the screen
 	var spare := vis - ART_SIZE * _k
@@ -199,6 +198,8 @@ func _build_hotspots() -> void:
 		b.tooltip_text = s.label + (", coming soon" if soon else "")
 		b.pressed.connect(_on_act.bind(s.act, box))
 		add_child(b)
+		if not s.has("tag"):
+			continue
 		var tag := Button.new()  # a small tag beside the object; a padlock if it is locked
 		tag.theme_type_variation = &"OfficeTagSoon" if soon else &"OfficeTag"
 		tag.focus_mode = Control.FOCUS_NONE
@@ -218,45 +219,25 @@ func _build_hotspots() -> void:
 		plates.append(tag)
 
 
-## Continue Hunt, written in ink on the blank parchment: the next level's name and the bounty's
-## reward. When every available bounty is captured: that, and the next outlaw's name, opening the
-## Bounty board. The whole parchment is the button; the writing is kept on it and inside the safe area.
+## CONTINUE HUNT, lettered big on the blank parchment like a heading on the paper. The whole parchment
+## is the button: it starts the next unfinished level of the current hunt, or opens the Bounty board
+## when no built bounty has levels left (Main decides). The lettering stays on it, inside the safe area.
 func _build_parchment() -> void:
-	var name := "hunt" if _status.hunting else "board"
 	var b := Button.new()
 	b.theme_type_variation = &"Hotspot"
 	b.focus_mode = Control.FOCUS_NONE
 	b.position = _to_local_px(PARCHMENT.position)
 	b.size = PARCHMENT.size * _k
-	b.tooltip_text = "Continue hunt" if _status.hunting else "Bounty board"
-	b.pressed.connect(_on_act.bind(name, PARCHMENT))
+	b.tooltip_text = "Continue hunt"
+	b.pressed.connect(_on_act.bind("hunt", PARCHMENT))
 	add_child(b)
-	var ink := HBoxContainer.new()
-	ink.alignment = BoxContainer.ALIGNMENT_CENTER
-	ink.add_theme_constant_override("separation", 26)
-	ink.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(ink)
-	var lines: Array[Label] = []
-	if _status.hunting:
-		var left := _ink_column(ink)
-		UiKit.text(left, "CONTINUE THE HUNT", &"ParchmentKey")
-		lines.append(UiKit.text(left, _status.subtitle, &"ParchmentTitle"))
-		var right := _ink_column(ink)
-		UiKit.text(right, "BOUNTY", &"ParchmentKey")
-		lines.append(UiKit.text(right, _status.reward, &"ParchmentValue"))
-	else:
-		var only := _ink_column(ink)
-		lines.append(UiKit.text(only, _status.title, &"ParchmentTitle"))
-		UiKit.text(only, _status.subtitle.to_upper(), &"ParchmentKey")
-	for l in ink.find_children("*", "Control", true, false):
-		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# As big as the parchment allows: smaller type for a long level name.
+	var ink := UiKit.text(self, "CONTINUE HUNT", &"ParchmentHeading")
+	ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var room := WRITING.size * _k
-	var size := 26
-	while size > 15 and ink.get_combined_minimum_size().x > room.x:
+	var size: int = ink.get_theme_font_size("font_size")
+	while size > 20 and ink.get_combined_minimum_size().x > room.x:  # as big as the parchment allows
 		size -= 1
-		for l in lines:
-			l.add_theme_font_size_override("font_size", size)
+		ink.add_theme_font_size_override("font_size", size)
 	var sz := ink.get_combined_minimum_size()
 	ink.size = sz
 	var safe := _safe_rect()
@@ -267,15 +248,7 @@ func _build_parchment() -> void:
 	ledger = ink
 
 
-func _ink_column(parent: Control) -> VBoxContainer:
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", -2)
-	v.alignment = BoxContainer.ALIGNMENT_CENTER
-	parent.add_child(v)
-	return v
-
-
-## The first visit's telegram: "Tap anything with a tag."
+## The first visit's telegram, over the cabinet: where to start.
 func _build_coach() -> void:
 	var p := PanelContainer.new()
 	p.theme_type_variation = &"Telegram"
@@ -284,11 +257,11 @@ func _build_coach() -> void:
 	v.add_theme_constant_override("separation", 0)
 	p.add_child(v)
 	UiKit.text(v, "TELEGRAM", &"DeskKey")
-	UiKit.text(v, "Welcome, partner. Tap the board, the doorway, or anything with a tag.", &"TelegramText", 300)  # wrapped, so the parchment keeps about its own proportions
+	UiKit.text(v, "Welcome, partner. Tap the parchment to start the hunt.", &"TelegramText", 460)  # wrapped, so the parchment keeps about its own proportions
 	add_child(p)
 	var sz := p.get_combined_minimum_size()
 	p.size = sz
-	p.position = _to_local_px(Vector2(805, 603)) - Vector2(sz.x / 2, 0)  # over the cabinet, clear of the posters
+	p.position = _to_local_px(Vector2(805, 600)) - Vector2(sz.x / 2, 0)  # over the cabinet, clear of the posters and the parchment's lettering
 	p.rotation = deg_to_rad(-1.2)
 	_coach = p
 

@@ -121,6 +121,8 @@ func _check_office(tag: String) -> void:
 	var sheet := Rect2(o._to_local_px(Office.PARCHMENT.position) + o.global_position, Office.PARCHMENT.size * o._k)
 	if not sheet.encloses(o.ledger.get_global_rect()):
 		problems.append("%s office: the writing %s is off the parchment %s" % [tag, o.ledger.get_global_rect(), sheet])
+	if o._coach != null and o._coach.get_global_rect().intersects(o.ledger.get_global_rect()):
+		problems.append("%s office: the telegram covers CONTINUE HUNT" % tag)
 	for p in o.plates:  # tags beside their objects, never over one
 		for sp in Office.SPOTS:
 			var box := Rect2(o._to_local_px(Vector2(sp.box[0], sp.box[1])) + o.global_position, Vector2(sp.box[2], sp.box[3]) * o._k)

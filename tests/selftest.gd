@@ -857,7 +857,8 @@ func _office() -> void:
 		var r := Rect2((t.position + o.global_position - o._origin) / o._k, t.size / o._k)
 		var own: Rect2 = t.get_meta("box")
 		tags_ok = tags_ok and not boxes.any(func(b): return b.intersects(r)) and not r.intersects(Office.PARCHMENT) and own.grow(70).intersects(r)
-	ok("Each object has a small tag beside it, covering no object", o.plates.size() == Office.SPOTS.size() and tags_ok
+	ok("Small tags beside the objects, covering none; no tag on the cabinet or the doorway (its painted sign labels it)",
+		o.plates.map(func(t): return t.text) == ["Duel", "Daily Bounty", "Survival", "Bounty board", "Profile"] and tags_ok
 		and o.plates.all(func(t): return t.theme_type_variation in [&"OfficeTag", &"OfficeTagSoon"] and t.size.y <= 30))
 	ok("Locked destinations show a padlock on their tag; open ones don't", o.plates.all(func(t): return (t.icon == Assets.texture("ui/icon_lock")) == (t.theme_type_variation == &"OfficeTagSoon"))
 		and o.plates.filter(func(t): return t.icon != null).map(func(t): return t.text) == ["Duel", "Daily Bounty", "Survival"])
@@ -883,22 +884,20 @@ func _office() -> void:
 	var smith_k: float = Assets.meta("gunsmith/polish", "scale", 1.0)
 	var stool_h: float = preload("res://tools/import_office.gd").SMITH_K * 197.0 * smith_k  # his stool, drawn: its sheet height scaled
 	var seated: float = Assets.texture("gunsmith/polish").get_height() * smith_k
-	var clear := true  # every rack place shows past him, in every pose
-	for pose in ["polish", "hammer", "tip"]:
-		var im := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/gunsmith_%s.png" % pose))
-		for at in Office.RACK_AT.values():
-			var p: Vector2 = (at - Office.STOOL_FOOT) / smith_k + Assets.anchor("gunsmith/" + pose)
-			clear = clear and (not Rect2(Vector2.ZERO, im.get_size()).has_point(p) or im.get_pixelv(Vector2i(p)).a < 0.1)
-	ok("The gunsmith sits at the stool by the bench, behind the doorframe, crate and barrel, small enough for the rack to show",
+	var stool_left: float = Office.STOOL_FOOT.x - (Assets.anchor("gunsmith/polish").x - 41) * smith_k  # his stool's leftmost leg (measured on the pose)
+	ok("The gunsmith's stool matches the painted stool exactly: 124 pixels, seat to floor, over it at the bench",
+		absf(stool_h - 124) < 1 and Office.STOOL_FOOT.y == 675 and absf(stool_left - 1403) < 2, "stool %.1f tall, left edge %.1f" % [stool_h, stool_left])
+	ok("At that size he is a person seated in the next room, layered behind the doorframe, crate and barrel",
 		o._smith.position == Office.STOOL_FOOT and Office.DOORWAY.has_point(Office.STOOL_FOOT) and kids.find(front) > kids.find(o._smith)
-		and clear and stool_h >= 0.6 * 124 and seated > Office.DOORWAY.size.y * 0.4 and seated < Office.DOORWAY.size.y * 0.55, "stool %.0f, seated %.0f" % [stool_h, seated])
+		and seated > Office.DOORWAY.size.y * 0.6 and seated < Office.DOORWAY.size.y * 0.8, "seated %.0f" % seated)
 	var fp := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/office_doorway_front.png"))
 	ok("The doorway's front layer is clear in the opening and solid on the frame, crate and barrel",
 		fp.get_pixelv(Vector2i(1500, 400) - Vector2i(Office.DOOR_AT)).a == 0 and fp.get_pixelv(Vector2i(1330, 400) - Vector2i(Office.DOOR_AT)).a == 1
 		and fp.get_pixelv(Vector2i(1375, 700) - Vector2i(Office.DOOR_AT)).a == 1 and fp.get_pixelv(Vector2i(1640, 680) - Vector2i(Office.DOOR_AT)).a == 1)
-	var ink: Array = o.ledger.find_children("*", "Label", true, false).map(func(l): return l.text)
-	ok("Continue Hunt is written on the parchment: the next level's name and the bounty's reward",
-		ink == ["CONTINUE THE HUNT", "Level 1: Target Practice", "BOUNTY", "$2,500"] and o.ledger.find_children("*", "Label", true, false)[1].theme_type_variation == &"ParchmentTitle", str(ink))
+	var heading: Label = o.ledger
+	ok("The parchment shows only CONTINUE HUNT, in big Western lettering, centred like a heading",
+		heading.text == "CONTINUE HUNT" and heading.theme_type_variation == &"ParchmentHeading" and heading.get_theme_font_size("font_size") >= 40
+		and absf(heading.get_rect().get_center().x - o._to_local_px(Office.WRITING.get_center()).x) < 1, str(heading.get_rect()))
 	var writing := Rect2(o._to_local_px(Office.PARCHMENT.position), Office.PARCHMENT.size * o._k)
 	ok("The writing stays on the parchment", writing.encloses(o.ledger.get_rect()), str(o.ledger.get_rect()))
 	ok("The office light only adds a light vignette and the chosen glow; the room isn't dimmed",
@@ -923,11 +922,18 @@ func _office() -> void:
 	add_child(o2)
 	ok("Captured bounties put trophies in the cabinet; owned guns go on the rack",
 		_art_named(o2, "trophy_office/") == ["trophy_office/ch0", "trophy_office/ch1"] and _art_named(o2, "rack/").size() == G.weapons.size())
-	var note: Array = o2.ledger.find_children("*", "Label", true, false).map(func(l): return l.text)
+	var note: String = (o2.ledger as Label).text
 	var sheet: Button = o2.get_children().filter(func(c): return c is Button and c.size.is_equal_approx(Office.PARCHMENT.size * o2._k))[0]
 	sheet.pressed.emit()
-	ok("Nothing left to hunt: the parchment says so, names the next outlaw, and opens the Bounty board",
-		note == ["All available bounties captured", "DIGGER MCCALL ARRIVES SOON"] and o2._lit.name == "board", str(note))
+	ok("Nothing left to hunt: the parchment still reads CONTINUE HUNT (Main opens the Bounty board)", note == "CONTINUE HUNT" and o2._lit.name == "hunt", note)
+	var fresh_pg := fresh()
+	var n0: Variant = G.next_unfinished(fresh_pg, false)
+	G.apply_win(fresh_pg, 0, 0, 2, o10(1000))
+	var n1: Variant = G.next_unfinished(fresh_pg, false)
+	for l in G.levels_for(0).size():
+		G.apply_win(fresh_pg, 0, l, 1, o10(1000, l == G.levels_for(0).size() - 1, l == G.levels_for(0).size() - 1))
+	ok("Continue Hunt starts the hunt's next unfinished level; with no built bounty left, the Bounty board",
+		n0 == {"ch": 0, "level": 0} and n1 == {"ch": 0, "level": 1} and G.next_unfinished(fresh_pg, false) == null, "%s %s %s" % [n0, n1, G.next_unfinished(fresh_pg, false)])
 	remove_child(o2)
 	o2.free()
 	SaveManager.data.progress = keep

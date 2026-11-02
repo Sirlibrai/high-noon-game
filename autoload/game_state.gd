@@ -233,6 +233,20 @@ func current_hunt(pg: Dictionary, playtest: bool) -> int:
 	return h.next if h.next != null else chapters.size() - 1
 
 
+## Continue Hunt: the next unfinished level to play, as {ch, level}: the first open level without a star
+## in the current hunt, or else in any other built bounty. Null when no built bounty has levels left.
+func next_unfinished(pg: Dictionary, playtest: bool) -> Variant:
+	var order: Array = [current_hunt(pg, playtest)] + range(chapters.size())
+	for c in order:
+		if not BUILT_CHAPTERS.has(c) or not chapter_open_for(pg, c, playtest):
+			continue
+		var unlocked := int(pg.ch[c].unlocked) if c < pg.ch.size() and pg.ch[c] != null else 1
+		for l in (levels_for(c) as Array).size():
+			if stars_in(pg, c, l) == 0 and (playtest or l < unlocked):
+				return {"ch": c, "level": l}
+	return null
+
+
 ## A wanted poster's state: "captured", "open" (can be hunted), "locked" (has levels, not reached yet)
 ## or "soon" (no levels yet).
 func poster_state(pg: Dictionary, i: int, playtest: bool) -> String:

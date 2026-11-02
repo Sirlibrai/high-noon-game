@@ -329,6 +329,7 @@ func _ready() -> void:
 	_puzzle_first()
 	_black_jack()
 	_readability()
+	_feel()
 	_office()
 	_launch()
 	_batch1()
@@ -1372,6 +1373,7 @@ func _launch() -> void:
 	G.apply_win(G.progress, 0, 0, 3, o10(1000))
 	G.progress.inv.guns.quickdraw = true
 	main.show_chapter(0)
+	_button_named(main._overlay, "Settings").pressed.emit()  # the level grid's Settings card
 	_button_named(main._overlay, "Reset progress").pressed.emit()
 	var ask: Array = _button_texts(main._overlay)
 	ok("Settings' Reset progress asks first", ask == ["Keep my progress", "Reset everything"], str(ask))
@@ -1642,3 +1644,127 @@ func _readability() -> void:
 	remove_child(main)
 	main.free()
 	SaveManager.data.progress = keep
+
+
+## Shooting feel (FeedbackDirector, data/feel.tres) on the flagged levels: the shot in the frame of the tap,
+## hit, miss, blocked and explosion each told apart by sight, sound and haptics, hit-stop that restores the
+## time scale before it and never chains, trauma shake, the player hit, and the debug toggles.
+func _feel() -> void:
+	var G := GameState
+	var FD := FeedbackDirector
+	var F: FeelConfig = FD.feel
+	var keep_sound := AudioManager.sound_on
+	AudioManager.sound_on = true
+	var flagged: Array = []
+	for i in G.levels_for(0).size():
+		if G.level(0, i).get("feel", false):
+			flagged.append(i + 1)
+	ok("The new feel is on levels 1, 2, 8 (Ambush) and 10 to test first; the rest keep the old feel", flagged == [1, 2, 8, 10], str(flagged))
+	ok("Every feel value comes from one config resource (data/feel.tres)", F != null and F.resource_path == "res://data/feel.tres" and F.gun_scale >= 1.3 and F.gun_scale <= 1.5)
+	# A shot: the sound, the haptic tick and the flash in the same call as the tap; the gun turns and kicks.
+	var lv := _new_level(1)  # Powder Keg
+	var now := Time.get_ticks_msec()
+	lv.shoot(lv.enemies[0].node.position / lv.PPU + Vector2(0, -60), true)  # into the sky above him: a miss
+	var miss_sfx := AudioManager.last_sfx
+	ok("A shot plays in the same frame as the tap: gunshot, haptic tick, muzzle flash, the gun turning and kicking",
+		lv.used == 1 and lv.muzzle_until > now and lv.gun_driven and FD.trauma > 0 and Haptics.last_pattern == F.miss_haptic)
+	ok("A miss is never silent or invisible: a puff of dust, a dull thud, the mark and the red crosshair",
+		miss_sfx == "dust" and lv.decals.size() == 1 and lv.aim_pt.miss and lv.fx.parts.size() >= F.miss_dust)
+	var pitches := {}
+	for i in 8:
+		FD.shot_fired(Vector2(100, 100))
+		pitches[snappedf(AudioManager.last_pitch, 0.001)] = true
+	ok("Repeated sounds vary their pitch a little", pitches.size() > 3 and pitches.keys().all(func(p): return p >= F.shot_pitch.x and p <= F.shot_pitch.y))
+	_drop(lv)
+	# Hit: a white flash, knockback and squash, hit-stop and a firm knock after the shot's tick.
+	FD.set_slow(false)
+	lv = _new_level(1)
+	lv._sync_view()  # (the sprites exist from the first frame on)
+	var e: Dictionary = lv.enemies[0]
+	lv.shoot(lv.visible_rect(e).get_center(), true)
+	var m := e.node.material as ShaderMaterial
+	ok("Hit: the outlaw flashes white, is knocked back and squashed, then falls; a thud", not e.alive and float(m.get_shader_parameter("flash")) > 0.5
+		and e.node.has_meta("fb_squash") and AudioManager.last_sfx == "hit")
+	ok("Hit: hit-stop drops the time scale for about 60 ms (a timer that ignores it brings it back)",
+		FD.stopping and Engine.time_scale < 0.1 and absf((FD.stop_ends - FD._stop_start) - F.hit_stop * 1000) < 2)
+	var hit_haptic: Array = Haptics.last_pattern
+	ok("Hit vs miss in the hand: the hit's firm knock comes 40 ms or more after the shot's light tick; a miss adds nothing",
+		int(hit_haptic[0][0]) >= 40 and float(hit_haptic[0][2]) > float(F.shot_haptic[0][2]) * 1.8 and F.miss_haptic.is_empty())
+	# Taps still register during a hit-stop, and a second hit replaces the stop without extending it.
+	var e2: Dictionary = lv.enemies[1]
+	var started: int = FD._stop_start
+	var ends: int = FD.stop_ends
+	_give_bullet(lv)  # (Powder Keg has one)
+	lv.shoot(lv.visible_rect(e2).get_center(), true)
+	ok("Taps register during a hit-stop; a new hit-stop replaces the current one, never ending later than it would have",
+		not e2.alive and lv.used == 2 and FD._stop_start == started and FD.stop_ends <= ends)
+	FD._end_stop()
+	ok("After the hit-stop the time scale is back to what it was (1.0)", is_equal_approx(Engine.time_scale, 1.0))
+	FD.set_slow(true)
+	FD.hit_stop(F.hit_stop)
+	var during := Engine.time_scale
+	FD._end_stop()
+	ok("Debug slow motion: 25% speed, and a hit-stop restores 25%, not 1.0", is_equal_approx(Engine.time_scale, F.slow_motion) and during < F.slow_motion * 0.1)
+	FD.set_slow(false)
+	_drop(lv)
+	# Blocked and explosion.
+	lv = _new_level(2)  # Crossfire: a barrel
+	FD.force_old = false
+	lv.L.feel = true
+	var before_parts: int = lv.fx.parts.size()
+	FD.trauma = 0.0
+	lv.shoot(lv.cover_rect(lv.covers[0]).get_center(), true)
+	ok("Blocked (cover, iron, armour): sparks, a clank, two quick haptic taps, a tiny shake and no hit-stop",
+		AudioManager.last_sfx in ["thunk", "clank"] and Haptics.last_pattern == F.blocked_haptic and lv.fx.parts.size() - before_parts >= F.blocked_sparks
+		and FD.trauma > 0 and FD.trauma < 0.3 and not FD.stopping)
+	_drop(lv)
+	lv = _new_level(1)
+	FD.trauma = 0.0
+	lv.shoot(lv.cover_rect(lv.covers[0]).get_center(), true)
+	ok("Explosion: a white flash, debris, the strongest shake and a long, heavy haptic",
+		lv._flash_rect.color.a > 0.3 and FD.trauma >= F.explosion_trauma - 0.01 and Haptics.last_pattern == F.explosion_haptic and lv.fx.parts.size() > F.explosion_debris)
+	FD._end_stop()
+	var sigs := [F.hit_haptic, F.miss_haptic, F.blocked_haptic, F.explosion_haptic]
+	var apart := true
+	for i in sigs.size():
+		for j in range(i + 1, sigs.size()):
+			apart = apart and sigs[i] != sigs[j]
+	ok("Hit, miss, blocked and explosion each have their own sound and haptic", apart)
+	# Shake: trauma decays fast; reduced shake scales it down.
+	FD.trauma = 1.0
+	FD._clock = 1.3
+	var full := FD.shake_offset().length()
+	FD.reduced_shake = true
+	var reduced := FD.shake_offset().length()
+	FD.reduced_shake = false
+	FD._last_us = Time.get_ticks_usec() - 600000
+	FD._process(0.0)
+	ok("Shake is trauma-based: it decays within half a second or so; the reduced-shake setting scales it down",
+		full > 0 and reduced < full * 0.5 and FD.trauma < 0.01)
+	# The player is hit: the heart pulses and the screen's edges glow red.
+	var keep: Dictionary = SaveManager.data.progress
+	SaveManager.data.progress = fresh()
+	var main: Node = load("res://scenes/main.tscn").instantiate()
+	add_child(main)
+	main.show_intro(0, 1)
+	main._go()
+	main.level.hurt()
+	var heart: TextureRect = main._hearts[2]
+	ok("Player hit: the heart that empties pulses, and a red vignette glows at the screen's edges",
+		float((main._vignette.material as ShaderMaterial).get_shader_parameter("amount")) > 0.5 and Haptics.last_pattern == F.player_hit_haptic)
+	# The gun: bigger in the new feel, and the feel toggle switches a flagged level back to the old one.
+	main.level._sync_view()
+	var big: float = main.level._gun.scale.x
+	FD.force_old = true
+	main.level._sync_view()
+	var old_k: float = main.level._gun.scale.x
+	main.level._fire_fx(Vector2(100, 100))
+	ok("The revolver is drawn bigger in the new feel (feel.tres gun_scale); the debug toggle plays the old feel on the same level",
+		absf(big / old_k - F.gun_scale) < 0.01 and main.level.flash == 3 and main.level.recoil == 6)
+	FD.force_old = false
+	remove_child(main)
+	main.free()
+	SaveManager.data.progress = keep
+	AudioManager.sound_on = keep_sound
+	Engine.time_scale = 1.0
+	FD.trauma = 0.0

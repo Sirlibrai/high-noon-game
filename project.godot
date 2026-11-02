@@ -27,6 +27,7 @@ Skins="*res://autoload/skins.gd"
 AudioManager="*res://autoload/audio_manager.gd"
 AdsManager="*res://autoload/ads_manager.gd"
 Haptics="*res://autoload/haptics.gd"
+FeedbackDirector="*res://autoload/feedback_director.gd"
 
 [display]
 

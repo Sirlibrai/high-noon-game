@@ -7,7 +7,7 @@ const RATE := 22050
 
 
 const NAMES := ["shot", "enemy_shot", "thunk", "glass", "down", "boom", "crash", "miss", "ping",
-	"card", "tick", "cock", "clank", "twitch", "bell", "win", "lose", "thump", "rustle", "creak", "tick2", "flip"]
+	"card", "tick", "cock", "clank", "twitch", "bell", "win", "lose", "thump", "rustle", "creak", "tick2", "flip", "dust", "ricochet", "hit"]
 
 
 static func build_all() -> Dictionary:
@@ -44,6 +44,15 @@ static func _render(key: String) -> PackedFloat32Array:
 		"miss":
 			b = _tone(b, 2600, 800, 0.2, "sine", 0.03)
 			b = _noise(b, 0.05, 5000, 2000, 0.05)
+		"dust":  # a bullet into dirt or a wall: a soft, dull puff
+			b = _noise(b, 0.12, 900, 150, 0.22)
+			b = _tone(b, 160, 60, 0.08, "sine", 0.05)
+		"ricochet":  # off wood or iron: a crack and a whining zing
+			b = _noise(b, 0.03, 6000, 3000, 0.18)
+			b = _tone(b, 3200, 1100, 0.32, "sine", 0.035, 0.02, 40.0)
+		"hit":  # a bullet finding its man: a short, heavy thud
+			b = _noise(b, 0.07, 1400, 200, 0.3)
+			b = _tone(b, 120, 45, 0.12, "sine", 0.12)
 		"ping":
 			b = _tone(b, 3400, 2600, 0.14, "triangle", 0.06)
 			b = _tone(b, 5200, 4800, 0.06, "sine", 0.02)

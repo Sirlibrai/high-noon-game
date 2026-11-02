@@ -4,6 +4,7 @@
   {
       "v": 2,
       "name": "Target Practice",
+      "feel": true,
       "puzzle": true,
       "bullets": 3,
       "par": 2,
@@ -38,6 +39,7 @@
     {
       "v": 2,
       "name": "Powder Keg",
+      "feel": true,
       "puzzle": true,
       "bullets": 1,
       "par": 1,
@@ -292,6 +294,7 @@
         }
       ],
       "name" : "Ambush",
+      "feel" : true,
       "pace" : 0.8,
       "par" : 6,
       "tip" : "Six of them. Faster now."
@@ -377,6 +380,7 @@
         }
       ],
       "name" : "Iron Eli",
+      "feel" : true,
       "pace" : 1,
       "par" : 9,
       "sign" : 196,

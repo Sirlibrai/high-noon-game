@@ -4,6 +4,8 @@ extends Node
 ## (the export preset grants the VIBRATE permission).
 
 var enabled := true
+## The last pattern asked for (the tests check feedback with it).
+var last_pattern: Array = []
 
 
 func shot() -> void:
@@ -20,6 +22,17 @@ func hurt() -> void:
 
 func explosion() -> void:
 	_buzz(60, 1.0)
+
+
+## A pattern of pulses, [delay ms, length ms, strength 0..1] each, timed in real time (a hit-stop or the
+## slow-motion debug view never delays them).
+func pattern(pulses: Array) -> void:
+	last_pattern = pulses
+	for p in pulses:
+		if int(p[0]) <= 0:
+			_buzz(int(p[1]), float(p[2]))
+		else:
+			get_tree().create_timer(int(p[0]) / 1000.0, true, false, true).timeout.connect(_buzz.bind(int(p[1]), float(p[2])))
 
 
 func _buzz(ms: int, amplitude: float) -> void:

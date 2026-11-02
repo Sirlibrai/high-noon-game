@@ -21,6 +21,9 @@ var _sting: AudioStreamPlayer
 var _sfx_streams := {}
 var _sfx_players: Array[AudioStreamPlayer] = []
 var _next_voice := 0
+## The last effect asked for and its pitch (the tests check feedback with them).
+var last_sfx := ""
+var last_pitch := 1.0
 
 
 func _ready() -> void:
@@ -109,13 +112,17 @@ func set_music(on: bool) -> void:
 	_refresh()
 
 
-func sfx(name: String, volume_db := 0.0) -> void:
+## pitch: 1 as rendered; FeedbackDirector varies it a little so repeated sounds never sound canned.
+func sfx(name: String, volume_db := 0.0, pitch := 1.0) -> void:
+	last_sfx = name  # for the tests
+	last_pitch = pitch
 	if not sound_on:
 		return
 	var p := _sfx_players[_next_voice]
 	_next_voice = (_next_voice + 1) % SFX_VOICES
 	p.stream = _sfx_streams[name]
 	p.volume_db = volume_db
+	p.pitch_scale = pitch
 	p.play()
 
 

@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="FeelConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/feel_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+muzzle_flash_time = 0.05
+aim_turn_time = 0.03
+recoil_peak_time = 0.025
+recoil_return_time = 0.12
+settle_delay = 0.25
+settle_time = 0.3
+gun_scale = 1.4
+aim_range = Vector2(-0.45, 0.35)
+recoil_strength = 1.0
+shot_pitch = Vector2(0.94, 1.06)
+shot_trauma = 0.12
+shot_haptic = [[0, 10, 0.45]]
+hit_flash_time = 0.06
+knockback = 3.0
+knockback_time = 0.08
+squash = Vector2(1.15, 0.86)
+squash_time = 0.12
+hit_stop = 0.06
+hit_stop_scale = 0.03
+hit_trauma = 0.22
+hit_pitch = Vector2(0.9, 1.1)
+hit_haptic = [[45, 30, 1.0]]
+miss_dust = 12
+miss_pitch = Vector2(0.85, 1.15)
+miss_haptic = []
+blocked_sparks = 10
+blocked_trauma = 0.1
+blocked_pitch = Vector2(0.92, 1.08)
+blocked_haptic = [[40, 8, 0.7], [85, 8, 0.7]]
+explosion_flash = 0.6
+explosion_flash_time = 0.15
+explosion_debris = 70
+explosion_trauma = 0.85
+explosion_hit_stop = 0.04
+explosion_haptic = [[0, 120, 1.0], [150, 80, 0.6]]
+boss_armour_trauma = 0.18
+boss_crack_trauma = 0.4
+boss_crack_haptic = [[40, 25, 1.0], [90, 25, 1.0]]
+boss_hit_stop = 0.08
+boss_hit_trauma = 0.35
+boss_hit_haptic = [[45, 40, 1.0]]
+boss_final_hit_stop = 0.15
+boss_defeat_trauma = 0.9
+boss_defeat_haptic = [[45, 60, 1.0], [140, 140, 0.8]]
+heart_pulse_scale = 1.5
+heart_pulse_time = 0.35
+vignette_alpha = 0.75
+vignette_time = 0.4
+player_hit_trauma = 0.45
+player_hit_haptic = [[0, 80, 1.0]]
+trauma_decay = 2.2
+max_offset = 6.0
+max_angle = 0.0
+shake_speed = 28.0
+reduced_shake = 0.25
+slow_motion = 0.25

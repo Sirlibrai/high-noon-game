@@ -8,6 +8,7 @@ uniform float width = 2.0;     // texels
 uniform float flip_x = 1.0;
 uniform float glint = -1.0;    // the sweep's position across the sprite (0..1), off outside
 uniform float glint_strength = 0.45;
+uniform float flash = 0.0;     // a hit: the sprite flashes white (FeedbackDirector)
 
 varying vec4 tint;  // the sprite's modulate (in fragment(), COLOR already includes the texture)
 
@@ -43,5 +44,6 @@ void fragment() {
 		float band = 1.0 - smoothstep(0.0, 0.12, abs((UV.x + UV.y) * 0.5 - glint));
 		rgb += vec3(1.0, 0.95, 0.8) * band * glint_strength * base.a;
 	}
+	rgb = mix(rgb, vec3(1.0), flash * base.a);
 	COLOR = vec4(rgb, out_a) * tint;
 }

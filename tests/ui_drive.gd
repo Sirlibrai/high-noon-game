@@ -54,6 +54,8 @@ func _screens(tag: String) -> void:
 	await _check_board(tag, "board_jr")
 	main.show_chapter(0)
 	await _check(tag, "levels")
+	main.show_settings(0)
+	await _check(tag, "settings")
 	main._confirm_reset(0)
 	await _check(tag, "reset_confirm")
 	main.show_intro(0, 0)

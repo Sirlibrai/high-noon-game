@@ -63,6 +63,11 @@ var kick := 0.0
 var cyl := 6
 var reload_t := 0.0
 var hit_stop := 0
+## The new feel (FeedbackDirector): the muzzle flash shows until this time (msec); the revolver is being
+## turned and kicked by a tween (its hover aim waits).
+var muzzle_until := 0
+var gun_driven := false
+var _flash_rect: ColorRect
 var last_aim: Variant = null
 var touch := false
 var weapon: Dictionary
@@ -151,6 +156,7 @@ func setup(chapter: int, index: int) -> void:
 	GY = int(SC.GY + float(SC.get("plane_offset_y", 0)))  # the gameplay plane can sit lower or higher on the painting
 	var T: Dictionary = G.touch
 	min_touch = float(T.min_pt) / (float(T.reference_pt_per_px) * PPU)
+	FeedbackDirector.attach(self)
 	touch = GameState.touch_mode
 	weapon = GameState.equipped_weapon()
 	var eq: Dictionary = GameState.progress.inv.equip
@@ -636,8 +642,7 @@ func eli_hit(e: Dictionary, how: String) -> void:
 	var cx: float = r.x + _hb(e).x / 2
 	if e.armor:
 		if how != "tnt" and how != "sign":
-			AudioManager.sfx("ping")
-			fx.burst(cx, r.y + 11, 8, "fx/ping", 1.8)
+			FeedbackDirector.boss_hit_armoured(Vector2(cx, r.y + 11), false)
 			if not e.get("pinged", false):
 				e.pinged = true
 				callout.emit("PING! Use the street.", true, 1100)
@@ -649,10 +654,7 @@ func eli_hit(e: Dictionary, how: String) -> void:
 		e.cracks.append(how)
 		e.flinch = 0.25
 		events.append("crack:" + how)
-		AudioManager.sfx("clank")
-		Haptics.hit()
-		hit_stop = 6
-		shake = 10
+		FeedbackDirector.boss_hit_armoured(Vector2(cx, r.y + 10), true)
 		fx.burst(cx, r.y + 10, 10, "fx/armour", 2)
 		if e.cracks.size() < 2:
 			callout.emit("Cracked! Now drop the sign on him." if how == "tnt" else "Cracked! Now the powder.", true, 1600)
@@ -668,9 +670,7 @@ func eli_hit(e: Dictionary, how: String) -> void:
 	e.hp -= 1
 	e.flinch = 0.25
 	events.append("eli_hit")
-	hit_stop = 5
-	AudioManager.sfx("down")
-	Haptics.hit()
+	FeedbackDirector.boss_hit_vulnerable(e.get("node"), Vector2(cx, r.y + 12))
 	_stats().hits += 1
 	fx.burst(cx, r.y + 8, 10, "fx/blood", 1.4)
 	e.state = "hidden"
@@ -741,10 +741,12 @@ func kill(e: Dictionary, how := "") -> void:
 	e.alive = false
 	e.state = "dead"
 	e.fall = 0.0
-	AudioManager.sfx("down")
-	hit_stop = 3
-	Haptics.hit()
 	var r := geo(e)
+	var at := Vector2(r.x + _hb(e).x / 2, r.y + _hb(e).y * 0.4)
+	if e.kind == "jack":
+		FeedbackDirector.boss_defeated(e.get("node"), at)
+	else:
+		FeedbackDirector.enemy_hit(e.get("node"), at, how == "")  # the blast or the sign took him: no extra thud
 	fx.particle(e.get("hat", "fx/hat"), 0, r.x + 3, r.y, (randf() - 0.5) * 1.4, -2.6, 42)  # the hat flies off
 	if e.kind == "jack":
 		callout.emit("Black Jack’s down!", true, 1200)
@@ -754,12 +756,9 @@ func kill(e: Dictionary, how := "") -> void:
 func explode(c: Dictionary) -> void:
 	var T: Dictionary = G.tnt
 	c.alive = false
-	AudioManager.sfx("boom")
-	Haptics.explosion()
-	shake = 18
-	flash = 6
 	var cx: float = c.x + c.w / 2.0
 	var cy: float = GY - c.h / 2.0
+	FeedbackDirector.explosion(Vector2(cx, cy))
 	fx.explosion(cx, cy)
 	fx.burst(cx, cy, 40, "fx/blast", 3.2, 1.5)
 	for e in enemies:
@@ -788,10 +787,7 @@ func explode(c: Dictionary) -> void:
 func hurt(msg := "") -> void:
 	hearts -= 1
 	damaged = true
-	hurt_flash = 14
-	shake = 8
-	AudioManager.sfx("enemy_shot")
-	Haptics.hurt()
+	FeedbackDirector.player_hit()
 	if hearts <= 0:
 		fail(msg if msg != "" else "You’ve been shot.")
 
@@ -828,13 +824,9 @@ func fail(reason: String, kind := "shot") -> void:
 
 # ---------- shooting ----------
 
-func _fire_fx() -> void:
-	AudioManager.sfx("shot")
-	recoil = 6
-	kick = weapon.kick
-	flash = 3
-	_muzzle_smoke()
-	Haptics.shot()
+## The shot itself, in the frame of the tap (FeedbackDirector: sound, haptic, flash, the gun's aim and kick).
+func _fire_fx(at: Vector2) -> void:
+	FeedbackDirector.shot_fired(at)
 
 
 func shoot(p: Vector2, from_touch: bool) -> void:
@@ -862,7 +854,7 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 		var brass := _gun_pivot() + _vec(G.gun.brass_from_pivot)
 		for i in mini(int(weapon.cyl), used):
 			fx.particle("fx/brass", 0, brass.x, brass.y, -0.5 - randf(), -1.5 - randf(), 40)
-	_fire_fx()
+	_fire_fx(p)
 	aim_pt = {"x": p.x, "y": p.y, "t": 10, "miss": false}
 	if observing:
 		_alert()
@@ -882,7 +874,7 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 			throws.erase(th)
 			events.append("throw_shot")
 			fx.explosion(q.x, q.y)
-			AudioManager.sfx("boom")
+			FeedbackDirector.explosion(Vector2(q.x, q.y))
 			fx.burst(q.x, q.y, 18, "fx/dynamite_blast", 2.4)
 			callout.emit("Nice shooting!", true, 800)
 			return
@@ -909,10 +901,9 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 				explode(c)
 				return
 			c.holes.append(Vector2(roundf(p.x) - 1, roundf(p.y) - 1))
-			AudioManager.sfx("thunk")
+			FeedbackDirector.blocked(p, "wood")
 			if not (tut != null and tut.step >= 1 and tut.step < 3):
 				callout.emit("Wasted bullet.", true, 700)
-			fx.burst(p.x, p.y, 6, "fx/splinter", 1)
 			return
 	if hang_sign != null and hang_sign.state == "hang":
 		for chain in chain_rects():  # the sign hangs from two chains; a shot at either drops it
@@ -923,7 +914,7 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 				return
 		if in_r(p, Rect2(hang_sign.x, hang_sign.y, hang_sign.w, hang_sign.h)):
 			hang_sign.swing = 1.0
-			AudioManager.sfx("thunk")
+			FeedbackDirector.miss(p, "wood")
 			return
 	if strongbox != null and strongbox.state == "hang":
 		var ch := strongbox_chain_rect()
@@ -934,8 +925,7 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 			fx.burst(ch.get_center().x, strongbox.rope_top + 3, 5, "fx/chain")
 			return
 		if in_r(p, strongbox_rect()):  # iron: the bullet rings off it
-			AudioManager.sfx("ping")
-			fx.burst(p.x, p.y, 6, "fx/ping", 1.2)
+			FeedbackDirector.blocked(p, "metal")
 			callout.emit("Clang! Try the chain.", true, 900)
 			return
 	if bucket != null and bucket.state == "hang":
@@ -963,9 +953,8 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 			return
 	# A miss: dust, a ricochet and a red crosshair.
 	decals.append({"x": roundf(p.x), "y": roundf(p.y), "life": 90})
-	AudioManager.sfx("miss")
 	aim_pt.miss = true
-	fx.burst(p.x, p.y, 4, "fx/dust_ground" if p.y > 134 else "fx/dust_wall", 0.8)
+	FeedbackDirector.miss(p)
 
 
 ## A shot at Black Jack (brief v2 §6): behind his crate it only finds the wood; standing, it only counts
@@ -978,12 +967,10 @@ func _shoot_jack(p: Vector2) -> void:
 	events.append("jack_wasted")
 	if e.state == "crate":
 		covers[e.c].holes.append(Vector2(roundi(p.x) - 1, maxf(roundi(p.y), GY - covers[e.c].h + 1) - 1))
-		AudioManager.sfx("thunk")
-		fx.burst(p.x, GY - covers[e.c].h, 6, "fx/splinter", 1)
+		FeedbackDirector.blocked(Vector2(p.x, maxf(p.y, GY - covers[e.c].h)), "wood")
 		callout.emit("He ducks behind the crate. Wasted bullet.", true, 1100)
 		return
-	AudioManager.sfx("miss")
-	fx.burst(p.x, p.y, 4, "fx/dust_wall", 0.8)
+	FeedbackDirector.miss(p)
 	callout.emit("Not the ace! Wasted bullet." if e.state == "cards" else "Wait for the ace. Wasted bullet.", true, 1200)
 
 
@@ -991,8 +978,12 @@ func _break_bottle(b: Dictionary, how: String) -> void:
 	b.alive = false
 	events.append("bottle:" + how)
 	AudioManager.sfx("glass")
-	Haptics.hit()
 	var r := bottle_rect(b)
+	if how == "shot":
+		if FeedbackDirector.new_feel():
+			FeedbackDirector.enemy_hit(b.get("node"), r.get_center(), true, true)
+		else:
+			Haptics.hit()
 	fx.burst(r.get_center().x, r.get_center().y, 10, "fx/glass", 1.4)
 
 
@@ -1183,7 +1174,7 @@ func _duel_shot(p: Vector2) -> void:
 		callout.emit("Wait for the bell…", true, 700)
 		return
 	if d.phase == "wait":
-		_fire_fx()
+		_fire_fx(p)
 		callout_cleared.emit()
 		callout.emit("That wasn’t the ace!" if L.get("cards", false) and d.card != null else "Too early!", true, 900)
 		d.phase = "out"
@@ -1193,25 +1184,32 @@ func _duel_shot(p: Vector2) -> void:
 	if d.phase == "draw":
 		last_aim = p
 		if not in_r(p, duel_zone(), pad(G.duel.zone_pad)):
-			_fire_fx()
-			AudioManager.sfx("miss")
+			_fire_fx(p)
 			aim_pt = {"x": p.x, "y": p.y, "t": 12, "miss": true}
+			FeedbackDirector.miss(p)
 			callout.emit("Missed! Shoot him!", true, 600)
 			return
-		_fire_fx()
-		Haptics.hit()
+		_fire_fx(p)
 		callout_cleared.emit()
 		d.hp -= 1
 		d.phase = "out"
 		d.t = 0.0
 		d.fall = 0.01 if d.hp <= 0 else 0.0
 		d.pose = "hit"
-		hit_stop = 3
+		var at := Vector2(SC.duelX, GY - 38)
+		if d.hp <= 0:  # every duel is a boss's: the last round won is his defeat
+			FeedbackDirector.boss_defeated(_duel_nodes.get("boss"), at)
+		else:
+			FeedbackDirector.boss_hit_vulnerable(_duel_nodes.get("boss"), at)
 		fx.burst(SC.duelX, GY - 38, 10, "fx/blood", 1.4)
 		callout.emit("He’s down!" if d.hp <= 0 else "Hit!", true, 900)
 
 
 # ---------- update (60 steps a second, like the prototype) ----------
+
+func _exit_tree() -> void:
+	FeedbackDirector.detach(self)
+
 
 func _physics_process(_delta: float) -> void:
 	if hit_stop > 0:
@@ -1222,7 +1220,10 @@ func _physics_process(_delta: float) -> void:
 
 
 func _process(_delta: float) -> void:
-	position = Vector2(randi_range(-2, 1), randi_range(-2, 1)) * PPU if shake > 0 else Vector2.ZERO
+	if FeedbackDirector.new_feel():  # trauma-based shake
+		position = (FeedbackDirector.shake_offset() * PPU).round()
+	else:
+		position = Vector2(randi_range(-2, 1), randi_range(-2, 1)) * PPU if shake > 0 else Vector2.ZERO
 	_sync_view()
 
 
@@ -1233,15 +1234,20 @@ func _step(dt: float) -> void:
 		dc.life -= 1
 	if recoil:
 		recoil -= 1
-	kick *= 0.78
-	if kick < 0.01:
-		kick = 0.0
+	if not gun_driven:
+		kick *= 0.78
+		if kick < 0.01:
+			kick = 0.0
 	if flash:
 		flash -= 1
 	if hurt_flash:
 		hurt_flash -= 1
 	if shake:
-		shake -= 1
+		if FeedbackDirector.new_feel():  # a landing's jolt (frames, in the old feel) becomes trauma
+			FeedbackDirector.add_trauma(shake * 0.025)
+			shake = 0
+		else:
+			shake -= 1
 	if aim_pt != null:
 		aim_pt.t -= 1
 		if aim_pt.t <= 0:
@@ -1568,9 +1574,14 @@ func _gun_tilt() -> float:
 
 
 ## Where the muzzle is, from the gun art's "muzzle" point in the manifest.
+## The revolver's size: bigger in the new feel (feel.tres gun_scale).
+func gun_k() -> float:
+	return FeedbackDirector.feel.gun_scale if FeedbackDirector.new_feel() else 1.0
+
+
 func _muzzle() -> Vector2:
 	var art := gun_asset + "/idle"
-	return _gun_pivot() + (Assets.point(art, "muzzle") * float(Assets.meta(art, "scale", 1.0)) / PPU).rotated(_gun_tilt())
+	return _gun_pivot() + (Assets.point(art, "muzzle") * float(Assets.meta(art, "scale", 1.0)) * gun_k() / PPU).rotated(_gun_tilt())
 
 
 func _muzzle_smoke() -> void:
@@ -1580,6 +1591,8 @@ func _muzzle_smoke() -> void:
 
 
 func _aim_gun() -> void:
+	if gun_driven:
+		return
 	var g: Dictionary = G.gun
 	var t: Variant = last_aim if last_aim != null else mouse
 	var want: float = g.rest_angle
@@ -1591,6 +1604,34 @@ func _aim_gun() -> void:
 	if reload_t > 0:
 		want = g.reload_angle
 	gun_ang += (want - gun_ang) * 0.25
+
+
+## The new feel's shot: the revolver turns toward the tap at once, kicks up and back, returns, then settles
+## to rest, all in real time (it plays through hit-stops). Its hover aim takes over again once it settles.
+func aim_and_recoil(at: Vector2) -> void:
+	var F: FeelConfig = FeedbackDirector.feel
+	var p := _gun_pivot()
+	var barrel: float = Assets.meta(gun_asset + "/idle", "barrel_angle", 0.0)
+	var want := clampf(atan2(-(at.y - p.y), -(at.x - p.x)) - barrel, F.aim_range.x, F.aim_range.y)
+	var FD := FeedbackDirector
+	FD.stop_anims(self)  # a new shot takes over from the last
+	gun_driven = true
+	var peak := float(weapon.kick) * F.recoil_strength
+	var t := F.aim_turn_time
+	FD.animate(self, "turn", gun_ang, want, F.aim_turn_time, func(v: float): gun_ang = v)
+	FD.animate(self, "kick_up", kick, peak, F.recoil_peak_time, func(v: float): kick = v, t)
+	t += F.recoil_peak_time
+	FD.animate(self, "kick_back", peak, 0.0, F.recoil_return_time, func(v: float): kick = v, t, "in_out")
+	t += F.recoil_return_time + F.settle_delay
+	FD.animate(self, "settle", want, float(G.gun.rest_angle), F.settle_time, func(v: float): gun_ang = v, t, "in_out")
+	FD.animate(self, "done", 0.0, 1.0, 0.001, func(v: float):
+		if v >= 1.0:
+			gun_driven = false, t + F.settle_time)
+
+
+## The explosion's white flash over the whole screen, fading in real time.
+func screen_flash(alpha: float, time: float) -> void:
+	FeedbackDirector.animate(_flash_rect, "fade", alpha, 0.0, time, func(v: float): _flash_rect.color.a = v)
 
 
 # ---------- the view: sprites only, placed from the state above ----------
@@ -1856,6 +1897,11 @@ func _build_view() -> void:
 	_hurt.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_hurt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.add_child(_hurt)
+	_flash_rect = ColorRect.new()
+	_flash_rect.color = Color(1, 0.97, 0.88, 0)
+	_flash_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_flash_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(_flash_rect)
 	_sync_view()
 
 
@@ -1908,10 +1954,14 @@ func _sync_view() -> void:
 		_place(_tumble_shadow, Vector2(roundf(tumble.x) + 5, GY - float(T.above_ground)))
 	_tumble_shadow.visible = tumble.on
 	_gun.show_asset(gun_asset + ("/reload" if reload_t > 0 else "/idle"))
+	var gk := gun_k()
+	if _gun.extra_scale.x != gk:
+		_gun.extra_scale = Vector2.ONE * gk
+		_muzzle_flash.extra_scale = Vector2.ONE * gk
 	_place(_gun, _gun_pivot().round())
 	_gun.rotation = _gun_tilt()
-	_muzzle_flash.visible = flash > 0
-	if flash:
+	_muzzle_flash.visible = flash > 0 or Time.get_ticks_msec() < muzzle_until
+	if _muzzle_flash.visible:
 		_place(_muzzle_flash, _muzzle().round())
 	var ch: Variant = aim_pt if aim_pt != null else mouse
 	_cross.visible = ch != null and state == "play"
@@ -2207,8 +2257,9 @@ func _sync_enemy(e: Dictionary) -> void:
 	var fig: float = (float(G.window_outlaw.figure_scale) if e.kind == "window" else 1.0) * char_k * (boss_k if is_boss(e) else 1.0)  # upstairs is further away
 	if e.has("run_node") and e.run_node.extra_scale.x != fig:
 		e.run_node.extra_scale = Vector2.ONE * fig
-	if n.extra_scale.x != fig:
-		n.extra_scale = Vector2.ONE * fig
+	var shape: Vector2 = Vector2.ONE * fig * n.get_meta("fb_squash", Vector2.ONE)  # a hit squashes him for a moment
+	if n.extra_scale != shape:
+		n.extra_scale = shape
 	var feet := Vector2(gm.x + _hb(e).x / 2, gm.y + _hb(e).y)
 	if p[2]:
 		feet.y = gm.y + Assets.anchor(who + p[0]).y * n.scale.y / PPU
@@ -2222,7 +2273,7 @@ func _sync_enemy(e: Dictionary) -> void:
 			feet.y += e.fall * O.fall_drop
 			if e.kind != "window":
 				n.rotation = minf(O.fall_max_angle, e.fall * O.fall_spin)
-	_place(n, feet)
+	_place(n, feet + n.get_meta("fb_kick", Vector2.ZERO))  # and knocks him back
 	if e.has("shadow"):  # only when his feet are on the street (peekers stand behind their cover)
 		e.shadow.visible = n.visible and feet.y >= GY - 3 and not (e.kind == "cover" and covers[e.c].alive)
 		e.shadow.modulate.a = n.modulate.a
@@ -2334,7 +2385,10 @@ func _sync_duel() -> void:
 	var boss: AssetSprite = dn.boss
 	boss.show_asset(boss_set + "/" + ("fall" if d.fall else ("aim" if d.pose == "aim" else ("hit" if d.pose == "hit" else "idle"))))
 	var jitter := float(frame % 4 - 2) if d.pose == "hit" and not d.fall else 0.0
-	_place(boss, Vector2(DX + dx + jitter, GY))
+	_place(boss, Vector2(DX + dx + jitter, GY) + boss.get_meta("fb_kick", Vector2.ZERO))
+	var bs: Vector2 = Vector2.ONE * float(D.boss_scale) * boss.get_meta("fb_squash", Vector2.ONE)
+	if boss.extra_scale != bs:
+		boss.extra_scale = bs
 	boss.rotation = minf(1.4, d.fall * 2.5) if d.fall else 0.0
 	boss.modulate.a = maxf(0, 1 - d.fall / 1.5) if d.fall else 1.0
 	dn.twitch.visible = d.twitch > 0

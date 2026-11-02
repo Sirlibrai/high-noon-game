@@ -45,6 +45,8 @@ var board: BountyWall
 ## and every hit area drawn over the level (H, or the pause menu; Level.show_hit_areas).
 static var greyscale := false
 var _grey_layer: CanvasLayer
+## The new feel's player hit: the red glow at the screen's edges.
+var _vignette: ColorRect
 
 
 func _ready() -> void:
@@ -126,6 +128,10 @@ func _input(event: InputEvent) -> void:
 	if OS.is_debug_build() and event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_G:
 			set_greyscale(not greyscale)
+		elif event.keycode == KEY_S:
+			FeedbackDirector.set_slow(not FeedbackDirector.slow)
+		elif event.keycode == KEY_F:
+			FeedbackDirector.force_old = not FeedbackDirector.force_old
 		elif event.keycode == KEY_H:
 			Level.show_hit_areas = not Level.show_hit_areas
 	# Music never starts before the first tap (audio.md).
@@ -158,6 +164,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_SPACE, KEY_ENTER:
 				if level.state == "play" and level.duel != null:
 					level.shoot(Vector2(level.SC.duelX, level.GY - 22), false)
+
+
+## The new feel's player hit: the heart that has just emptied swells and settles, and the screen's edges
+## glow red for a moment.
+func _on_player_hurt(hearts_left: int) -> void:
+	var F: FeelConfig = FeedbackDirector.feel
+	if hearts_left >= 0 and hearts_left < _hearts.size():
+		var h := _hearts[hearts_left]
+		h.pivot_offset = h.size / 2
+		FeedbackDirector.animate(h, "swell", Vector2.ONE, Vector2.ONE * F.heart_pulse_scale, F.heart_pulse_time * 0.3, func(v: Vector2): h.scale = v)
+		FeedbackDirector.animate(h, "settle", Vector2.ONE * F.heart_pulse_scale, Vector2.ONE, F.heart_pulse_time * 0.7, func(v: Vector2): h.scale = v, F.heart_pulse_time * 0.3, "back")
+	var m := _vignette.material as ShaderMaterial
+	FeedbackDirector.animate(_vignette, "glow", F.vignette_alpha, 0.0, F.vignette_time, func(v: float): m.set_shader_parameter("amount", v))
 
 
 func set_greyscale(on: bool) -> void:
@@ -361,20 +380,35 @@ func show_chapter(c: int) -> void:
 			b.add_theme_constant_override("icon_max_width", 30)
 		b.pressed.connect(show_intro.bind(c, i))
 		UiKit.stars(cell, GameState.stars_in(GameState.progress, c, i), 32)
-	var settings := UiKit.row(card)
-	var pt := UiKit.button(settings, "All levels open: " + ("on" if GameState.playtest() else "off"), &"SmallGhostButton")
-	pt.pressed.connect(func():
-		SaveManager.set_setting("playtest", not GameState.playtest())
-		show_chapter(c))
-	var snd := UiKit.button(settings, "Sound: " + ("on" if AudioManager.sound_on else "off"), &"SmallGhostButton")
+	UiKit.button(UiKit.row(card), "Settings", &"SmallGhostButton").pressed.connect(show_settings.bind(c))
+
+
+## Settings (from a bounty's level grid): sound, music, reduced shake, all levels open, and Reset progress.
+func show_settings(c: int) -> void:
+	_office_backdrop()
+	var card := _open_overlay()
+	UiKit.text(card, "Settings", &"Heading")
+	var row1 := UiKit.row(card)
+	var snd := UiKit.button(row1, "Sound: " + ("on" if AudioManager.sound_on else "off"), &"GhostButton")
 	snd.pressed.connect(func():
 		AudioManager.set_sound(not AudioManager.sound_on)
-		show_chapter(c))
-	var mus := UiKit.button(settings, "Music: " + ("on" if AudioManager.music_on else "off"), &"SmallGhostButton")
+		show_settings(c))
+	var mus := UiKit.button(row1, "Music: " + ("on" if AudioManager.music_on else "off"), &"GhostButton")
 	mus.pressed.connect(func():
 		AudioManager.set_music(not AudioManager.music_on)
-		show_chapter(c))
-	UiKit.button(settings, "Reset progress", &"SmallGhostButton").pressed.connect(_confirm_reset.bind(c))
+		show_settings(c))
+	var row2 := UiKit.row(card)
+	var shk := UiKit.button(row2, "Screen shake: " + ("reduced" if FeedbackDirector.reduced_shake else "full"), &"GhostButton")
+	shk.pressed.connect(func():
+		FeedbackDirector.set_reduced_shake(not FeedbackDirector.reduced_shake)
+		show_settings(c))
+	var pt := UiKit.button(row2, "All levels open: " + ("on" if GameState.playtest() else "off"), &"GhostButton")
+	pt.pressed.connect(func():
+		SaveManager.set_setting("playtest", not GameState.playtest())
+		show_settings(c))
+	var row3 := UiKit.row(card)
+	UiKit.button(row3, "Reset progress", &"SmallGhostButton").pressed.connect(_confirm_reset.bind(c))
+	UiKit.button(row3, "Back", &"SmallGhostButton").pressed.connect(show_chapter.bind(c))
 
 
 ## Reset progress, after a confirmation: every star, capture, Bounty Dollar, gun and clue goes, here
@@ -384,7 +418,7 @@ func _confirm_reset(c: int) -> void:
 	UiKit.text(card, "Reset progress?", &"Heading")
 	UiKit.text(card, "This wipes every star, capture, Bounty Dollar, gun and clue, on this phone and in iCloud. Sound and music settings stay. It can’t be undone.", &"", 840)
 	var buttons := UiKit.row(card)
-	UiKit.button(buttons, "Keep my progress").pressed.connect(show_chapter.bind(c))
+	UiKit.button(buttons, "Keep my progress").pressed.connect(show_settings.bind(c))
 	UiKit.button(buttons, "Reset everything", &"GhostButton").pressed.connect(reset_progress)
 
 
@@ -600,15 +634,24 @@ func _toggle_pause() -> void:
 			UiKit.button(card, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
 		UiKit.button(card, "Home", &"GhostButton").pressed.connect(show_home)
 		if OS.is_debug_build():  # testing aids
-			var dbg := UiKit.row(card)
-			var g := UiKit.button(dbg, "Greyscale: " + ("on" if greyscale else "off"), &"SmallGhostButton")
+			var dbg := UiKit.row(card)  # one row: greyscale, hit areas, 25% speed, old or new feel
+			var g := UiKit.button(dbg, "Grey: " + ("on" if greyscale else "off"), &"SmallGhostButton")
 			g.pressed.connect(func():
 				set_greyscale(not greyscale)
-				g.text = "Greyscale: " + ("on" if greyscale else "off"))
-			var h := UiKit.button(dbg, "Hit areas: " + ("on" if Level.show_hit_areas else "off"), &"SmallGhostButton")
+				g.text = "Grey: " + ("on" if greyscale else "off"))
+			var h := UiKit.button(dbg, "Hits: " + ("on" if Level.show_hit_areas else "off"), &"SmallGhostButton")
 			h.pressed.connect(func():
 				Level.show_hit_areas = not Level.show_hit_areas
-				h.text = "Hit areas: " + ("on" if Level.show_hit_areas else "off"))
+				h.text = "Hits: " + ("on" if Level.show_hit_areas else "off"))
+			var s := UiKit.button(dbg, "Slow: " + ("on" if FeedbackDirector.slow else "off"), &"SmallGhostButton")
+			s.pressed.connect(func():
+				FeedbackDirector.set_slow(not FeedbackDirector.slow)
+				s.text = "Slow: " + ("on" if FeedbackDirector.slow else "off"))
+			var f := UiKit.button(dbg, "Feel: " + ("old" if FeedbackDirector.force_old else "new"), &"SmallGhostButton")
+			f.disabled = not level.L.get("feel", false)  # only flagged levels have the new feel to compare
+			f.pressed.connect(func():
+				FeedbackDirector.force_old = not FeedbackDirector.force_old
+				f.text = "Feel: " + ("old" if FeedbackDirector.force_old else "new"))
 
 
 func _on_won(res: Dictionary) -> void:
@@ -755,6 +798,13 @@ func _grant_hint() -> void:
 func _build_hud() -> void:
 	_hud = CanvasLayer.new()
 	_hud.layer = 5
+	_vignette = ColorRect.new()  # under the HUD, over the street
+	_vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_vignette.material = ShaderMaterial.new()
+	_vignette.material.shader = load("res://ui/vignette.gdshader")
+	_hud.add_child(_vignette)
+	FeedbackDirector.player_hurt.connect(_on_player_hurt)
 	add_child(_hud)
 	_hud_box = MarginContainer.new()
 	_hud_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)

@@ -1,8 +1,8 @@
 class_name BountyWall
 extends Control
 ## The Bounty board: the office notice board's cork filling the screen, its wooden frame along the
-## top and bottom, with the wanted posters pinned to it by brass tacks, side by side, about 80% of the
-## screen tall. A lantern's warm pool of light falls on the middle of the screen and the edges fade
+## top and bottom, with the painted wanted posters nailed to it side by side, about three quarters of
+## the screen tall, each started bounty's star progress on the cork below it. A lantern's warm pool of light falls on the middle of the screen and the edges fade
 ## into shadow, so the centred poster is the brightest. Swipe sideways along the board; it snaps to a
 ## poster, and never shows bare cork before the first poster or after the last. It opens with the
 ## current hunt centred (as near as those ends allow). Tapping a poster that can be hunted emits
@@ -10,16 +10,16 @@ extends Control
 
 signal chosen(index: int)
 
-## Poster size and spacing, in screen pixels (720 tall).
-const POSTER := Vector2(372, 568)
-const GAP := 64.0
-## The portrait spans almost the poster's width and about half its height, right under WANTED.
-const PORTRAIT := Vector2(328, 246)
-## Names are condensed: their line is squeezed to this much of its width (letters and spacing alike).
-const CONDENSE := 0.8
+## Poster size and spacing, in screen pixels (720 tall). The painted posters are about 0.6 as wide as tall.
+const POSTER := Vector2(328, 548)
+const GAP := 72.0
+## Each painted poster's portrait window, as fractions of its height (its stamps go across it).
+const WINDOW_TOP := 0.225
+const WINDOW_BOTTOM := 0.695
+## The star progress on the cork under a started bounty's poster: its gap below the poster, and height.
+const STARS_GAP := 8.0
+const STARS_H := 28.0
 const TILTS := [-1.2, 0.8, -0.6, 1.1, -0.9]
-## Brass tacks: one at each corner of a poster, over the paper's own nail holes.
-const TACKS := [Vector2(39.5, 38.5), Vector2(339.5, 38.5), Vector2(41.5, 532), Vector2(331, 530)]
 ## The frame rails, top and bottom (their art's height), and the bare cork kept beside the first and
 ## last posters (past the safe area) when the board is at either end.
 const RAIL_H := 54.0
@@ -76,6 +76,9 @@ func _ready() -> void:
 		_strip.add_child(p)
 		posters.append(p)
 	show_poster(GameState.current_hunt(pg, pt))
+	for i in posters.size():  # a portrait shown for the first time: its shadow lifts away
+		if posters[i].has_meta("veil"):
+			_lift_veil(i, posters[i].get_meta("veil"))
 
 
 func _tiled(asset: String) -> TextureRect:
@@ -128,7 +131,7 @@ func centred() -> int:
 
 func _place() -> void:
 	var vis := _vis()
-	_strip.position = Vector2(vis.x / 2 - POSTER.x / 2 - scroll, RAIL_H + (vis.y - RAIL_H * 2 - POSTER.y) / 2)
+	_strip.position = Vector2(vis.x / 2 - POSTER.x / 2 - scroll, RAIL_H + (vis.y - RAIL_H * 2 - POSTER.y - STARS_GAP - STARS_H) / 2)
 	var tile := _cork.texture.get_size()
 	_cork.position = Vector2(-fposmod(scroll, tile.x), RAIL_H - tile.y / 2)  # the cork moves with the posters pinned to it
 	_cork.size = Vector2(vis.x + tile.x * 2, vis.y + tile.y)
@@ -211,100 +214,96 @@ func show_poster(i: int) -> void:
 	_place()
 
 
-## One wanted poster: WANTED (in the art), a wide portrait right under it, the outlaw's name in big,
-## heavy, condensed slab capitals filling the width, a one-line title in small capitals, the reward
-## large on a red banner, and small star progress under it once the bounty is started. Pinned with
-## brass tacks. Stamps: CAPTURED in red across the portrait, a padlock while locked, COMING SOON in
-## dark faded ink. J.R. shows his silhouette until he can be hunted.
-static func poster(i: int, state: String, pg: Dictionary) -> Button:
+
+
+## The shadow lifting off a newly revealed portrait (J.R.'s, when his bounty unlocks), once.
+func _lift_veil(i: int, veil: TextureRect) -> void:
+	var t := create_tween()
+	t.tween_interval(0.6)
+	t.tween_method(func(v: float):
+		veil.set_meta("lift", v)
+		veil.material.set_shader_parameter("lift", v), 0.0, 1.0, 1.8).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	t.tween_callback(func():
+		veil.queue_free()
+		GameState.progress.revealed[str(i)] = true
+		GameState.save())
+
+
+## One painted wanted poster, `size` pixels (the Bounty board's, or smaller on the office's cork board
+## and the hunt screen). On top of the painting only: the CAPTURED stamp, small and a little see-through
+## so the face shows; COMING SOON in dark brown ink, on a faded poster; and, with `stars`, a started
+## bounty's star progress on the cork just below. J.R.'s poster shows his silhouette until he can be
+## hunted; with `reveal`, the first time it shows his face the silhouette is laid over it in the "veil"
+## meta, for the board to lift away. The stamp is in the "stamp" meta.
+static func poster(i: int, state: String, pg: Dictionary, size := POSTER, stars := true, reveal := true) -> Button:
 	var ch: Dictionary = GameState.chapters[i]
 	var open := state == "open" or state == "captured"
 	var b := Button.new()
 	b.theme = load(Assets.THEME)
-	b.theme_type_variation = &"WallPoster"
+	b.theme_type_variation = &"Hotspot"  # no frame: the painting is the poster
 	b.focus_mode = Control.FOCUS_NONE
 	b.mouse_filter = Control.MOUSE_FILTER_IGNORE  # the board takes the taps (and tells a tap from a swipe)
 	b.disabled = not open
-	b.size = POSTER
-	b.custom_minimum_size = POSTER
+	b.size = size
+	b.custom_minimum_size = size
 	b.tooltip_text = "%s, %s, %s" % [ch.poster_name, ch.title, ch.reward]
-	var sb: StyleBox = b.theme.get_stylebox("normal", &"WallPoster")
-	var inner := POSTER.x - sb.content_margin_left - sb.content_margin_right
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 2)
-	v.position = Vector2(sb.content_margin_left, sb.content_margin_top)
-	v.size = Vector2(inner, POSTER.y - sb.content_margin_top - sb.content_margin_bottom)
-	b.add_child(v)
-	var frame := PanelContainer.new()
-	frame.theme_type_variation = &"PortraitFrame"
-	frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	v.add_child(frame)
-	var side: float = b.theme.get_stylebox("panel", &"PortraitFrame").content_margin_left
-	var pic := UiKit.image(frame, portrait_for(i, open), PORTRAIT - Vector2(side, side) * 2)
-	if not open and not Assets.has("portrait_wide/ch%d_locked" % i):
-		pic.modulate = Color(0.45, 0.4, 0.38)
-	var holder := Control.new()  # the squeezed name, centred in the column
-	v.add_child(holder)
-	var name := UiKit.text(holder, str(ch.poster_name).to_upper(), &"PosterBigName")
-	var nfs := fit(name, inner / CONDENSE, b.theme)
-	var nfont := b.theme.get_font("font", &"PosterBigName")
-	var nsz := Vector2(nfont.get_string_size(name.text, HORIZONTAL_ALIGNMENT_LEFT, -1, nfs).x, nfont.get_height(nfs))  # measured from the theme: it isn't on screen yet
-	name.size = nsz
-	name.scale.x = CONDENSE
-	name.position.x = (inner - nsz.x * CONDENSE) / 2
-	holder.custom_minimum_size = Vector2(inner, nsz.y)
-	UiKit.text(v, str(ch.title).to_upper(), &"PosterTitle")
-	var banner_row := UiKit.row(v)
-	var banner := PanelContainer.new()
-	banner.theme_type_variation = &"RewardBanner"
-	banner_row.add_child(banner)
-	UiKit.text(banner, ch.reward, &"RewardLabel")
+	var art := _painting(b, image_for(i, open), size)
+	b.set_meta("art", art)
+	if not open:  # coming soon (or not yet reachable): washed out
+		art.material = ShaderMaterial.new()
+		art.material.shader = load("res://ui/poster_faded.gdshader")
+	var dark := "poster/ch%d_locked" % i
+	if reveal and open and Assets.has(dark) and not pg.get("revealed", {}).has(str(i)):
+		var veil := _painting(b, dark, size)
+		veil.material = ShaderMaterial.new()
+		veil.material.shader = load("res://ui/poster_veil.gdshader")
+		b.set_meta("veil", veil)
 	var got := GameState.chapter_stars(pg, i) if open else 0
-	if got > 0:  # started: small star progress under the banner
-		var stars := UiKit.row(v)
-		UiKit.image(stars, "ui/star_on", Vector2(20, 20))
-		UiKit.text(stars, "%d / %d" % [got, GameState.levels_for(i).size() * 3], &"PosterStars")
-	for at in TACKS:
-		var t := UiKit.image(b, "poster/tack")
-		t.position = at - Assets.anchor("poster/tack")  # centred on the paper's nail hole
+	if stars and got > 0:  # started: star progress on the cork, under the poster
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 6)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.position = Vector2(0, size.y + STARS_GAP)
+		row.size = Vector2(size.x, STARS_H)
+		b.add_child(row)
+		UiKit.image(row, "ui/star_on", Vector2(STARS_H, STARS_H) - Vector2(4, 4))
+		UiKit.text(row, "%d / %d" % [got, GameState.levels_for(i).size() * 3], &"PosterStars")
+		b.set_meta("stars", row)
+	var stamp: Control = null
+	match state:
+		"captured":
+			stamp = UiKit.image(b, "ui/stamp_captured", Vector2(size.x * 0.68, size.x * 0.375))
+			stamp.modulate.a = 0.9
+		"soon":
+			stamp = PanelContainer.new()
+			stamp.theme_type_variation = &"StampFaded"
+			stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			UiKit.text(stamp, "COMING SOON", &"StampFadedLabel")
+			b.add_child(stamp)
+	if stamp != null:
+		var sz := stamp.get_combined_minimum_size()
+		var k := minf(1.0, size.x * 0.86 / sz.x)  # smaller posters, smaller stamps
+		stamp.size = sz
+		stamp.pivot_offset = sz / 2
+		stamp.scale = Vector2.ONE * k
+		var captured := state == "captured"  # CAPTURED goes low across the portrait, on the chest, so the face shows
+		var y := lerpf(WINDOW_TOP, WINDOW_BOTTOM, 0.74 if captured else 0.5)
+		stamp.position = Vector2(size.x / 2, size.y * y) - sz / 2
+		stamp.rotation = deg_to_rad(0.0 if captured else -12.0)  # the CAPTURED art is already tilted
+		b.set_meta("stamp", stamp)
 	for c in b.find_children("*", "Control", true, false):
 		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if state != "open":
-		var stamp: Control
-		var tilt := -12.0
-		match state:
-			"captured":
-				stamp = UiKit.image(b, "ui/stamp_captured", Vector2(POSTER.x * 0.8, POSTER.x * 0.44))
-			"locked":
-				stamp = UiKit.image(b, "ui/icon_lock", Vector2(84, 104))
-				tilt = 0.0
-			_:
-				stamp = PanelContainer.new()
-				stamp.theme_type_variation = &"StampFaded"
-				stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				UiKit.text(stamp, "COMING SOON", &"StampFadedLabel")
-				b.add_child(stamp)
-		var sz := stamp.get_combined_minimum_size()
-		stamp.size = sz
-		stamp.position = Vector2((POSTER.x - sz.x) / 2, sb.content_margin_top + PORTRAIT.y / 2 - sz.y / 2)  # across the portrait
-		stamp.pivot_offset = sz / 2
-		stamp.rotation = deg_to_rad(tilt)
-		b.set_meta("stamp", stamp)
 	return b
 
 
-## The wide portrait: J.R.'s silhouette until he can be hunted, then his face.
-static func portrait_for(i: int, open: bool) -> String:
-	var dark := "portrait_wide/ch%d_locked" % i
-	return dark if not open and Assets.has(dark) else "portrait_wide/ch%d" % i
+static func _painting(parent: Control, asset: String, size: Vector2) -> TextureRect:
+	var t := UiKit.image(parent, asset, size)
+	t.size = size
+	return t
 
 
-## Sizes a label's font so its text fits `width` on one line: the theme's size (as big as the poster's
-## height allows) for short names, smaller for long ones. Measured with the theme, before it is on screen.
-static func fit(l: Label, width: float, theme: Theme) -> int:
-	var font := theme.get_font("font", l.theme_type_variation)
-	var fs := theme.get_font_size("font_size", l.theme_type_variation)
-	while fs > 22 and font.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > width:
-		fs -= 1
-	l.add_theme_font_size_override("font_size", fs)
-	return fs
+## The poster's painting: J.R.'s silhouette until he can be hunted, then his face.
+static func image_for(i: int, open: bool) -> String:
+	var dark := "poster/ch%d_locked" % i
+	return dark if not open and Assets.has(dark) else "poster/ch%d" % i

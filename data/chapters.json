@@ -1,10 +1,10 @@
 {
-  "_about": "Adds to (or replaces fields of) the kit's chapters.json, by index: what each bounty's wanted poster on the Bounty board wall says. poster_name is the outlaw (big slab capitals); title is the one line under it. Iron Eli's reward and bounty follow brief v2 ($2,500).",
+  "_about": "Adds to (or replaces fields of) the kit's chapters.json, by index: what each bounty's wanted poster says. poster_name is the outlaw; title is the one line under it. Rewards and bounties match the painted posters (Vintage Western Wanted Poster Collection).",
   "chapters": [
     {"poster_name": "Iron Eli", "title": "The Iron Gunslinger", "reward": "$2,500", "bounty": 2500},
-    {"poster_name": "Cole Haggerty", "title": "Leader of the Coal Gang"},
-    {"poster_name": "Digger McCall", "title": "The Claim Jumper"},
-    {"poster_name": "The Lantern Man", "title": "The Ghost of Silver Creek"},
-    {"poster_name": "J.R.", "title": "Name Unknown"}
+    {"poster_name": "Cole Haggerty", "title": "Leader of the Coal Gang", "reward": "$3,500", "bounty": 3500},
+    {"poster_name": "Digger McCall", "title": "The Claim Jumper", "reward": "$5,000", "bounty": 5000},
+    {"poster_name": "The Lantern Man", "title": "The Ghost of Silver Creek", "reward": "$7,500", "bounty": 7500},
+    {"poster_name": "J.R.", "title": "Name Unknown", "reward": "$10,000", "bounty": 10000}
   ]
 }

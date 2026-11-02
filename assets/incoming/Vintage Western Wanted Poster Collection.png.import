@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dwnovpdaq6ehu"
-path="res://.godot/imported/poster_tack.png-76b2666e53794f76438427ac52b3b7a6.ctex"
+uid="uid://k2etx8sc007c"
+path="res://.godot/imported/Vintage Western Wanted Poster Collection.png-bb788b646c401281494eeba5e070133c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/painted/poster_tack.png"
-dest_files=["res://.godot/imported/poster_tack.png-76b2666e53794f76438427ac52b3b7a6.ctex"]
+source_file="res://assets/incoming/Vintage Western Wanted Poster Collection.png"
+dest_files=["res://.godot/imported/Vintage Western Wanted Poster Collection.png-bb788b646c401281494eeba5e070133c.ctex"]
 
 [params]
 

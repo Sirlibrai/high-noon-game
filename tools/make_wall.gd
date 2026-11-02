@@ -2,15 +2,13 @@ extends SceneTree
 ## Makes the Bounty board wall from the office's notice board (assets/painted/office.png), so the two
 ## match: a seamless cork tile (the board's cork, its lamp-light gradient evened out, mirrored so it
 ## repeats without seams), the board's wooden frame rail (repeating sideways, for the top and the
-## bottom edge), and a brass tack (the board's corner bolt) for pinning the posters:
+## bottom edge):
 ##   Godot --headless --path . -s res://tools/make_wall.gd
 
 const OFFICE := "res://assets/painted/office.png"
 const OUT := "res://assets/painted/"
 const CORK := Rect2i(600, 196, 400, 220)  # inside the frame, clear of its edges
 const RAIL := Rect2i(560, 138, 480, 27)  # the frame's top rail, between its corner blocks
-const BOLT := Vector2(532, 152)  # a corner block's brass bolt, and its radius
-const BOLT_R := 9.0
 const CORK_K := 1.6  # drawn bigger than in the office: the wall is the whole screen
 const RAIL_K := 2.0
 
@@ -28,8 +26,7 @@ func _init() -> void:
 	rail.flip_x()
 	wide.blit_rect(rail, Rect2i(Vector2i.ZERO, rail.get_size()), Vector2i(rail.get_width(), 0))
 	wide.save_png(ProjectSettings.globalize_path(OUT + "wall_rail.png"))
-	_tack().save_png(ProjectSettings.globalize_path(OUT + "poster_tack.png"))
-	print('    "wall/cork": "painted/wall_cork.png", "wall/rail": "painted/wall_rail.png" (%d px tall), "poster/tack": "painted/poster_tack.png"' % wide.get_height())
+	print('    "wall/cork": "painted/wall_cork.png", "wall/rail": "painted/wall_rail.png" (%d px tall)' % wide.get_height())
 	quit()
 
 
@@ -68,30 +65,3 @@ static func _mirror_tile(im: Image) -> Image:
 		out.blit_rect(part, Rect2i(0, 0, w, h), Vector2i(w * (k % 2), h * (k / 2)))
 	return out
 
-
-## A round brass tack like the board's corner bolts: a dark outline, a domed brass head lit from the top
-## left, and a soft shadow below-right on the cork.
-static func _tack() -> Image:
-	var r := 15.0
-	var size := int(r * 2 + 10)
-	var out := Image.create_empty(size, size, false, Image.FORMAT_RGBA8)
-	var c := Vector2(size / 2.0 - 2, size / 2.0 - 2)
-	var light := Color("#FFE49A")
-	var brass := Color("#E3A12E")
-	var deep := Color("#8A4C12")
-	var ink := Color("#3A1E0A")
-	for y in size:
-		for x in size:
-			var p := Vector2(x + 0.5, y + 0.5)
-			var d := p.distance_to(c)
-			var sd := p.distance_to(c + Vector2(3.5, 3.5))
-			var col := Color(0.1, 0.05, 0.02, 0.4 * clampf(r + 1.5 - sd, 0, 1)) if sd < r + 1.5 else Color(0, 0, 0, 0)
-			if d < r + 1.0:
-				var q := (p - c) / r
-				var t := clampf(q.dot(Vector2(0.7, 0.7)) * 0.5 + 0.5, 0, 1)  # 0 at the lit top left
-				var body := brass.lerp(deep, smoothstep(0.45, 1.0, t)).lerp(light, smoothstep(0.42, 0.0, (q - Vector2(-0.35, -0.35)).length()))
-				if d > r - 2.2:
-					body = ink
-				col = Color(body, clampf(r + 1.0 - d, 0, 1)) if col.a == 0 or d < r else col.blend(Color(body, clampf(r + 1.0 - d, 0, 1)))
-			out.set_pixel(x, y, col)
-	return out

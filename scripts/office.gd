@@ -44,8 +44,6 @@ const LAMPS := [[Vector2(805, 108), 2.4], [Vector2(1478, 281), 1.1]]
 ## The row of rivets along the desk's front edge: the ledger sits on the desk above it.
 const DESK_RIVETS := 900.0
 const IDLE_POSE_TIME := 2.6
-## The poster's portrait frame (its side, in poster pixels at the design width).
-const PORTRAIT_SIDE := 116.0
 
 ## The safe area's insets in screen pixels (left, right, bottom), set by Main on phones.
 var safe_lrb := Vector3.ZERO
@@ -147,100 +145,21 @@ func _to_local_px(p: Vector2) -> Vector2:
 
 
 func _big_rect() -> Rect2:
-	var h := BIG_W * 1.75
+	var h := BIG_W * BountyWall.POSTER.y / BountyWall.POSTER.x
 	return Rect2(BIG_SPOT[0] - BIG_W / 2, BIG_SPOT[1] - h / 2, BIG_W, h)
-
-
-## A bounty's portrait: its silhouette (if it has one) until it can be hunted, then the full face.
-static func portrait_for(i: int, open: bool) -> String:
-	var dark := "portrait/ch%d_locked" % i
-	return dark if not open and Assets.has(dark) else "portrait/ch%d" % i
-
-
-## A wanted poster as the Bounty board shows it, designed `width` pixels wide. The compact one
-## (small on the office's cork board) keeps only WANTED, the portrait and the reward. Its stamp
-## (captured, locked, coming soon) is in its "stamp" meta.
-static func wanted_poster(i: int, state: String, width: float, compact := false) -> Button:
-	var ch: Dictionary = GameState.chapters[i]
-	var pg: Dictionary = GameState.progress
-	var open := state == "open" or state == "captured"
-	var b := Button.new()
-	b.theme_type_variation = &"Poster"  # the painted poster: WANTED is in the art
-	b.focus_mode = Control.FOCUS_NONE
-	b.custom_minimum_size = Vector2(width, 0)
-	b.disabled = not open
-	b.theme = load(Assets.THEME)  # so its wrapped text measures at the theme's sizes before it is on screen
-	var sb: StyleBox = b.theme.get_stylebox("normal", b.theme_type_variation)
-	var inner := width - sb.content_margin_left - sb.content_margin_right
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 2)
-	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	b.add_child(v)
-	# The portrait, square in an inked frame. A bounty with a silhouette (J.R.) shows only that until
-	# he can be hunted; the others show darkened.
-	var frame := PanelContainer.new()
-	frame.theme_type_variation = &"PortraitFrame"
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	v.add_child(frame)
-	var side := minf(PORTRAIT_SIDE, inner)
-	var pic := UiKit.image(frame, portrait_for(i, open), Vector2(side, side))
-	if not open and not Assets.has("portrait/ch%d_locked" % i):
-		pic.modulate = Color(0.35, 0.3, 0.28)
-	if not compact:
-		UiKit.text(v, ch.who, &"PosterName", inner)
-		UiKit.text(v, ch.crime, &"PosterCrime", inner)
-	UiKit.text(v, ch.reward, &"PosterReward")
-	if not compact:
-		if open:
-			UiKit.text(v, "★ %d/%d" % [GameState.chapter_stars(pg, i), GameState.levels_for(i).size() * 3], &"PosterCrime")
-		else:
-			UiKit.text(v, ch.name, &"PosterCrime")
-	for c in v.get_children():
-		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	v.offset_left = sb.content_margin_left
-	v.offset_right = -sb.content_margin_right
-	v.offset_top = sb.content_margin_top
-	b.custom_minimum_size.y = v.get_combined_minimum_size().y + sb.content_margin_top + sb.content_margin_bottom
-	v.minimum_size_changed.connect(func():  # wrapped text settles its height once laid out
-		b.custom_minimum_size.y = maxf(b.custom_minimum_size.y, v.get_combined_minimum_size().y + sb.content_margin_top + sb.content_margin_bottom))
-	if state != "open":
-		# Captured: the painted CAPTURED stamp. Locked: a padlock. Coming soon: an inked stamp.
-		var stamp: Control
-		var tilt := -14.0
-		match state:
-			"captured":
-				stamp = UiKit.image(b, "ui/stamp_captured", Vector2(width * 0.86, width * 0.47))
-			"locked":
-				stamp = UiKit.image(b, "ui/icon_lock", Vector2(inner * 0.5, inner * 0.62))
-				tilt = 0.0
-			_:
-				stamp = PanelContainer.new()
-				stamp.theme_type_variation = &"Stamp"
-				stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				UiKit.text(stamp, "COMING SOON", &"StampLabel")
-				b.add_child(stamp)
-		var sz := stamp.get_combined_minimum_size()
-		stamp.size = sz
-		stamp.position = Vector2((width - sz.x) / 2, sb.content_margin_top + frame.get_combined_minimum_size().y / 2 - sz.y / 2)  # across the portrait
-		stamp.pivot_offset = sz / 2
-		stamp.rotation = deg_to_rad(tilt)
-		b.set_meta("stamp", stamp)
-	return b
 
 
 func _build_posters(pg: Dictionary, pt: bool) -> void:
 	var cur := GameState.current_hunt(pg, pt)
 	var others := range(5).filter(func(i): return i != cur)
 	for k in others.size():
-		_hang(others[k], SMALL_SPOTS[k], SMALL_W, true, pg, pt)
-	_hang(cur, BIG_SPOT, BIG_W, false, pg, pt)
+		_hang(others[k], SMALL_SPOTS[k], SMALL_W, pg, pt)
+	_hang(cur, BIG_SPOT, BIG_W, pg, pt)
 
 
-func _hang(c: int, spot: Array, w: float, compact: bool, pg: Dictionary, pt: bool) -> void:
-	var design := 200.0
-	var p := wanted_poster(c, GameState.poster_state(pg, c, pt), design, compact)
+func _hang(c: int, spot: Array, w: float, pg: Dictionary, pt: bool) -> void:
+	var design := 200.0  # the painted poster, as on the Bounty board, scaled down
+	var p := BountyWall.poster(c, GameState.poster_state(pg, c, pt), pg, Vector2(design, design * BountyWall.POSTER.y / BountyWall.POSTER.x), false, false)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE  # the board's hotspot takes the tap
 	_art.add_child(p)
 	p.size = p.custom_minimum_size
@@ -248,9 +167,6 @@ func _hang(c: int, spot: Array, w: float, compact: bool, pg: Dictionary, pt: boo
 	p.scale = Vector2.ONE * s
 	p.pivot_offset = Vector2.ZERO
 	p.position = Vector2(spot[0], spot[1]) - p.size * s / 2
-	p.minimum_size_changed.connect(func():
-		p.size = p.custom_minimum_size
-		p.position = Vector2(spot[0], spot[1]) - p.size * s / 2)
 	p.rotation = spot[2]
 	if p.has_meta("stamp"):
 		_poster_stamps[c] = p.get_meta("stamp")

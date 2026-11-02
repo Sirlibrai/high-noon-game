@@ -449,8 +449,8 @@ func _campaign_status() -> void:
 	ok("Desk continues at the furthest unlocked level (Level 4: Chain Reaction)", d.subtitle == "Level 4: Chain Reaction", str(d))
 	G.apply_win(pg, 0, 9, 2, o10(1000, true, true))
 	d = G.desk_status(pg, false)
-	ok("Desk, Iron Eli captured: Continue hunt goes to the train, 1 of 5, $1,500",
-		d.hunting and d.ch == 1 and d.subtitle == "Level 1: All aboard" and d.caught == 1 and d.reward == "$1,500", str(d))
+	ok("Desk, Iron Eli captured: Continue hunt goes to the train, 1 of 5, $3,500",
+		d.hunting and d.ch == 1 and d.subtitle == "Level 1: All aboard" and d.caught == 1 and d.reward == "$3,500", str(d))
 	ok("Posters, Iron Eli captured: his poster stamped, the train open",
 		states.call(pg, false) == ["captured", "open", "soon", "soon", "soon"], str(states.call(pg, false)))
 	ok("Office board, Iron Eli captured: the train's poster moves to the middle", G.current_hunt(pg, false) == 1)
@@ -850,8 +850,10 @@ func _office() -> void:
 			if boxes[i].intersects(boxes[j]):
 				overlaps += 1
 	ok("No two office hotspots overlap", overlaps == 0, "%d overlaps" % overlaps)
-	ok("Five wanted posters on the cork board, with the current hunt in the middle",
-		o._art.get_children().filter(func(c): return c is Button and c.theme_type_variation == &"Poster").size() == 5)
+	var hung: Array = o._art.get_children().filter(func(c): return c is Button and c.has_meta("art"))
+	ok("Five painted wanted posters on the cork board (the Bounty board's, smaller), the current hunt in the middle",
+		hung.size() == 5 and hung.all(func(b): return (b.get_meta("art") as TextureRect).texture.resource_path.contains("painted/poster_ch"))
+		and (hung[4].get_meta("art") as TextureRect).texture == Assets.texture("poster/ch0") and hung[4].scale.x < 1)
 	ok("The new save's office: no trophies, the Peacemaker alone on the rack, the gunsmith polishing",
 		_art_named(o, "trophy_office/").is_empty() and _art_named(o, "rack/") == ["rack/peacemaker"] and o._smith.asset.begins_with("gunsmith/"))
 	ok("The hunter's portrait fills the gilt frame", _art_named(o, "office/portrait").size() == 1)
@@ -970,13 +972,13 @@ func _batch1() -> void:
 			and lv._posts.size() == 1 and _arm_covers(lv, xs) and lv._posts[0] > G.geometry.hanging.post_room[0] and lv._posts[0] < G.geometry.hanging.post_room[1])
 		_drop(lv)
 
-	# The UI kit: off states are slashed versions, and a padlock marks locked levels and posters.
+	# The UI kit: off states are slashed versions, and a padlock marks locked levels.
 	ok("Sound and music off are the painted icons with a slash", Assets.texture("ui/icon_sound_off").resource_path.ends_with("ui_icon_sound_off.png")
 		and Assets.texture("ui/icon_music_off").resource_path.ends_with("ui_icon_music_off.png"))
-	var locked := Office.wanted_poster(4, "locked", 200)
-	var captured := Office.wanted_poster(0, "captured", 200)
-	ok("Locked posters carry the padlock; captured ones the painted CAPTURED stamp", (locked.get_meta("stamp") as TextureRect).texture == Assets.texture("ui/icon_lock")
-		and (captured.get_meta("stamp") as TextureRect).texture == Assets.texture("ui/stamp_captured") and locked.disabled)
+	var locked := BountyWall.poster(1, "locked", GameState.progress)
+	var captured := BountyWall.poster(0, "captured", GameState.progress)
+	ok("Locked posters are faded and can't be tapped; captured ones carry the painted CAPTURED stamp", locked.disabled and locked.get_meta("art").material != null
+		and (captured.get_meta("stamp") as TextureRect).texture == Assets.texture("ui/stamp_captured"))
 	locked.free()
 	captured.free()
 
@@ -1067,26 +1069,46 @@ func _scale_guide() -> void:
 		problems.is_empty(), "; ".join(problems))
 
 
-## The five bounty portraits: square painted faces in each poster's frame; J.R. is a silhouette until
-## his bounty can be hunted.
+## The bounty portraits and painted wanted posters: J.R.'s is a silhouette until his bounty can be hunted.
 func _portraits() -> void:
 	var squares := true
 	for i in 5:
 		var t := Assets.texture("portrait/ch%d" % i)
 		squares = squares and t.resource_path.contains("assets/painted/") and t.get_width() == t.get_height()
-	ok("Each bounty has its own square painted portrait", squares)
-	var pic_of := func(b: Button) -> TextureRect:
-		return b.find_children("*", "TextureRect", true, false).filter(func(t): return t.get_parent() is PanelContainer and t.get_parent().theme_type_variation == &"PortraitFrame")[0]
-	var eli := Office.wanted_poster(0, "open", 200)
-	var jr_locked := Office.wanted_poster(4, "soon", 200)
-	ok("The poster shows its outlaw's portrait, enlarged and square in its frame", (pic_of.call(eli) as TextureRect).texture == Assets.texture("portrait/ch0")
-		and (pic_of.call(eli) as TextureRect).custom_minimum_size == Vector2(Office.PORTRAIT_SIDE, Office.PORTRAIT_SIDE))
-	ok("J.R.'s locked poster shows only his dark silhouette", (pic_of.call(jr_locked) as TextureRect).texture == Assets.texture("portrait/ch4_locked")
-		and (pic_of.call(jr_locked) as TextureRect).modulate == Color.WHITE)
-	ok("J.R.'s full portrait shows once his bounty is available", Office.portrait_for(4, true) == "portrait/ch4" and Office.portrait_for(4, false) == "portrait/ch4_locked"
-		and Office.portrait_for(1, false) == "portrait/ch1")
-	eli.free()
-	jr_locked.free()
+	ok("Each bounty has its own square painted portrait (for the trophy labels)", squares)
+	var sheet := Image.load_from_file(ProjectSettings.globalize_path("res://assets/incoming/Vintage Western Wanted Poster Collection.png"))
+	var cut := true
+	for i in 5:
+		var t := Assets.texture("poster/ch%d" % i)
+		var im := Image.load_from_file(ProjectSettings.globalize_path(t.resource_path))  # the file itself, not its compressed import
+		cut = cut and (t.resource_path.ends_with("painted/poster_ch%d.png" % i) and im.get_width() > 400 and im.get_height() > 690
+			and im.get_pixel(0, 0).a < 0.1 and im.get_pixel(im.get_width() / 2, im.get_height() / 2).a > 0.95)
+	ok("Each bounty's wanted poster is cut from the painted sheet, on real transparency", cut and sheet.detect_alpha() != Image.ALPHA_NONE)
+	var jr := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/poster_ch4.png"))
+	var dark := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/poster_ch4_locked.png"))
+	var win := Rect2i(Vector2i(0, roundi(jr.get_height() * BountyWall.WINDOW_TOP)), Vector2i(jr.get_width(), roundi(jr.get_height() * (BountyWall.WINDOW_BOTTOM - BountyWall.WINDOW_TOP))))
+	var same_out := true
+	var inked := 0
+	var figure := 0
+	for y in range(0, jr.get_height(), 3):
+		for x in range(0, jr.get_width(), 3):
+			var a := jr.get_pixel(x, y)
+			var b := dark.get_pixel(x, y)
+			if not win.grow(2).has_point(Vector2i(x, y)):
+				same_out = same_out and a.is_equal_approx(b)
+			elif not a.is_equal_approx(b):
+				figure += 1
+				inked += 1 if b.get_luminance() < 0.12 else 0
+	var share := float(figure) / (win.get_area() / 9.0)
+	ok("J.R.'s locked poster: the same paper and lettering, only his figure inked into a dark silhouette",
+		same_out and inked > figure * 0.95 and share > 0.3 and share < 0.75, "figure %.2f of the window, %d of %d dark" % [share, inked, figure])
+	var open_jr := BountyWall.poster(4, "open", fresh())
+	var shut_jr := BountyWall.poster(4, "soon", fresh())
+	ok("J.R.'s poster shows his silhouette until he can be hunted, then his face",
+		(shut_jr.get_meta("art") as TextureRect).texture == Assets.texture("poster/ch4_locked") and (open_jr.get_meta("art") as TextureRect).texture == Assets.texture("poster/ch4")
+		and (BountyWall.poster(1, "soon", fresh()).get_meta("art") as TextureRect).texture == Assets.texture("poster/ch1"))
+	open_jr.free()
+	shut_jr.free()
 
 
 ## The Bounty board wall: big posters pinned to the cork, swiping with snapping between its ends,
@@ -1145,39 +1167,39 @@ func _bounty_wall() -> void:
 		drag.call(-BountyWall.step() * 3, -300)
 		ok("%s: the board stops at its far end" % tag, w.scroll == s[-1])
 	var w: BountyWall = made[0]
-	ok("Posters are 75 to 80% of the screen tall, side by side, pinned with four brass tacks", BountyWall.POSTER.y / 720.0 >= 0.75 and BountyWall.POSTER.y / 720.0 <= 0.8
+	ok("Posters are 75 to 80% of the screen tall, side by side, each its painted poster filling it",
+		BountyWall.POSTER.y / 720.0 >= 0.75 and BountyWall.POSTER.y / 720.0 <= 0.8
 		and w.posters.size() == G.chapters.size() and w.posters[1].position.x - w.posters[0].position.x == BountyWall.step()
-		and w.posters[0].find_children("*", "TextureRect", true, false).filter(func(t): return t.texture == Assets.texture("poster/tack")).size() == 4)
-	var p0 := w.posters[0]
-	var pic: TextureRect = p0.find_children("*", "TextureRect", true, false).filter(func(t): return t.texture == Assets.texture("portrait_wide/ch0"))[0]
-	var framed: Vector2 = (pic.get_parent() as Control).get_combined_minimum_size()
-	ok("The portrait spans almost the poster's width and about half its height", framed.x >= BountyWall.POSTER.x * 0.85
-		and framed.y >= BountyWall.POSTER.y * 0.42, str(framed))
-	var labels: Array = p0.find_children("*", "Label", true, false)
-	var name: Label = labels.filter(func(l): return l.theme_type_variation == &"PosterBigName")[0]
-	var name_w: float = name.get_theme_font("font").get_string_size(name.text, HORIZONTAL_ALIGNMENT_LEFT, -1, name.get_theme_font_size("font_size")).x
-	ok("The name is in big slab capitals (Alfa Slab One, SIL OFL) filling the poster's width", name.text == "IRON ELI"
-		and (name.get_theme_font("font") as FontVariation).base_font.resource_path.ends_with("AlfaSlabOne-Regular.ttf")
-		and FileAccess.get_file_as_string("res://ui/fonts/OFL-AlfaSlabOne.txt").contains("SIL Open Font License")
-		and name_w * name.scale.x <= BountyWall.POSTER.x - 44 + 0.5 and name.scale.x < 1 and name.get_theme_font_size("font_size") >= 48)
-	ok("Then the title in small capitals, the reward on a red banner, then star progress", labels.map(func(l): return l.text).slice(1, 4) == ["THE IRON GUNSLINGER", "$2,500", "★"] or (
-		labels[1].text == "THE IRON GUNSLINGER" and labels[2].text == "$2,500" and labels[2].get_parent().theme_type_variation == &"RewardBanner" and labels[3].theme_type_variation == &"PosterStars"))
-	var fits := true
-	for p in w.posters:  # every name on one line inside the poster, and everything inside the paper
-		var nl: Label = p.find_children("*", "Label", true, false).filter(func(l): return l.theme_type_variation == &"PosterBigName")[0]
-		var nw: float = nl.get_theme_font("font").get_string_size(nl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, nl.get_theme_font_size("font_size")).x
-		var v: Control = p.get_child(0)
-		fits = fits and nw * nl.scale.x <= BountyWall.POSTER.x - 44 + 0.5 and v.get_combined_minimum_size().y <= v.size.y + 0.5
-	ok("Every poster's name fits on one line, and its parts fit the paper (stars included)", fits)
+		and range(4).all(func(i): return ((w.posters[i].get_meta("art") as TextureRect).texture == Assets.texture("poster/ch%d" % i)
+			and (w.posters[i].get_meta("art") as TextureRect).size == BountyWall.POSTER)))
+	var aspect := Assets.texture("poster/ch0").get_size()
+	ok("The poster's size keeps the painting's shape", absf(BountyWall.POSTER.x / BountyWall.POSTER.y - aspect.x / aspect.y) < 0.02)
+	ok("Nothing is lettered over the paintings: the posters carry their own names, titles and rewards",
+		w.posters.all(func(p): return p.find_children("*", "Label", true, false).all(func(l): return l.theme_type_variation in [&"PosterStars", &"StampFadedLabel"])))
+	var rewards := ["$2,500", "$3,500", "$5,000", "$7,500", "$10,000"]
+	ok("Bounty rewards match the posters: $2,500, $3,500, $5,000, $7,500, $10,000",
+		range(5).all(func(i): return G.chapters[i].reward == rewards[i] and int(G.chapters[i].bounty) == int(rewards[i].replace("$", "").replace(",", ""))))
 	ok("Every bounty has its poster name and title", G.chapters.all(func(c): return c.has("poster_name") and c.has("title"))
 		and G.chapters[1].poster_name == "Cole Haggerty" and G.chapters[4].title == "Name Unknown")
 	var stamp_of := func(i: int) -> Variant: return w.posters[i].get_meta("stamp") if w.posters[i].has_meta("stamp") else null
-	ok("Stamps: CAPTURED across a captured portrait, COMING SOON in faded ink, J.R. a silhouette",
-		(stamp_of.call(0) as TextureRect).texture == Assets.texture("ui/stamp_captured")
-		and (stamp_of.call(2) as PanelContainer).theme_type_variation == &"StampFaded"
-		and w.posters[4].find_children("*", "TextureRect", true, false).any(func(t): return t.texture == Assets.texture("portrait_wide/ch4_locked")))
-	var stars_shown := func(i: int) -> bool: return w.posters[i].find_children("*", "Label", true, false).any(func(l): return l.theme_type_variation == &"PosterStars")
-	ok("Star progress shows on started bounties only", stars_shown.call(0) and not stars_shown.call(1))
+	var cap: TextureRect = stamp_of.call(0)
+	ok("CAPTURED is stamped low across the portrait, smaller and a little see-through, so the face shows",
+		cap.texture == Assets.texture("ui/stamp_captured") and cap.size.x * cap.scale.x <= BountyWall.POSTER.x * 0.7 and cap.modulate.a < 1
+		and cap.position.y >= BountyWall.POSTER.y * (BountyWall.WINDOW_TOP + BountyWall.WINDOW_BOTTOM) / 2 - 4
+		and cap.position.y + cap.size.y <= BountyWall.POSTER.y * BountyWall.WINDOW_BOTTOM + 2, str(cap.get_rect()))
+	var soon: PanelContainer = stamp_of.call(2)
+	var ink: Color = soon.get_child(0).get_theme_color("font_color")
+	ok("COMING SOON is stamped in clear dark brown ink, on a faded poster", soon.theme_type_variation == &"StampFaded" and ink.a == 1.0 and ink.get_luminance() < 0.2 and ink.r > ink.b
+		and (w.posters[2].get_meta("art").material as ShaderMaterial).shader.resource_path.ends_with("poster_faded.gdshader")
+		and w.posters[0].get_meta("art").material == null and w.posters[1].get_meta("art").material == null)
+	ok("J.R. is coming soon: his poster shows his silhouette", (w.posters[4].get_meta("art") as TextureRect).texture == Assets.texture("poster/ch4_locked"))
+	ok("Star progress shows on started bounties only", w.posters[0].has_meta("stars") and not w.posters[1].has_meta("stars") and not w.posters[2].has_meta("stars"))
+	for m in made:
+		var row: Control = m.posters[0].get_meta("stars")
+		var bottom: float = m._strip.position.y + row.position.y + row.size.y
+		ok("%s: the stars sit on the cork just below the poster, above the frame's bottom rail" % ("16:9" if m.safe_lrb.x == 0 else "19.5:9"),
+			row.position.y >= BountyWall.POSTER.y and row.position.y <= BountyWall.POSTER.y + 12 and bottom <= 720 - BountyWall.RAIL_H - 4
+			and m._strip.position.y >= BountyWall.RAIL_H + 4, "%.0f to %.0f" % [m._strip.position.y, bottom])
 	ok("A lantern's light pool and vignette lie over the board", w._light.material is ShaderMaterial and (w._light.material as ShaderMaterial).shader.resource_path.ends_with("board_light.gdshader"))
 	var opened: Array = []
 	w.chosen.connect(func(i): opened.append(i))
@@ -1196,6 +1218,24 @@ func _bounty_wall() -> void:
 		up.position = at
 		w._gui_input(up)
 	ok("Tapping a poster that can be hunted opens its hunt screen; others do nothing", opened == [1])
+	# J.R. unlocked: the first time his poster shows his face, the shadow lifts away from the portrait.
+	var persist: bool = SaveManager.persist
+	SaveManager.persist = false
+	var jr := BountyWall.poster(4, "open", pg)
+	w._strip.add_child(jr)
+	var veil: TextureRect = jr.get_meta("veil")
+	ok("J.R. unlocked: his silhouette poster lies over his face, ready to lift", veil.texture == Assets.texture("poster/ch4_locked")
+		and (veil.material as ShaderMaterial).shader.resource_path.ends_with("poster_veil.gdshader") and (jr.get_meta("art") as TextureRect).texture == Assets.texture("poster/ch4"))
+	w._lift_veil(4, veil)
+	var tw: Tween = w.get_tree().get_processed_tweens().back()
+	tw.custom_step(0.6 + 0.9)
+	var half: float = veil.get_meta("lift")
+	tw.custom_step(1.0)
+	ok("The shadow lifts away over a couple of seconds, once: afterwards his face shows for good", half > 0.3 and half < 0.7
+		and veil.is_queued_for_deletion() and pg.revealed.has("4") and not BountyWall.poster(4, "open", pg).has_meta("veil")
+		and not BountyWall.poster(4, "open", fresh(), Vector2(120, 200), false, false).has_meta("veil"), "halfway %.2f" % half)
+	SaveManager.persist = persist
+	jr.free()
 	for m in made:
 		remove_child(m)
 		m.free()

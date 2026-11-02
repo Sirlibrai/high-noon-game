@@ -242,8 +242,9 @@ func hunt() -> void:
 ## The HUD's cartridges: big enough to count at a glance on a phone.
 const BULLET_SIZE := Vector2(34, 56)
 const BULLET_GAP := 12
-## The outlaw's portrait on his hunt screen, and on his keepsake's label in the trophy cabinet.
-const HUNT_PORTRAIT := 104.0
+## The outlaw's wanted poster on his hunt screen (its height), and his face on his keepsake's label in
+## the trophy cabinet.
+const HUNT_POSTER := 168.0
 const TROPHY_FACE := 48.0
 
 
@@ -289,12 +290,14 @@ func show_chapter(c: int) -> void:
 	UiKit.button(top, "‹ Bounty board", &"SmallGhostButton").pressed.connect(show_board.bind(c))
 	_wallet_button(top)
 	var ch: Dictionary = GameState.chapters[c]
-	var head := UiKit.row(card)  # the outlaw's portrait beside the bounty's name
+	var head := UiKit.row(card)  # the outlaw's wanted poster beside the bounty's name
 	head.add_theme_constant_override("separation", 20)
-	var frame := PanelContainer.new()
-	frame.theme_type_variation = &"PortraitFrame"
-	head.add_child(frame)
-	UiKit.image(frame, Office.portrait_for(c, true), Vector2(HUNT_PORTRAIT, HUNT_PORTRAIT))
+	var pg: Dictionary = GameState.progress
+	var sz := Vector2(HUNT_POSTER * BountyWall.POSTER.x / BountyWall.POSTER.y, HUNT_POSTER)
+	var wanted := BountyWall.poster(c, GameState.poster_state(pg, c, GameState.playtest()), pg, sz, false, false)
+	wanted.pivot_offset = sz / 2
+	wanted.rotation = deg_to_rad(-1.5)
+	head.add_child(wanted)
 	var names := VBoxContainer.new()
 	names.alignment = BoxContainer.ALIGNMENT_CENTER
 	head.add_child(names)

@@ -37,6 +37,7 @@ static func fresh_progress() -> Dictionary:
 		"avatar": {"name": "The Stranger", "hat": 0, "hatCol": 0, "skin": 2, "bandana": 1, "coat": 0, "face": 0},
 		"avOwned": {},
 		"seenOffice": false,
+		"revealed": {},
 		"skins": {"active": "standard", "owned": {"standard": true}},
 	}
 
@@ -134,6 +135,10 @@ static func merge_progress(a: Dictionary, a_time: float, b: Dictionary, b_time: 
 	for k in older.get("skins", {}).get("owned", {}):  # skins bought on either device; the active one from the newer
 		out.skins.owned[k] = out.skins.owned.get(k, false) or older.skins.owned[k]
 	out.seenOffice = bool(out.get("seenOffice", false)) or bool(older.get("seenOffice", false))
+	if not out.has("revealed"):
+		out.revealed = {}
+	for k in older.get("revealed", {}):  # a portrait revealed on either device stays revealed
+		out.revealed[k] = true
 	var spent := maxf(float(a.stats.earned) - float(a.bucks), float(b.stats.earned) - float(b.bucks))
 	for k in older.stats:
 		out.stats[k] = maxf(float(out.stats.get(k, 0)), float(older.stats[k]))

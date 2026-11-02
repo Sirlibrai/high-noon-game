@@ -1887,8 +1887,8 @@ func _ui_pass() -> void:
 	var restart_b: Button = _button_named(main._overlay, "Restart")
 	ok("Pause: Your best shows the saved stars (Powder Keg, 3), and Resume is clearly the largest round button",
 		best_row.size() == 3 and resume_b.custom_minimum_size.x >= restart_b.custom_minimum_size.x * 1.3, "%d stars, %s vs %s" % [best_row.size(), resume_b.custom_minimum_size, restart_b.custom_minimum_size])
-	ok("The HUD's hearts and bullets are about 1.6 times their art's size, as in the mockup",
-		heart.custom_minimum_size.y >= 52 * 1.5 and bullet != null and bullet.custom_minimum_size.y >= 59 * 1.5, "%s, %s" % [heart.custom_minimum_size, bullet.custom_minimum_size if bullet else null])
+	ok("The HUD's hearts and bullets are at their art's own size (the larger ones felt too big on the phone)",
+		heart.custom_minimum_size == Vector2(48, 52) and bullet != null and bullet.custom_minimum_size == Vector2(24, 56), "%s, %s" % [heart.custom_minimum_size, bullet.custom_minimum_size if bullet else null])
 	ok("Every tap target is at least 44 points each way on the smallest phone (office, levels, settings, intro, HUD, pause)", small.is_empty(), ", ".join(small))
 	var strip: Array = _button_texts(main._overlay)
 	ok("The HUD has hearts, bullets and one round pause button: no level name, sound or restart", hud_icons == ["pause.svg"]

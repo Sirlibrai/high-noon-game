@@ -294,10 +294,10 @@ func hunt() -> void:
 	show_intro(next.ch, next.level)
 
 
-## The HUD's hearts (about 1.6 times their art's size, as in the mockup).
-const HEART_SIZE := Vector2(78, 84)
+## The HUD's hearts, at their art's own size.
+const HEART_SIZE := Vector2(48, 52)
 ## The HUD's cartridges: big enough to count at a glance on a phone.
-const BULLET_SIZE := Vector2(38, 90)
+const BULLET_SIZE := Vector2(24, 56)
 const BULLET_GAP := 12
 ## More cartridges than this (Iron Eli's chase) show as one cartridge and a count.
 const MAX_BULLET_ICONS := 6

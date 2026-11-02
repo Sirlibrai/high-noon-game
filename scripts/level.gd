@@ -1574,9 +1574,9 @@ func _gun_tilt() -> float:
 
 
 ## Where the muzzle is, from the gun art's "muzzle" point in the manifest.
-## The revolver's size: bigger in the new feel (feel.tres gun_scale).
+## The revolver's size on every level (feel.tres gun_scale), whichever feel the level has.
 func gun_k() -> float:
-	return FeedbackDirector.feel.gun_scale if FeedbackDirector.new_feel() else 1.0
+	return FeedbackDirector.feel.gun_scale
 
 
 func _muzzle() -> Vector2:

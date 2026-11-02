@@ -1827,8 +1827,9 @@ func _feel() -> void:
 	main.level._sync_view()
 	var old_k: float = main.level._gun.scale.x
 	main.level._fire_fx(Vector2(100, 100))
-	ok("The revolver is drawn bigger in the new feel (feel.tres gun_scale); the debug toggle plays the old feel on the same level",
-		absf(big / old_k - F.gun_scale) < 0.01 and main.level.flash == 3 and main.level.recoil == 6)
+	ok("The revolver is drawn bigger on every level, in either feel (feel.tres gun_scale); the debug toggle plays the old feel on the same level",
+		absf(big - old_k) < 0.001 and absf(big / (float(Assets.meta(main.level.gun_asset + "/idle", "scale", 1.0))) - F.gun_scale) < 0.01
+		and main.level.flash == 3 and main.level.recoil == 6)
 	FD.force_old = false
 	remove_child(main)
 	main.free()

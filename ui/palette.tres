@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="UiPalette" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/palette.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+outline = Color(0.231373, 0.141176, 0.0862745, 1)
+parchment = Color(0.956863, 0.894118, 0.756863, 1)
+parchment_deep = Color(0.901961, 0.811765, 0.623529, 1)
+wood = Color(0.545098, 0.352941, 0.168627, 1)
+primary = Color(0.878431, 0.482353, 0.180392, 1)
+gold = Color(0.94902, 0.713725, 0.188235, 1)
+danger = Color(0.784314, 0.215686, 0.176471, 1)
+ink = Color(0.231373, 0.141176, 0.0862745, 1)
+ink_soft = Color(0.419608, 0.290196, 0.2, 1)
+cream = Color(1, 0.956863, 0.862745, 1)
+hud_pill = Color(0.231, 0.141, 0.086, 0.55)
+dim = Color(0.09, 0.05, 0.03, 0.35)
+shadow = Color(0.12, 0.06, 0.03, 0.35)
+press_darken = 0.18

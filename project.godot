@@ -59,4 +59,4 @@ environment/defaults/default_clear_color=Color(0.0784314, 0.0470588, 0.0313726, 
 
 [gui]
 
-theme/custom="res://ui/theme.tres"
+theme/custom="res://ui/ui_theme.tres"

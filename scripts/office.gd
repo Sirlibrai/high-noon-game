@@ -10,8 +10,9 @@ extends Node2D
 ##   - a small spark now and then at the gunsmith's bench, the lamps flickering gently (the workshop's
 ##     a little more), dust in the window light, and a light vignette.
 ## The painting covers the screen (16:9 shows all of it; wider phones trim some ceiling and a little
-## desk). Most objects have a small tag beside them (a padlock on locked ones); a tapped object glows
-## warmly for a moment before its screen opens (one tap, no hover).
+## desk). Most objects have a label beside them (a padlock on locked ones; the Bounty board's is the main
+## action); a pressed object lights up and its label bounces, then it glows warmly for a moment before
+## its screen opens (one tap, no hover).
 ## Emits `act`: board, hunt, gunsmith, profile, trophies, daily, survival, duelsoon.
 
 signal act(name: String)
@@ -21,13 +22,14 @@ const ART_SIZE := Vector2(1671, 941)
 ## the bottom): mostly ceiling, so the parchment's painted CONTINUE HUNT stays above the home indicator.
 const CROP_TOP := 0.72
 ## Hotspots in painting pixels: the box you tap (its painted object), and the centre of its tag, beside
-## the object and never over it. Tags are kept inside the safe area. The cabinet has no tag, and the
-## doorway's is the painted GUNSMITH sign.
+## the object, over no other object (it may overlap its own: a tap there does the same). Tags are kept
+## inside the safe area; tag_text, when given, is the label's own wording (Daily Bounty on two lines).
+## The cabinet has no tag, and the doorway's is the painted GUNSMITH sign.
 const SPOTS := [
-	{"act": "duelsoon", "label": "Duel", "box": [92, 88, 225, 447], "tag": [205, 588], "soon": true},
-	{"act": "daily", "label": "Daily Bounty", "box": [376, 315, 106, 109], "tag": [403, 294], "soon": true},
-	{"act": "survival", "label": "Survival", "box": [374, 425, 108, 112], "tag": [420, 556], "soon": true},
-	{"act": "board", "label": "Bounty board", "box": [490, 82, 635, 478], "tag": [805, 582]},
+	{"act": "duelsoon", "label": "Duel", "box": [92, 88, 215, 447], "tag": [190, 588], "soon": true},
+	{"act": "daily", "label": "Daily Bounty", "box": [376, 315, 106, 109], "tag": [404, 252], "tag_text": "Daily\nBounty", "soon": true},
+	{"act": "survival", "label": "Survival", "box": [374, 425, 108, 112], "tag": [385, 572], "soon": true},
+	{"act": "board", "label": "Bounty board", "box": [490, 82, 635, 478], "tag": [805, 536]},
 	{"act": "profile", "label": "Profile", "box": [1132, 125, 166, 203], "tag": [1215, 346]},
 	{"act": "trophies", "label": "Trophies", "box": [500, 603, 600, 127]},
 	{"act": "gunsmith", "label": "Gunsmith", "box": [1350, 120, 300, 620]},
@@ -49,6 +51,10 @@ const TROPHY_AT := [Vector2(565, 663), Vector2(640, 663), Vector2(715, 663), Vec
 const RACK_AT := {"repeater": Vector2(1567, 376), "quickdraw": Vector2(1621, 376), "coach": Vector2(1565, 399),
 	"peacemaker": Vector2(1618, 399), "longbarrel": Vector2(1561, 421), "legend": Vector2(1614, 421)}
 const RACK_SCALE := 0.6
+## The main action: the Bounty board (its label is the primary one, and pulses gently).
+const MAIN_ACT := "board"
+## The smallest tap area a label gets (design pixels: 46 points on a 375-point-tall phone).
+const TAP := 88.0
 const DOORWAY := Rect2(1350, 120, 300, 620)
 ## The lamps (flame or bulb, glow size): ceiling, wall lantern, desk lantern, workshop.
 const LAMPS := [[Vector2(832, 116), 1.8], [Vector2(427, 222), 0.9], [Vector2(322, 690), 1.2], [Vector2(1505, 320), 0.7]]
@@ -80,6 +86,7 @@ var _spark_t := 0.0
 var _spark_next := 2.0
 var _sparks := 0
 var _shade: ColorRect
+var _main_chip: Control
 var _lit := {"t": -1.0, "name": ""}
 var _stamp_anim: Variant = null
 var _shake := 0
@@ -195,38 +202,72 @@ func _build_rack(pg: Dictionary) -> void:
 		gun.modulate = Color(1.1, 1.0, 0.86) if pg.inv.equip.gun == w.id else Color(1.0, 0.9, 0.78)  # the gun in use catches the lamp
 
 
+## The labels first (each chip in an invisible tap area at least TAP pixels square), then the painted
+## objects' hotspots over them, so where a label's tap area meets another object the object wins. A press
+## lights the object (the Hotspot's pressed style) and bounces its label. The Bounty board's label is the
+## primary action: orange, larger, gently pulsing.
 func _build_hotspots() -> void:
 	var safe := _safe_rect()
+	var chips := {}
 	for s in SPOTS:
+		if not s.has("tag"):
+			continue
 		var box := Rect2(s.box[0], s.box[1], s.box[2], s.box[3])
 		var soon: bool = s.get("soon", false)
+		var chip := Button.new()  # the label beside the object; a padlock if it is locked
+		chip.theme_type_variation = &"OfficeTagPrimary" if s.act == MAIN_ACT else (&"OfficeTagSoon" if soon else &"OfficeTag")
+		chip.focus_mode = Control.FOCUS_NONE
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.text = s.get("tag_text", s.label)
+		if chip.text.contains("\n"):  # a two-line label: its padlock above the words
+			chip.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+			chip.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		chip.tooltip_text = s.label + (", coming soon" if soon else "")
+		if soon:
+			chip.icon = Assets.texture("ui/icon_lock")
+		var area := Button.new()
+		area.theme_type_variation = &"TapArea"
+		area.focus_mode = Control.FOCUS_NONE
+		area.tooltip_text = chip.tooltip_text
+		area.pressed.connect(_on_act.bind(s.act, box))
+		area.button_down.connect(_bounce.bind(chip))
+		add_child(area)
+		area.add_child(chip)  # in the tree first, so it is measured with its theme
+		var sz := chip.get_combined_minimum_size()
+		chip.size = sz
+		var at := _to_local_px(Vector2(s.tag[0], s.tag[1])) - sz / 2
+		at.x = clampf(at.x, safe.position.x + 6, safe.end.x - 6 - sz.x)
+		at.y = clampf(at.y, safe.position.y + 6, safe.end.y - 6 - sz.y)
+		area.size = Vector2(maxf(sz.x, TAP), maxf(sz.y, TAP))
+		area.position = at + sz / 2 - area.size / 2
+		chip.position = area.size / 2 - sz / 2
+		chip.pivot_offset = sz / 2
+		chip.set_meta("box", box)
+		plates.append(chip)
+		chips[s.act] = chip
+	for s in SPOTS:
+		var box := Rect2(s.box[0], s.box[1], s.box[2], s.box[3])
 		var b := Button.new()
 		b.theme_type_variation = &"Hotspot"
 		b.focus_mode = Control.FOCUS_NONE
 		b.position = _to_local_px(box.position)
 		b.size = box.size * _k
-		b.tooltip_text = s.label + (", coming soon" if soon else "")
+		b.tooltip_text = s.label + (", coming soon" if s.get("soon", false) else "")
 		b.pressed.connect(_on_act.bind(s.act, box))
+		if chips.has(s.act):
+			b.button_down.connect(_bounce.bind(chips[s.act]))
 		add_child(b)
-		if not s.has("tag"):
-			continue
-		var tag := Button.new()  # a small tag beside the object; a padlock if it is locked
-		tag.theme_type_variation = &"OfficeTagSoon" if soon else &"OfficeTag"
-		tag.focus_mode = Control.FOCUS_NONE
-		tag.text = s.label
-		tag.tooltip_text = b.tooltip_text
-		if soon:
-			tag.icon = Assets.texture("ui/icon_lock")
-		tag.pressed.connect(_on_act.bind(s.act, box))
-		add_child(tag)
-		var sz := tag.get_combined_minimum_size()
-		tag.size = sz
-		var at := _to_local_px(Vector2(s.tag[0], s.tag[1])) - sz / 2
-		at.x = clampf(at.x, safe.position.x + 6, safe.end.x - 6 - sz.x)
-		at.y = clampf(at.y, safe.position.y + 6, safe.end.y - 6 - sz.y)
-		tag.position = at
-		tag.set_meta("box", box)
-		plates.append(tag)
+		if s.act == MAIN_ACT:
+			_main_chip = chips.get(s.act)
+
+
+## A label's small bounce when its object is pressed.
+func _bounce(chip: Control) -> void:
+	chip.set_meta("bouncing", true)
+	var tw := chip.create_tween()
+	tw.tween_property(chip, "scale", Vector2.ONE * 1.18, 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(chip, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func(): chip.remove_meta("bouncing"))
 
 
 ## The parchment with CONTINUE HUNT painted on it is the button: it starts the next unfinished level of
@@ -315,6 +356,9 @@ func _physics_process(delta: float) -> void:
 		_motes[i].position = Vector2(110 + t2 * 0.35 + h % 70, 110 + t2 * 1.0 + sin(_frame * 0.02 + i) * 6)
 		_motes[i].modulate.a = sin(t2 / 400.0 * PI) * 0.7
 	_step_spark(delta)
+	# The Bounty board's label breathes gently: the main action.
+	if _main_chip != null and not _main_chip.has_meta("bouncing"):
+		_main_chip.scale = Vector2.ONE * (1.0 + 0.035 * (0.5 + 0.5 * sin(_frame * 0.06)))
 	# A chosen object glows.
 	var lit := 0.0
 	if _lit.t >= 0:

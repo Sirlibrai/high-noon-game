@@ -235,27 +235,36 @@ func _ready() -> void:
 	ok("Every Main Street level's cover is apart and inside the safe area", lay_gaps.is_empty(), ", ".join(lay_gaps))
 	ok("Puzzle-first levels are laid out as authored (no spreading)", range(4).all(func(i): return spreads[i] == 1.0), str(spreads))
 
-	# The painted HUD: wooden panels, a licensed Western font, painted hearts and bullets, glowing rings.
-	var theme: Theme = load("res://ui/theme.tres")
-	var hud_font: Font = theme.get_font("font", "HudLabel")
-	ok("The HUD uses Rye, a Western display font under the SIL Open Font License",
-		hud_font != null and hud_font.resource_path.ends_with("Rye-Regular.ttf") and FileAccess.get_file_as_string("res://ui/fonts/OFL.txt").contains("SIL Open Font License"))
-	# The presentation pass: no pixel font or pixel UI art left on any card, list or menu.
+	# The flat UI (ui/ui_theme.tres, built from ui/palette.tres): flat styles, one palette, Rye for titles only.
+	var theme: Theme = load("res://ui/ui_theme.tres")
+	var P: UiPalette = load("res://ui/palette.tres")
+	ok("The project's theme is the flat one, built from one palette", ProjectSettings.get_setting("gui/theme/custom") == "res://ui/ui_theme.tres"
+		and theme.get_stylebox("panel", "InfoPanel") is StyleBoxFlat and (theme.get_stylebox("panel", "InfoPanel") as StyleBoxFlat).bg_color == P.parchment
+		and (theme.get_stylebox("normal", "PrimaryButton") as StyleBoxFlat).bg_color == P.primary and (theme.get_stylebox("normal", "SecondaryButton") as StyleBoxFlat).bg_color == P.wood
+		and (theme.get_stylebox("normal", "SecondaryButton") as StyleBoxFlat).border_color == P.outline and P.outline.to_html(false) == "3b2416")
+	var flat_types := ["Button", "PrimaryButton", "SecondaryButton", "GhostButton", "SmallGhostButton", "IconButton", "Wallet", "OfficeTag", "OfficeTagSoon", "OfficeTagPrimary"]
+	ok("No wood textures on cards, buttons, chips or the HUD: flat styles with a dark brown outline, rounded and shadowed",
+		flat_types.all(func(t): return theme.get_stylebox("normal", t) is StyleBoxFlat and (theme.get_stylebox("normal", t) as StyleBoxFlat).corner_radius_top_left >= 12)
+		and ["Card", "InfoPanel", "Chip", "Pill", "HudPill", "HudPanel", "HudPlaque"].all(func(t): return theme.get_stylebox("panel", t) is StyleBoxFlat)
+		and (theme.get_stylebox("panel", "InfoPanel") as StyleBoxFlat).shadow_size > 0)
+	ok("A pressed button is darker", flat_types.all(func(t): return (theme.get_stylebox("pressed", t) as StyleBoxFlat).bg_color.get_luminance() < (theme.get_stylebox("normal", t) as StyleBoxFlat).bg_color.get_luminance()))
 	var body: Font = theme.default_font
-	ok("Body text is Lora (SIL Open Font License), set once in the theme; no pixel font anywhere",
-		body is FontVariation and body.base_font.resource_path.ends_with("Lora-Variable.ttf") and not FileAccess.get_file_as_string("res://ui/theme.tres").contains("Pixelify")
-		and FileAccess.get_file_as_string("res://ui/fonts/OFL-Lora.txt").contains("SIL Open Font License"))
-	ok("Titles and headings are Rye", ["Heading", "Title", "Logo", "Callout", "InkTitle", "PosterWanted"].all(
-		func(t): return theme.get_font("font", t).resource_path.ends_with("Rye-Regular.ttf")))
-	var pixel_ui: Array = ["ui/card", "ui/button", "ui/button_pressed", "ui/button_ghost", "ui/button_ghost_pressed", "ui/pill", "ui/star_on", "ui/star_off",
+	ok("Titles are Rye; body text, chips, buttons and numbers a clean sans-serif (the system's: SF Pro on iPhone)",
+		["Heading", "HeadingDanger", "Callout"].all(func(t): return theme.get_font("font", t).resource_path.ends_with("Rye-Regular.ttf"))
+		and body is SystemFont and ["Button", "ChipLabel", "PillLabel", "HudLabel", "Pay", "Tip", "Hint", "OfficeTag"].all(func(t): return theme.get_font("font", t) is SystemFont))
+	var small_text: Array = []
+	for t in ["Label", "Tip", "Hint", "Pay", "AdTag", "ChipLabel", "PillLabel", "HudLabel", "Button", "GhostButton", "SmallGhostButton", "OfficeTag", "OfficeTagSoon", "Wallet"]:
+		if theme.get_font_size("font_size", t) < 26:
+			small_text.append("%s %d" % [t, theme.get_font_size("font_size", t)])
+	ok("Text is at least 26 pixels (13.5 points on the smallest phone) everywhere outside the posters", small_text.is_empty(), ", ".join(small_text))
+	ok("The posters, stamps and telegram keep their own styles and fonts", theme.get_stylebox("normal", "WallPoster") is StyleBoxTexture
+		and theme.get_stylebox("panel", "Telegram") is StyleBoxTexture and theme.get_font("font", "PosterWanted").resource_path.ends_with("Rye-Regular.ttf"))
+	var pixel_ui: Array = ["ui/star_on", "ui/star_off",
 		"ui/icon_pause", "ui/icon_restart", "ui/icon_sound_on", "ui/icon_sound_off", "ui/icon_music", "ui/icon_music_off", "ui/icon_lock",
-		"ui/plaque", "ui/plaque_soon", "ui/wallet", "ui/desk_plaque", "ui/poster_paper", "ui/telegram", "ui/stamp_box", "portrait/ch0"].filter(
+		"ui/plaque", "ui/plaque_soon", "ui/desk_plaque", "ui/poster_paper", "ui/telegram", "ui/stamp_box", "portrait/ch0"].filter(
 		func(n): return not Assets.texture(n).resource_path.contains("painted/"))
-	ok("Cards, buttons, tags, stars, icons, plates and posters use the painted UI art", pixel_ui.is_empty(), ", ".join(pixel_ui))
-	ok("Every overlay screen sits on the painted wooden card", theme.get_stylebox("panel", "Card") is StyleBoxTexture and UiKit.card(Control.new()).get_parent().theme_type_variation == &"Card")
-	ok("The HUD's panel and round buttons are the painted wood, the level name on the brass plaque", theme.get_stylebox("panel", "HudPanel") is StyleBoxTexture
-		and Assets.texture("ui/hud_panel").resource_path.ends_with("painted/ui_panel_small.png") and Assets.texture("ui/icon_button").resource_path.ends_with("painted/ui_button_round.png")
-		and Assets.texture("ui/hud_plaque").resource_path.ends_with("painted/ui_plaque.png"))
+	ok("Stars, icons, plates and posters use the painted art", pixel_ui.is_empty(), ", ".join(pixel_ui))
+	ok("Every overlay screen sits on a parchment card", UiKit.card(Control.new()).get_parent().theme_type_variation == &"Card" and theme.get_stylebox("panel", "Card") == theme.get_stylebox("panel", "InfoPanel"))
 	ok("Hearts, bullets and draw rings are the painted versions",
 		["ui/heart_full", "ui/heart_empty", "ui/bullet_full", "ui/bullet_empty", "fx/draw_ring", "fx/draw_ring_urgent"].all(
 			func(n): return Assets.texture(n).resource_path.contains("painted/")))
@@ -330,6 +339,7 @@ func _ready() -> void:
 	_black_jack()
 	_readability()
 	_feel()
+	await _ui_pass()
 	_office()
 	_launch()
 	_batch1()
@@ -871,16 +881,18 @@ func _office() -> void:
 			if boxes[i].intersects(boxes[j]):
 				overlaps += 1
 	ok("No two office hotspots overlap", overlaps == 0, "%d overlaps" % overlaps)
-	var tags_ok := true
+	var bad_tags: Array = []
 	for t in o.plates:  # in painting pixels: beside its own object, over none
-		var r := Rect2((t.position + o.global_position - o._origin) / o._k, t.size / o._k)
+		var r := Rect2((t.global_position - o._origin) / o._k, t.size / o._k)
 		var own: Rect2 = t.get_meta("box")
-		tags_ok = tags_ok and not boxes.any(func(b): return b.intersects(r)) and not r.intersects(Office.PARCHMENT) and own.grow(70).intersects(r)
-	ok("Small tags beside the objects, covering none; no tag on the cabinet or the doorway (its painted sign labels it)",
-		o.plates.map(func(t): return t.text) == ["Duel", "Daily Bounty", "Survival", "Bounty board", "Profile"] and tags_ok
-		and o.plates.all(func(t): return t.theme_type_variation in [&"OfficeTag", &"OfficeTagSoon"] and t.size.y <= 30))
+		if not own.grow(70).intersects(r):  # (covering no other object: checked at phone sizes by tests/ui_drive.gd)
+			bad_tags.append("%s %s" % [t.text, r])
+	ok("Labels beside their objects; no label on the cabinet or the doorway (its painted sign labels it); the Bounty board's is the primary one",
+		o.plates.map(func(t): return t.text.replace("\n", " ")) == ["Duel", "Daily Bounty", "Survival", "Bounty board", "Profile"] and bad_tags.is_empty()
+		and o.plates.all(func(t): return t.theme_type_variation == (&"OfficeTagPrimary" if t.text == "Bounty board" else (&"OfficeTagSoon" if t.icon != null else &"OfficeTag")) and t.size.y <= (140 if t.text.contains("\n") else 60)),
+		", ".join(bad_tags))
 	ok("Locked destinations show a padlock on their tag; open ones don't", o.plates.all(func(t): return (t.icon == Assets.texture("ui/icon_lock")) == (t.theme_type_variation == &"OfficeTagSoon"))
-		and o.plates.filter(func(t): return t.icon != null).map(func(t): return t.text) == ["Duel", "Daily Bounty", "Survival"])
+		and o.plates.filter(func(t): return t.icon != null).map(func(t): return t.text.replace("\n", " ")) == ["Duel", "Daily Bounty", "Survival"])
 	var hung: Array = o._art.get_children().filter(func(c): return c is Button and c.has_meta("art"))
 	var cork := Rect2(622, 140, 340, 385)  # the cork's clear middle, between the painted maps and notes
 	var poster_boxes: Array = hung.map(func(p): return Rect2(p.position + p.size / 2 - p.size * p.scale / 2, p.size * p.scale).grow(absf(p.rotation) * p.size.y * p.scale.y / 2))
@@ -1768,3 +1780,82 @@ func _feel() -> void:
 	AudioManager.sound_on = keep_sound
 	Engine.time_scale = 1.0
 	FD.trauma = 0.0
+
+
+## The flat UI pass: every tap target at least 44 points on the smallest phone, the HUD without a restart
+## button (restart is in the pause menu, behind a confirmation), result cards led by one large main action,
+## quick intros on replays, and the office's press feedback.
+func _ui_pass() -> void:
+	var G := GameState
+	var keep: Dictionary = SaveManager.data.progress
+	SaveManager.data.progress = fresh()
+	var main: Node = load("res://scenes/main.tscn").instantiate()
+	add_child(main)
+	var pt := 375.0 / 720.0
+	var small: Array = []
+	var audit := func(screen: String) -> void:
+		for b in main.find_children("*", "Button", true, false):
+			var btn := b as Button
+			if btn.is_visible_in_tree() and btn.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+				var s := btn.get_combined_minimum_size().max(btn.size) * pt
+				if s.x < 44 or s.y < 44:
+					small.append("%s: %s %.0fx%.0f pt" % [screen, btn.text if btn.text != "" else btn.tooltip_text, s.x, s.y])
+	main.show_home()
+	audit.call("office")
+	main.show_chapter(0)
+	audit.call("levels")
+	main.show_settings(0)
+	audit.call("settings")
+	main.show_intro(0, 1)
+	audit.call("intro")
+	var hud_icons: Array = main._hud_box.find_children("*", "Button", true, false).map(func(b): return (b as Button).icon.resource_path.get_file())
+	main._go()
+	main._toggle_pause()
+	audit.call("pause")
+	ok("Every tap target is at least 44 points each way on the smallest phone (office, levels, settings, intro, HUD, pause)", small.is_empty(), ", ".join(small))
+	ok("The HUD has round sound and pause icons only: restart is in the pause menu", hud_icons.size() == 2 and not hud_icons.any(func(f): return f.contains("restart"))
+		and _button_texts(main._overlay).has("Restart"), str(hud_icons))
+	_button_named(main._overlay, "Restart").pressed.emit()
+	var ask: Array = _button_texts(main._overlay)
+	var used_before: int = main.level.used
+	ok("Restart asks first: Restart or Keep playing", ask == ["Restart", "Keep playing"], str(ask))
+	_button_named(main._overlay, "Keep playing").pressed.emit()
+	ok("Keep playing goes back to the pause menu, the showdown untouched", _button_texts(main._overlay).has("Resume") and main.level.state == "pause" and main.level.used == used_before)
+	# Results: one large main action.
+	main._toggle_pause()
+	main.level.state = "won"
+	main._on_won({"stars": 3, "pay": 60, "captured": false, "hearts": 3, "used": 1, "damaged": false, "assisted": false, "last": false})
+	await get_tree().create_timer(0.5).timeout
+	var next: Button = _button_named(main._overlay, "Next showdown")
+	var retry: Button = _button_named(main._overlay, "Retry")
+	ok("Results: Next showdown is the one large primary button, Retry and Levels smaller beside each other below it",
+		next != null and next.theme_type_variation == &"BigPrimaryButton" and retry.theme_type_variation == &"GhostButton"
+		and next.get_combined_minimum_size().x > retry.get_combined_minimum_size().x * 2 and next.get_global_rect().position.y < retry.get_global_rect().position.y)
+	next.pressed.emit()
+	ok("A completed level reaches the next showdown in one tap", main.li == 2 and main.level != null)
+	# Replays: the title and chips for a moment, then play (or at once on a tap).
+	G.apply_win(G.progress, 0, 2, 3, o10(1000))
+	main.show_intro(0, 2)
+	var quick: Array = _button_texts(main._overlay)
+	ok("A replay's intro shows the title and chips only (no buttons) and starts by itself", quick.is_empty() and main.level.state == "intro", str(quick))
+	await get_tree().create_timer(main.REPLAY_INTRO + 0.2).timeout
+	ok("…after about a second", main.level.state == "play" and main._overlay == null)
+	main.show_intro(0, 2)
+	var tap := InputEventMouseButton.new()
+	tap.button_index = MOUSE_BUTTON_LEFT
+	tap.pressed = true
+	(main._overlay.get_child(0) as Control).gui_input.emit(tap)
+	ok("…or at once on a tap", main.level.state == "play" and main._overlay == null)
+	# The office: a press lights the object and bounces its label; the Bounty board's label is the main action.
+	main.show_home()
+	var o: Office = main._screen
+	var board_chip: Control = o.plates.filter(func(p): return p.text == "Bounty board")[0]
+	var spot: Button = o.get_children().filter(func(c): return c is Button and c.theme_type_variation == &"Hotspot" and c.tooltip_text == "Bounty board")[0]
+	spot.button_down.emit()
+	await get_tree().create_timer(0.05).timeout
+	ok("Office: pressing an object lights it (a press style) and bounces its label", spot.get_theme_stylebox("pressed") is StyleBoxFlat and board_chip.scale.x > 1.05)
+	ok("Office: the Bounty board's label is the primary action", board_chip.theme_type_variation == &"OfficeTagPrimary"
+		and o.plates.filter(func(p): return p.theme_type_variation == &"OfficeTagPrimary").size() == 1)
+	remove_child(main)
+	main.free()
+	SaveManager.data.progress = keep

@@ -296,8 +296,10 @@ const BULLET_SIZE := Vector2(34, 56)
 const BULLET_GAP := 12
 ## The outlaw's wanted poster on his hunt screen (its height), and his face on his keepsake's label in
 ## the trophy cabinet.
-const HUNT_POSTER := 168.0
+const HUNT_POSTER := 132.0
 const TROPHY_FACE := 48.0
+## How long a replay's intro shows (s) before the showdown starts by itself.
+const REPLAY_INTRO := 1.2
 ## A boss's face on his intro card, and stamped CAPTURED on his capture card.
 const BOSS_FACE := 96.0
 const CAPTURE_FACE := 140.0
@@ -562,6 +564,9 @@ func show_intro(chapter: int, index: int) -> void:
 			UiKit.pill(pills, "%d bottles" % L.bottles.size())
 		UiKit.pill(pills, "%d bullet%s" % [int(L.bullets), "" if int(L.bullets) == 1 else "s"])
 		UiKit.pill(pills, "Par %d" % int(L.par))
+	if replay_intro(ci, li):  # a level already beaten: the title and chips for a moment, or a tap, then play
+		_quick_start()
+		return
 	if L.has("story"):  # brief v2: one story line on the intro card
 		UiKit.text(card, L.story.intro, &"Tip", 840)
 	if L.get("puzzle", false) and level.hint_lvl >= 1:
@@ -578,6 +583,24 @@ func show_intro(chapter: int, index: int) -> void:
 	if not tutorial:
 		UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
 
+
+
+## On a replay the intro is only a glance: it starts by itself after REPLAY_INTRO seconds, or at once on a tap.
+func replay_intro(c: int, l: int) -> bool:
+	return not tutorial and GameState.stars_in(GameState.progress, c, l) > 0
+
+
+func _quick_start() -> void:
+	UiKit.text(_overlay.find_children("*", "VBoxContainer", true, false)[0], "Tap to start", &"Hint")
+	var shade: Control = _overlay.get_child(0)
+	var card_overlay := _overlay
+	shade.gui_input.connect(func(ev: InputEvent):
+		if ev is InputEventMouseButton and ev.pressed and _overlay == card_overlay:
+			get_viewport().set_input_as_handled()
+			_go())
+	get_tree().create_timer(REPLAY_INTRO).timeout.connect(func():
+		if _overlay == card_overlay and level != null and level.state == "intro":
+			_go())
 
 func _go() -> void:
 	_close_overlay()
@@ -623,35 +646,57 @@ func _toggle_pause() -> void:
 		level.resume()
 	elif level.state == "play":
 		level.pause()
-		var card := _open_overlay()
-		UiKit.text(card, "Paused", &"Heading")
-		UiKit.button(card, "Resume").pressed.connect(_toggle_pause)
-		var mus := UiKit.button(card, "Music: " + ("on" if AudioManager.music_on else "off"), &"GhostButton")
-		mus.pressed.connect(func():
-			AudioManager.set_music(not AudioManager.music_on)
-			mus.text = "Music: " + ("on" if AudioManager.music_on else "off"))
-		if not tutorial:
-			UiKit.button(card, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
-		UiKit.button(card, "Home", &"GhostButton").pressed.connect(show_home)
-		if OS.is_debug_build():  # testing aids
-			var dbg := UiKit.row(card)  # one row: greyscale, hit areas, 25% speed, old or new feel
-			var g := UiKit.button(dbg, "Grey: " + ("on" if greyscale else "off"), &"SmallGhostButton")
-			g.pressed.connect(func():
-				set_greyscale(not greyscale)
-				g.text = "Grey: " + ("on" if greyscale else "off"))
-			var h := UiKit.button(dbg, "Hits: " + ("on" if Level.show_hit_areas else "off"), &"SmallGhostButton")
-			h.pressed.connect(func():
-				Level.show_hit_areas = not Level.show_hit_areas
-				h.text = "Hits: " + ("on" if Level.show_hit_areas else "off"))
-			var s := UiKit.button(dbg, "Slow: " + ("on" if FeedbackDirector.slow else "off"), &"SmallGhostButton")
-			s.pressed.connect(func():
-				FeedbackDirector.set_slow(not FeedbackDirector.slow)
-				s.text = "Slow: " + ("on" if FeedbackDirector.slow else "off"))
-			var f := UiKit.button(dbg, "Feel: " + ("old" if FeedbackDirector.force_old else "new"), &"SmallGhostButton")
-			f.disabled = not level.L.get("feel", false)  # only flagged levels have the new feel to compare
-			f.pressed.connect(func():
-				FeedbackDirector.force_old = not FeedbackDirector.force_old
-				f.text = "Feel: " + ("old" if FeedbackDirector.force_old else "new"))
+		_pause_card()
+
+
+## The pause menu: Resume (the main action), music and restart, levels and home; debug toggles in debug builds.
+func _pause_card() -> void:
+	var card := _open_overlay()
+	UiKit.text(card, "Paused", &"Heading")
+	var resume := UiKit.button(card, "Resume", &"BigPrimaryButton")
+	resume.pressed.connect(_toggle_pause)
+	var row1 := UiKit.row(card)
+	var mus := UiKit.button(row1, "Music: " + ("on" if AudioManager.music_on else "off"), &"GhostButton")
+	mus.pressed.connect(func():
+		AudioManager.set_music(not AudioManager.music_on)
+		mus.text = "Music: " + ("on" if AudioManager.music_on else "off"))
+	UiKit.button(row1, "Restart", &"GhostButton").pressed.connect(_confirm_restart)
+	var row2 := UiKit.row(card)
+	if not tutorial:
+		UiKit.button(row2, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
+	UiKit.button(row2, "Home", &"GhostButton").pressed.connect(show_home)
+	for b in row1.get_children() + row2.get_children():
+		b.custom_minimum_size.x = 250
+	resume.custom_minimum_size.x = 520
+	if OS.is_debug_build():  # testing aids
+		var dbg := UiKit.row(card)  # one row: greyscale, hit areas, 25% speed, old or new feel
+		var g := UiKit.button(dbg, "Grey: " + ("on" if greyscale else "off"), &"SmallGhostButton")
+		g.pressed.connect(func():
+			set_greyscale(not greyscale)
+			g.text = "Grey: " + ("on" if greyscale else "off"))
+		var h := UiKit.button(dbg, "Hits: " + ("on" if Level.show_hit_areas else "off"), &"SmallGhostButton")
+		h.pressed.connect(func():
+			Level.show_hit_areas = not Level.show_hit_areas
+			h.text = "Hits: " + ("on" if Level.show_hit_areas else "off"))
+		var s := UiKit.button(dbg, "Slow: " + ("on" if FeedbackDirector.slow else "off"), &"SmallGhostButton")
+		s.pressed.connect(func():
+			FeedbackDirector.set_slow(not FeedbackDirector.slow)
+			s.text = "Slow: " + ("on" if FeedbackDirector.slow else "off"))
+		var f := UiKit.button(dbg, "Feel: " + ("old" if FeedbackDirector.force_old else "new"), &"SmallGhostButton")
+		f.disabled = not level.L.get("feel", false)  # only flagged levels have the new feel to compare
+		f.pressed.connect(func():
+			FeedbackDirector.force_old = not FeedbackDirector.force_old
+			f.text = "Feel: " + ("old" if FeedbackDirector.force_old else "new"))
+
+
+## Restart, from the pause menu: asked first, so a stray tap never throws a run away.
+func _confirm_restart() -> void:
+	var card := _open_overlay()
+	UiKit.text(card, "Restart this showdown?", &"Heading")
+	UiKit.text(card, "You start again from the beginning, with every bullet back.", &"Hint", 600)
+	var buttons := UiKit.row(card)
+	UiKit.button(buttons, "Restart", &"PrimaryButton").pressed.connect(restart)
+	UiKit.button(buttons, "Keep playing", &"GhostButton").pressed.connect(_pause_card)
 
 
 func _on_won(res: Dictionary) -> void:
@@ -695,22 +740,32 @@ func _on_won(res: Dictionary) -> void:
 		if not keep.is_empty() and Assets.has("keepsake/" + keep.art):  # his keepsake, for the trophy cabinet
 			UiKit.image(pay, "keepsake/" + keep.art, Vector2(30, 44))
 			UiKit.text(pay, "Keepsake: " + keep.name, &"Tip")
-	var buttons := UiKit.row(card)
 	if tutorial:  # the first launch's level: on to the office
-		UiKit.button(buttons, "On to the sheriff’s office").pressed.connect(show_home)
-		UiKit.button(buttons, "Retry", &"GhostButton").pressed.connect(restart)
+		_result_buttons(card, "On to the sheriff’s office", show_home, [["Retry", restart]])
 		return
 	if res.last:
 		# The stamp lands on the poster when the office next opens (officeFresh).
 		if res.get("captured", false):
 			_fresh_capture = ci
-		UiKit.button(buttons, "See the bounty board").pressed.connect(show_board)
-		UiKit.button(buttons, "Home", &"GhostButton").pressed.connect(show_home)
+		_result_buttons(card, "See the bounty board", show_board, [["Home", show_home]])
 		return
 	if GameState.level_open(ci, li + 1):
-		UiKit.button(buttons, "Next showdown").pressed.connect(show_intro.bind(ci, li + 1))
-	UiKit.button(buttons, "Retry", &"GhostButton").pressed.connect(restart)
-	UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
+		_result_buttons(card, "Next showdown", show_intro.bind(ci, li + 1), [["Retry", restart], ["Levels", show_chapter.bind(ci)]])
+	else:
+		_result_buttons(card, "Retry", restart, [["Levels", show_chapter.bind(ci)]])
+
+
+## A result card's buttons: the main action clearly the largest (one tap on to the next showdown), and
+## the rest smaller, secondary, beneath it. others: [[label, Callable], ...].
+func _result_buttons(card: Control, main_label: String, main_action: Callable, others: Array) -> void:
+	var big := UiKit.button(UiKit.row(card), main_label, &"BigPrimaryButton")
+	big.custom_minimum_size.x = 560
+	big.pressed.connect(main_action)
+	var row := UiKit.row(card)
+	for o in others:
+		var b := UiKit.button(row, o[0], &"GhostButton")
+		b.custom_minimum_size.x = 220
+		b.pressed.connect(o[1])
 
 
 func _offer_text(offer: String) -> Array:
@@ -741,7 +796,7 @@ func _show_fail(reason: String, offer: Variant) -> void:
 		clue = "Clue: " + L.hint + (" The key spot now glows when you play." if level.hint_lvl >= 2 else "")
 	if offer != null:
 		var o := _offer_text(offer)
-		UiKit.text(card, o[0], &"Heading")
+		UiKit.text(card, o[0], &"HeadingDanger")
 		UiKit.text(card, o[1], &"", 840)
 		if clue != "":
 			UiKit.text(card, clue, &"Tip", 840)
@@ -751,13 +806,13 @@ func _show_fail(reason: String, offer: Variant) -> void:
 			UiKit.button(UiKit.row(card), "No ad available right now").disabled = true
 		UiKit.text(card, "Using this caps the clear at two stars.", &"Hint")
 	else:
-		UiKit.text(card, reason, &"Heading")
+		UiKit.text(card, reason, &"HeadingDanger")
 		UiKit.text(card, clue if clue != "" else L.get("tip", "Watch them first, then try again."), &"Hint", 840)
 	var buttons := UiKit.row(card)
 	var retry_label := "Try again"
 	if offer != null:
 		retry_label = "Start over, free" if L.get("eli", false) else "Retry level, free"
-	UiKit.button(buttons, retry_label, &"GhostButton").pressed.connect(restart)
+	UiKit.button(buttons, retry_label, &"GhostButton" if offer != null else &"PrimaryButton").pressed.connect(restart)  # with no offer, trying again is the main action
 	if tutorial:
 		UiKit.button(buttons, "Sheriff’s office", &"GhostButton").pressed.connect(show_home)
 	else:
@@ -814,10 +869,12 @@ func _build_hud() -> void:
 	var bar := HBoxContainer.new()
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hud_box.add_child(bar)
-	# Hearts and bullets on a wooden panel (theme "HudPanel"), the level name on a brass plaque ("HudPlaque").
+	# Hearts and bullets on a small translucent pill over the scene (theme "HudPill"), the level name on another;
+	# round sound and pause icons. Restart is in the pause menu, behind a confirmation.
 	var left := PanelContainer.new()
-	left.theme_type_variation = &"HudPanel"
+	left.theme_type_variation = &"HudPill"
 	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	bar.add_child(left)
 	var stock := HBoxContainer.new()
 	stock.add_theme_constant_override("separation", 16)
@@ -837,11 +894,12 @@ func _build_hud() -> void:
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(spacer)
 	var name_panel := PanelContainer.new()
-	name_panel.theme_type_variation = &"HudPlaque"
+	name_panel.theme_type_variation = &"HudPill"
+	name_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	name_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_panel.size_flags_horizontal = Control.SIZE_SHRINK_END
 	bar.add_child(name_panel)
-	_lvl_label = UiKit.text(name_panel, "", &"HudPlaqueLabel")
+	_lvl_label = UiKit.text(name_panel, "", &"HudLabel")
 	_lvl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_lvl_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_lvl_label.autowrap_mode = TextServer.AUTOWRAP_OFF  # always one line
@@ -849,9 +907,6 @@ func _build_hud() -> void:
 	_sound_btn.pressed.connect(func():
 		AudioManager.set_sound(not AudioManager.sound_on)
 		_sound_btn.icon = Assets.texture("ui/icon_sound_on" if AudioManager.sound_on else "ui/icon_sound_off"))
-	UiKit.icon_button(bar, "ui/icon_restart").pressed.connect(func():
-		if level != null and level.state in ["play", "pause", "won", "lost"]:
-			restart())
 	UiKit.icon_button(bar, "ui/icon_pause").pressed.connect(_toggle_pause)
 	_hud.visible = false
 

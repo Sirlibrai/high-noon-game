@@ -12,7 +12,7 @@ extends Node
 
 const ROOT := "res://assets/"
 const MANIFEST := ROOT + "manifest.json"
-const THEME := "res://ui/theme.tres"
+const THEME := "res://ui/ui_theme.tres"
 const DEFAULT_FPS := 8.0
 
 var scenes: Dictionary = {}
@@ -166,5 +166,5 @@ func _apply_theme() -> void:
 			if sb is StyleBoxTexture:
 				sb.texture = _entries[name].frames[0]
 			else:
-				errors.append("%s: theme slot %s is not a StyleBoxTexture in ui/theme.tres" % [name, slot])
+				errors.append("%s: theme slot %s is not a StyleBoxTexture in ui/ui_theme.tres" % [name, slot])
 				push_error(errors[-1])

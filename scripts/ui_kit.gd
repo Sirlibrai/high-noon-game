@@ -1,7 +1,15 @@
 class_name UiKit
 ## Builds overlay cards from Controls styled by the shared theme
-## (ui/theme.tres) through theme type variations. No colours, fonts or sizes
-## are set here; change the look in the theme and the manifest.
+## (ui/ui_theme.tres, built from ui/palette.tres by tools/build_ui_theme.gd) through theme type variations.
+## No colours, fonts or sizes are set here; change the look in the palette and the builder.
+
+
+## Wrapped text is never wider than this (design pixels): the cards stay compact.
+const MAX_TEXT_WIDTH := 640.0
+## A pressed button shrinks to this size and springs back.
+const PRESS_SCALE := 0.95
+## The smallest button (design pixels: 46 points on a 375-point-tall phone, Apple asks for 44).
+const TAP := 88.0
 
 
 ## A full-screen dimmed layer that swallows taps, with a centred card column.
@@ -36,7 +44,7 @@ static func text(parent: Node, s: String, variation := &"", wrap_width := 0.0) -
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if wrap_width > 0.0:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		l.custom_minimum_size.x = wrap_width
+		l.custom_minimum_size.x = minf(wrap_width, MAX_TEXT_WIDTH)
 	parent.add_child(l)
 	return l
 
@@ -48,22 +56,41 @@ static func row(parent: Node) -> HBoxContainer:
 	return r
 
 
-## `variation`: "" for the gold button, GhostButton, SmallGhostButton.
+## `variation`: "" or PrimaryButton for the main action (orange), GhostButton or SecondaryButton (wood),
+## SmallGhostButton, DangerButton, BigPrimaryButton.
 static func button(parent: Node, s: String, variation := &"") -> Button:
 	var b := Button.new()
 	b.text = s
 	b.theme_type_variation = variation
 	b.focus_mode = Control.FOCUS_NONE
 	parent.add_child(b)
+	press_feel(b)
 	return b
+
+
+## A pressed button (darker, from the theme) also shrinks a little, and springs back on release.
+static func press_feel(b: Control, target: Control = null) -> void:
+	var t: Control = target if target != null else b
+	b.button_down.connect(func():
+		t.pivot_offset = t.size / 2
+		t.scale = Vector2.ONE * PRESS_SCALE)
+	b.button_up.connect(func():
+		if not is_instance_valid(t):
+			return
+		var tw := t.create_tween()
+		tw.tween_property(t, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))
 
 
 static func icon_button(parent: Node, icon_asset: String) -> Button:
 	var b := Button.new()
 	b.theme_type_variation = &"IconButton"
 	b.icon = Assets.texture(icon_asset)
+	b.custom_minimum_size = Vector2(TAP, TAP)  # round, and a full-size tap target
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.expand_icon = true
 	b.focus_mode = Control.FOCUS_NONE
 	parent.add_child(b)
+	press_feel(b)
 	return b
 
 

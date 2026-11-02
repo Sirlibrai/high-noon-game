@@ -44,10 +44,11 @@ const SMALL_W := 88.0
 ## The gilt frame's empty canvas, the cabinet's middle shelf (trophy bases), the rack's hooks.
 const FRAME_IN := Rect2(1158, 150, 117, 152)
 const TROPHY_AT := [Vector2(565, 663), Vector2(640, 663), Vector2(715, 663), Vector2(910, 663), Vector2(1010, 663)]
-const RACK_AT := {"repeater": Vector2(1585, 380), "coach": Vector2(1585, 400), "peacemaker": Vector2(1560, 420),
-	"quickdraw": Vector2(1614, 420), "longbarrel": Vector2(1566, 440), "legend": Vector2(1612, 440)}
+const RACK_AT := {"repeater": Vector2(1530, 372), "legend": Vector2(1612, 372), "coach": Vector2(1530, 393),
+	"longbarrel": Vector2(1610, 393), "peacemaker": Vector2(1598, 416), "quickdraw": Vector2(1600, 438)}
 const RACK_SCALE := 0.8
-## The gunsmith's stool: the foot of its front-left leg, over the painted stool's. The doorway's front
+## The gunsmith's stool: the foot of its front-left leg, at the painted stool's (he hides it). He is
+## drawn small enough for the rack behind him to show above and beside his head; the doorway's front
 ## layer (frame, crate, barrel) is drawn over him from DOOR_AT.
 const STOOL_FOOT := Vector2(1404, 673)
 const DOORWAY := Rect2(1351, 127, 294, 613)
@@ -182,7 +183,7 @@ func _build_rack(pg: Dictionary) -> void:
 		var gun := AssetSprite.make("rack/" + w.id, _art)
 		gun.position = RACK_AT[w.id]
 		gun.scale = Vector2.ONE * RACK_SCALE
-		gun.modulate = Color(1.0, 0.86, 0.7) if pg.inv.equip.gun == w.id else Color(0.9, 0.76, 0.62)  # the gun in use catches the lamp
+		gun.modulate = Color(1.1, 1.0, 0.86) if pg.inv.equip.gun == w.id else Color(1.0, 0.9, 0.78)  # the gun in use catches the lamp
 
 
 func _build_hotspots() -> void:

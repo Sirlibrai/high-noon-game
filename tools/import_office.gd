@@ -15,9 +15,10 @@ const SMITH := "Three Poses of a Western Craftsman.png"
 const POSES := ["polish", "hammer", "tip"]
 const Cut := preload("res://tools/cut.gd")
 ## The painted stool is 124 office pixels tall (seat to floor); his is 197 sheet pixels. His is drawn
-## 112 tall, so its seat sits just under the painted seat (hidden by him) and his hands stay clear
-## of the doorpost. Stored at twice that density (drawn at scale 0.5), sharp on wide phones.
-const SMITH_K := 112.0 / 197.0 * 2.0
+## 80 tall: small enough that the gun rack on the wall behind shows above and beside his head. His
+## body hides the painted seat, and his stool's legs the painted legs. Stored at twice that density
+## (drawn at scale 0.5), sharp on wide phones.
+const SMITH_K := 80.0 / 197.0 * 2.0
 ## The doorway's front layer: the region it covers, the opening (painting pixels), and inside the
 ## opening, the workshop crate (left) and the office's barrel (right, an outline) that stand in front of him.
 const DOOR_REGION := Rect2i(1290, 76, 382, 690)

@@ -883,9 +883,15 @@ func _office() -> void:
 	var smith_k: float = Assets.meta("gunsmith/polish", "scale", 1.0)
 	var stool_h: float = preload("res://tools/import_office.gd").SMITH_K * 197.0 * smith_k  # his stool, drawn: its sheet height scaled
 	var seated: float = Assets.texture("gunsmith/polish").get_height() * smith_k
-	ok("The gunsmith sits on his stool over the painted one, behind the doorframe, crate and barrel",
+	var clear := true  # every rack place shows past him, in every pose
+	for pose in ["polish", "hammer", "tip"]:
+		var im := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/gunsmith_%s.png" % pose))
+		for at in Office.RACK_AT.values():
+			var p: Vector2 = (at - Office.STOOL_FOOT) / smith_k + Assets.anchor("gunsmith/" + pose)
+			clear = clear and (not Rect2(Vector2.ZERO, im.get_size()).has_point(p) or im.get_pixelv(Vector2i(p)).a < 0.1)
+	ok("The gunsmith sits at the stool by the bench, behind the doorframe, crate and barrel, small enough for the rack to show",
 		o._smith.position == Office.STOOL_FOOT and Office.DOORWAY.has_point(Office.STOOL_FOOT) and kids.find(front) > kids.find(o._smith)
-		and stool_h >= 0.85 * 124 and stool_h <= 124 and seated > Office.DOORWAY.size.y * 0.55 and seated < Office.DOORWAY.size.y * 0.7, "stool %.0f, seated %.0f" % [stool_h, seated])
+		and clear and stool_h >= 0.6 * 124 and seated > Office.DOORWAY.size.y * 0.4 and seated < Office.DOORWAY.size.y * 0.55, "stool %.0f, seated %.0f" % [stool_h, seated])
 	var fp := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/office_doorway_front.png"))
 	ok("The doorway's front layer is clear in the opening and solid on the frame, crate and barrel",
 		fp.get_pixelv(Vector2i(1500, 400) - Vector2i(Office.DOOR_AT)).a == 0 and fp.get_pixelv(Vector2i(1330, 400) - Vector2i(Office.DOOR_AT)).a == 1

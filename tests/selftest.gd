@@ -328,6 +328,7 @@ func _ready() -> void:
 	_playthroughs()
 	_puzzle_first()
 	_office()
+	_launch()
 	_batch1()
 	_scale_guide()
 	_portraits()
@@ -541,6 +542,16 @@ func _saves() -> void:
 	ok("iCloud merge keeps the wallet honest: earned minus spent", int(m.bucks) == int(m.stats.earned) - 50 and int(m.bucks) >= 0, "%s of %s" % [m.bucks, m.stats.earned])
 	var again: Dictionary = SaveManager.merge_progress(m, 300.0, m.duplicate(true), 300.0)
 	ok("iCloud merge of a save with itself changes nothing", JSON.stringify(again) == JSON.stringify(SaveManager.merge_progress(m, 300.0, m, 300.0)) and int(again.bucks) == int(m.bucks))
+	var wiped := fresh()
+	wiped.resetAt = 500.0
+	var old_copy := fresh()
+	GameState.apply_win(old_copy, 0, 0, 3, o10(1000))
+	var rm: Dictionary = SaveManager.merge_progress(wiped, 600.0, old_copy, 400.0)
+	var replayed := wiped.duplicate(true)
+	GameState.apply_win(replayed, 0, 0, 2, o10(1000))
+	var rm2: Dictionary = SaveManager.merge_progress(wiped, 600.0, replayed, 800.0)
+	ok("After Reset progress, a copy saved before it (iCloud's, another device's) doesn't bring the old progress back; later play merges as usual",
+		GameState.stars_in(rm, 0, 0) == 0 and float(rm.resetAt) == 500.0 and GameState.stars_in(rm2, 0, 0) == 2)
 
 	# The iCloud file bridge the iOS plugin uses (cloud_out.json up, cloud_in.json down).
 	var keep: Dictionary = SaveManager.data
@@ -822,7 +833,7 @@ func _puzzle_first() -> void:
 	ok("Levels 1 to 4 start in observation; the prototype levels 5 to 10 keep their old timing", obs == [true, true, true, true, false, false, false, false, false, false], str(obs))
 
 
-## The painted sheriff's office: its layers, hotspots over their painted objects, and the gunsmith.
+## The painted sheriff's office (the gunsmith painted in): its layers, hotspots over their painted objects, the bench spark.
 func _office() -> void:
 	var G := GameState
 	var keep: Dictionary = G.progress
@@ -843,7 +854,7 @@ func _office() -> void:
 		"profile": Vector2(1215, 226), "trophies": Vector2(800, 665), "gunsmith": Vector2(1498, 430)}
 	ok("Every hotspot sits on its painted object: window, calendar, target, board, frame, cabinet, doorway",
 		objects.keys().all(func(a): return spots.has(a) and spots[a].has_point(objects[a]) and art.encloses(spots[a])), str(spots.keys()))
-	ok("The parchment on the desk is the Continue Hunt hotspot", Office.PARCHMENT.has_point(Vector2(835, 836)) and Office.PARCHMENT.encloses(Office.WRITING)
+	ok("The parchment on the desk is the Continue Hunt hotspot", Office.PARCHMENT.has_point(Vector2(840, 836)) and Office.PARCHMENT.encloses(Office.LETTERING)
 		and not spots.values().any(func(b): return b.intersects(Office.PARCHMENT)))
 	var boxes: Array = spots.values()
 	var overlaps := 0
@@ -874,43 +885,69 @@ func _office() -> void:
 		and hung.all(func(b): return (b.get_meta("art") as TextureRect).texture.resource_path.contains("painted/poster_ch"))
 		and (hung[4].get_meta("art") as TextureRect).texture == Assets.texture("poster/ch0") and hung[4].get_meta("hunt")
 		and absf(poster_boxes[4].get_center().x - spots.board.get_center().x) < 4, str(poster_boxes))
-	ok("The new save's office: no trophies, the Peacemaker alone on the rack, the gunsmith polishing",
-		_art_named(o, "trophy_office/").is_empty() and _art_named(o, "rack/") == ["rack/peacemaker"] and o._smith.asset.begins_with("gunsmith/"))
+	ok("The new save's office: no trophies, the Peacemaker alone on the rack; no separate gunsmith or doorway layer (he's painted in)",
+		_art_named(o, "trophy_office/").is_empty() and _art_named(o, "rack/") == ["rack/peacemaker"]
+		and _art_named(o, "gunsmith/").is_empty() and _art_named(o, "office/doorway").is_empty() and not Assets.has("office/doorway_front"))
 	var pic: TextureRect = o._art.get_node("Portrait")
 	ok("The hunter's portrait fills the gilt frame's canvas", pic.position == Office.FRAME_IN.position and pic.size == Office.FRAME_IN.size
 		and pic.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_COVERED and spots.profile.encloses(Office.FRAME_IN))
-	var kids: Array = o._art.get_children()
-	var front: Node = kids.filter(func(c): return c is AssetSprite and c.asset == "office/doorway_front")[0]
-	var smith_k: float = Assets.meta("gunsmith/polish", "scale", 1.0)
-	var stool_h: float = preload("res://tools/import_office.gd").SMITH_K * 197.0 * smith_k  # his stool, drawn: its sheet height scaled
-	var seated: float = Assets.texture("gunsmith/polish").get_height() * smith_k
-	var stool_left: float = Office.STOOL_FOOT.x - (Assets.anchor("gunsmith/polish").x - 41) * smith_k  # his stool's leftmost leg (measured on the pose)
-	ok("The gunsmith's stool matches the painted stool exactly: 124 pixels, seat to floor, over it at the bench",
-		absf(stool_h - 124) < 1 and Office.STOOL_FOOT.y == 675 and absf(stool_left - 1403) < 2, "stool %.1f tall, left edge %.1f" % [stool_h, stool_left])
-	ok("At that size he is a person seated in the next room, layered behind the doorframe, crate and barrel",
-		o._smith.position == Office.STOOL_FOOT and Office.DOORWAY.has_point(Office.STOOL_FOOT) and kids.find(front) > kids.find(o._smith)
-		and seated > Office.DOORWAY.size.y * 0.6 and seated < Office.DOORWAY.size.y * 0.8, "seated %.0f" % seated)
-	var fp := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/office_doorway_front.png"))
-	ok("The doorway's front layer is clear in the opening and solid on the frame, crate and barrel",
-		fp.get_pixelv(Vector2i(1500, 400) - Vector2i(Office.DOOR_AT)).a == 0 and fp.get_pixelv(Vector2i(1330, 400) - Vector2i(Office.DOOR_AT)).a == 1
-		and fp.get_pixelv(Vector2i(1375, 700) - Vector2i(Office.DOOR_AT)).a == 1 and fp.get_pixelv(Vector2i(1640, 680) - Vector2i(Office.DOOR_AT)).a == 1)
-	var heading: Label = o.ledger
-	ok("The parchment shows only CONTINUE HUNT, in big Western lettering, centred like a heading",
-		heading.text == "CONTINUE HUNT" and heading.theme_type_variation == &"ParchmentHeading" and heading.get_theme_font_size("font_size") >= 40
-		and absf(heading.get_rect().get_center().x - o._to_local_px(Office.WRITING.get_center()).x) < 1, str(heading.get_rect()))
-	var writing := Rect2(o._to_local_px(Office.PARCHMENT.position), Office.PARCHMENT.size * o._k)
-	ok("The writing stays on the parchment", writing.encloses(o.ledger.get_rect()), str(o.ledger.get_rect()))
+	var room := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/office.png"))
+	var inked := 0
+	var canvas_dark := 0
+	for y in range(int(Office.LETTERING.position.y), int(Office.LETTERING.end.y)):
+		for x in range(int(Office.LETTERING.position.x), int(Office.LETTERING.end.x), 2):
+			var c := room.get_pixel(x, y)
+			inked += int(c.r > 0.25 and c.g < 0.15 and c.b < 0.15)  # the painted lettering's dark red
+	for y in range(int(Office.FRAME_IN.position.y), int(Office.FRAME_IN.end.y), 3):
+		for x in range(int(Office.FRAME_IN.position.x), int(Office.FRAME_IN.end.x), 3):
+			canvas_dark += int(room.get_pixel(x, y).get_luminance() < 0.3)
+	var frame_cells := ceili(Office.FRAME_IN.size.x / 3) * ceili(Office.FRAME_IN.size.y / 3)
+	ok("The painting is the office with the gunsmith: CONTINUE HUNT lettered on its parchment, the frame's canvas bare",
+		room.get_size() == Vector2i(Office.ART_SIZE) and inked > Office.LETTERING.get_area() / 2 * 0.25 and canvas_dark > frame_cells * 0.95,
+		"%d inked, canvas %d of %d" % [inked, canvas_dark, frame_cells])
+	ok("The parchment carries no game text of its own; its painted lettering is on it, the whole sheet the hotspot",
+		Office.PARCHMENT.encloses(Office.LETTERING) and not o.get_children().any(func(c): return c is Label)
+		and not o.get_children().any(func(c): return c is Control and c.theme_type_variation == &"ParchmentHeading"))
+	var cap := Rect2(1420, 365, 88, 70)  # the painted gunsmith's cap and face
+	var rail := Rect2(1532, 345, 112, 95)  # the rack, rail to hooks
+	var gun_boxes: Array = []
+	for id in Office.RACK_AT:
+		var tex := Assets.texture("rack/" + id)
+		gun_boxes.append(Rect2(Office.RACK_AT[id] - tex.get_size() * Office.RACK_SCALE / 2, tex.get_size() * Office.RACK_SCALE))
+	var rack_apart := true
+	for i in gun_boxes.size():
+		for j in range(i + 1, gun_boxes.size()):
+			rack_apart = rack_apart and not gun_boxes[i].grow(-1).intersects(gun_boxes[j].grow(-1))
+	ok("Every gun has a place across the workshop rack, none overlapping, clear of the gunsmith's cap",
+		G.weapons.all(func(w): return Office.RACK_AT.has(w.id)) and rack_apart
+		and gun_boxes.all(func(b): return rail.encloses(b) and not b.intersects(cap)), str(gun_boxes))
 	ok("The office light only adds a light vignette and the chosen glow; the room isn't dimmed",
 		(o._shade.material as ShaderMaterial).shader.code.contains("vignette") and not (o._shade.material as ShaderMaterial).shader.code.contains("uniform float dim"))
-	o._smith_t = Office.IDLE_POSE_TIME + 0.1
-	o._physics_process(0.0)
-	var idle2: String = o._smith.asset
+	var lamp_range := [[1.0, 0.0], [1.0, 0.0]]
+	for f in 1500:  # the ceiling lamp and the workshop's, over 25 seconds
+		o._physics_process(1.0 / 60.0)
+		for k in 2:
+			var a: float = o._glows[[0, Office.WORKSHOP_LAMP][k]].modulate.a
+			lamp_range[k] = [minf(lamp_range[k][0], a), maxf(lamp_range[k][1], a)]
+	var swing := func(r): return r[1] - r[0]
+	ok("The lamps flicker gently; the workshop lamp a little more", swing.call(lamp_range[1]) > swing.call(lamp_range[0]) * 1.3
+		and swing.call(lamp_range[1]) < 0.45 and lamp_range[1][0] > 0.2, str(lamp_range))
+	o._spark_t = o._spark_next
+	o._physics_process(1.0 / 60.0)
+	var flash_on: bool = o._spark_flash.visible and o._spark_bits.all(func(b): return b.visible)
+	var gap: float = o._spark_next
+	for f in 8:
+		o._physics_process(1.0 / 60.0)
+	var flew: bool = o._spark_bits.all(func(b): return b.position.distance_to(Office.SPARK_AT) > 3 and b.position.distance_to(Office.SPARK_AT) < 40)
+	for f in 30:
+		o._physics_process(1.0 / 60.0)
+	ok("Now and then a small spark flies off the gunsmith's bench: a flash and a few flecks, gone in half a second",
+		flash_on and flew and not o._spark_flash.visible and o._spark_bits.all(func(b): return not b.visible)
+		and gap >= Office.SPARK_EVERY.x and gap <= Office.SPARK_EVERY.y and Office.DOORWAY.has_point(Office.SPARK_AT), "next in %.1f s" % gap)
 	var fired: Array = []
 	o.act.connect(func(n): fired.append(n))
 	o._on_act("gunsmith", spots.gunsmith)
 	o._on_act("board", spots.board)  # a second tap while the first is on its way does nothing
-	ok("The gunsmith's idle loop moves from polishing to hammering, and he tips his cap when called",
-		idle2 == "gunsmith/hammer" and o._smith.asset == "gunsmith/tip" and o._lit.name == "gunsmith")
 	ok("One tap lights the chosen object; a second tap meanwhile is ignored", o._lit.t >= 0 and o._lit.name == "gunsmith" and fired.is_empty())
 	remove_child(o)
 	o.free()
@@ -922,10 +959,9 @@ func _office() -> void:
 	add_child(o2)
 	ok("Captured bounties put trophies in the cabinet; owned guns go on the rack",
 		_art_named(o2, "trophy_office/") == ["trophy_office/ch0", "trophy_office/ch1"] and _art_named(o2, "rack/").size() == G.weapons.size())
-	var note: String = (o2.ledger as Label).text
 	var sheet: Button = o2.get_children().filter(func(c): return c is Button and c.size.is_equal_approx(Office.PARCHMENT.size * o2._k))[0]
 	sheet.pressed.emit()
-	ok("Nothing left to hunt: the parchment still reads CONTINUE HUNT (Main opens the Bounty board)", note == "CONTINUE HUNT" and o2._lit.name == "hunt", note)
+	ok("Nothing left to hunt: the parchment still continues the hunt (Main opens the Bounty board)", o2._lit.name == "hunt")
 	var fresh_pg := fresh()
 	var n0: Variant = G.next_unfinished(fresh_pg, false)
 	G.apply_win(fresh_pg, 0, 0, 2, o10(1000))
@@ -1298,3 +1334,64 @@ func _bounty_wall() -> void:
 		m.free()
 	SaveManager.data.progress = keep
 	SaveManager.data.settings.playtest = was_pt
+
+
+## The first launch: splash, then straight into Main Street level 1, then the office after its result;
+## later launches go splash, then office. Settings' Reset progress, after a confirmation, starts it over.
+func _launch() -> void:
+	var G := GameState
+	var keep: Dictionary = SaveManager.data.progress
+	var keep_settings: Dictionary = SaveManager.data.settings.duplicate(true)
+	SaveManager.data.progress = fresh()
+	var main: Node = load("res://scenes/main.tscn").instantiate()
+	add_child(main)
+	ok("A new save is a first launch; a save that has seen the office isn't",
+		G.first_launch(G.progress) and not G.first_launch(fresh().merged({"seenOffice": true}, true)))
+	(main._screen as Splash).finished.emit()
+	var intro: Array = _button_texts(main._overlay)
+	ok("First launch: the splash leads straight into Main Street level 1 (its intro card, no detour to the level grid)",
+		main.level != null and main.ci == 0 and main.li == 0 and main.tutorial and intro.has("Draw") and not intro.has("Levels"), str(intro))
+	main.level.state = "lost"
+	main._show_fail("Shot down", null)
+	var fail: Array = _button_texts(main._overlay)
+	ok("First launch, level lost: try again, or on to the office", fail.has("Try again") and fail.has("Sheriff’s office") and not fail.has("Levels"), str(fail))
+	var to_office: Button = _button_named(main._overlay, "Sheriff’s office")
+	to_office.pressed.emit()
+	ok("Reaching the office ends the first launch: it is remembered in the save", main._screen is Office and not main.tutorial
+		and G.progress.tutorialDone and not G.first_launch(G.progress))
+	main.show_splash()
+	(main._screen as Splash).finished.emit()
+	ok("Later launches: the splash, then the office", main._screen is Office and main.level == null and not main.tutorial)
+	G.apply_win(G.progress, 0, 0, 3, o10(1000))
+	G.progress.inv.guns.quickdraw = true
+	main.show_chapter(0)
+	_button_named(main._overlay, "Reset progress").pressed.emit()
+	var ask: Array = _button_texts(main._overlay)
+	ok("Settings' Reset progress asks first", ask == ["Keep my progress", "Reset everything"], str(ask))
+	_button_named(main._overlay, "Keep my progress").pressed.emit()
+	ok("Keeping your progress changes nothing", G.stars_in(G.progress, 0, 0) == 3 and int(G.progress.bucks) > 0 and _button_texts(main._overlay).has("Reset progress"))
+	_button_named(main._overlay, "Reset progress").pressed.emit()
+	_button_named(main._overlay, "Reset everything").pressed.emit()
+	ok("Reset everything: stars, Bounty Dollars and guns are gone, settings stay, and the game starts over at the splash",
+		G.stars_in(G.progress, 0, 0) == 0 and int(G.progress.bucks) == 0 and not G.progress.inv.guns.has("quickdraw")
+		and G.first_launch(G.progress) and float(G.progress.resetAt) > 0 and main._screen is Splash and SaveManager.data.settings == keep_settings)
+	(main._screen as Splash).finished.emit()
+	ok("After a reset, the splash leads into Main Street level 1 again", main.tutorial and main.level != null and main.li == 0)
+	remove_child(main)
+	main.free()
+	SaveManager.data.progress = keep
+
+
+func _button_texts(root: Node) -> Array:
+	var out: Array = []
+	for n in root.find_children("*", "Button", true, false):
+		if not (n as Button).text.is_empty():
+			out.append((n as Button).text)
+	return out
+
+
+func _button_named(root: Node, text: String) -> Button:
+	for n in root.find_children("*", "Button", true, false):
+		if (n as Button).text.begins_with(text):
+			return n
+	return null

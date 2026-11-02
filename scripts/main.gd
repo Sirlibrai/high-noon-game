@@ -21,6 +21,8 @@ var _safe_lrb := Vector3.ZERO
 var safe_override: Variant = null
 var _screen: Node2D  # the splash or the office, when no level is running
 var _fresh_capture: Variant = null
+## The first launch's run through Main Street level 1: its result card leads to the office.
+var tutorial := false
 var _home_bar: CanvasLayer
 var _home_box: MarginContainer
 var _wallet: Button
@@ -160,18 +162,32 @@ func _set_screen(node: Node2D) -> void:
 		_world.add_child(node)
 
 
-## The splash standoff; its second tap fades to the office.
+## The splash standoff; its second tap fades to the office. On the first launch (or after a reset) it
+## goes straight into Main Street level 1 instead, and the office opens after that level's result.
 func show_splash() -> void:
 	_end_level()
 	_home_bar.visible = false
 	var s := Splash.new()
 	_set_screen(s)
-	s.finished.connect(func(): show_home())
+	s.finished.connect(func():
+		if GameState.first_launch(GameState.progress):
+			start_tutorial()
+		else:
+			show_home())
+
+
+func start_tutorial() -> void:
+	tutorial = true
+	show_intro(0, 0)
 
 
 ## The sheriff's office (the prototype's home()).
 func show_home() -> void:
 	_end_level()
+	tutorial = false
+	if not GameState.progress.get("tutorialDone", false):  # the office has been reached: later launches come straight here
+		GameState.progress.tutorialDone = true
+		GameState.save()
 	var o := Office.new()  # rebuilt each visit, so posters, rack and cabinet show the latest progress
 	o.safe_lrb = _safe_lrb
 	o.fresh_capture = _fresh_capture
@@ -331,6 +347,24 @@ func show_chapter(c: int) -> void:
 	mus.pressed.connect(func():
 		AudioManager.set_music(not AudioManager.music_on)
 		show_chapter(c))
+	UiKit.button(settings, "Reset progress", &"SmallGhostButton").pressed.connect(_confirm_reset.bind(c))
+
+
+## Reset progress, after a confirmation: every star, capture, Bounty Dollar, gun and clue goes, here
+## and in iCloud (sound and music stay), and the game starts again from the splash, as on the first launch.
+func _confirm_reset(c: int) -> void:
+	var card := _open_overlay()
+	UiKit.text(card, "Reset progress?", &"Heading")
+	UiKit.text(card, "This wipes every star, capture, Bounty Dollar, gun and clue, on this phone and in iCloud. Sound and music settings stay. It can’t be undone.", &"", 840)
+	var buttons := UiKit.row(card)
+	UiKit.button(buttons, "Keep my progress").pressed.connect(show_chapter.bind(c))
+	UiKit.button(buttons, "Reset everything", &"GhostButton").pressed.connect(reset_progress)
+
+
+func reset_progress() -> void:
+	SaveManager.reset_progress()
+	_fresh_capture = null
+	show_splash()
 
 
 const SOON := {
@@ -441,7 +475,8 @@ func show_intro(chapter: int, index: int) -> void:
 		UiKit.text(card, "They're already shooting.", &"Hint", 840)
 	var buttons := UiKit.row(card)
 	UiKit.button(buttons, "Face him" if L.get("duel", false) else "Draw").pressed.connect(_go)
-	UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
+	if not tutorial:
+		UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
 
 
 func _go() -> void:
@@ -495,7 +530,8 @@ func _toggle_pause() -> void:
 		mus.pressed.connect(func():
 			AudioManager.set_music(not AudioManager.music_on)
 			mus.text = "Music: " + ("on" if AudioManager.music_on else "off"))
-		UiKit.button(card, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
+		if not tutorial:
+			UiKit.button(card, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
 		UiKit.button(card, "Home", &"GhostButton").pressed.connect(show_home)
 
 
@@ -522,6 +558,10 @@ func _on_won(res: Dictionary) -> void:
 		UiKit.image(pay, "ui/coin", Vector2(40, 40))
 		UiKit.text(pay, "+%s" % _money(res.pay), &"Pay")
 	var buttons := UiKit.row(card)
+	if tutorial:  # the first launch's level: on to the office
+		UiKit.button(buttons, "On to the sheriff’s office").pressed.connect(show_home)
+		UiKit.button(buttons, "Retry", &"GhostButton").pressed.connect(restart)
+		return
 	if res.last:
 		# The stamp lands on the poster when the office next opens (officeFresh).
 		if res.get("captured", false):
@@ -580,7 +620,10 @@ func _show_fail(reason: String, offer: Variant) -> void:
 	if offer != null:
 		retry_label = "Start over, free" if L.get("eli", false) else "Retry level, free"
 	UiKit.button(buttons, retry_label, &"GhostButton").pressed.connect(restart)
-	UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
+	if tutorial:
+		UiKit.button(buttons, "Sheriff’s office", &"GhostButton").pressed.connect(show_home)
+	else:
+		UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
 
 
 func _use_offer(offer: String, reason: String) -> void:

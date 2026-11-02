@@ -37,6 +37,8 @@ static func fresh_progress() -> Dictionary:
 		"avatar": {"name": "The Stranger", "hat": 0, "hatCol": 0, "skin": 2, "bandana": 1, "coat": 0, "face": 0},
 		"avOwned": {},
 		"seenOffice": false,
+		"tutorialDone": false,
+		"resetAt": 0.0,
 		"revealed": {},
 		"skins": {"active": "standard", "owned": {"standard": true}},
 	}
@@ -93,6 +95,14 @@ func save_game() -> void:
 	saved.emit(data)
 
 
+## Starts the progress over (Settings' Reset progress); the settings stay. The reset time keeps any copy
+## saved before it (iCloud's, another device's) from merging the old progress back in.
+func reset_progress() -> void:
+	data.progress = fresh_progress()
+	data.progress.resetAt = Time.get_unix_time_from_system()
+	save_game()
+
+
 func get_setting(key: String, default: Variant = null) -> Variant:
 	return data.settings.get(key, default)
 
@@ -109,6 +119,8 @@ func set_setting(key: String, value: Variant) -> void:
 static func merge_progress(a: Dictionary, a_time: float, b: Dictionary, b_time: float) -> Dictionary:
 	var newer: Dictionary = (a if a_time >= b_time else b).duplicate(true)
 	var older: Dictionary = b if a_time >= b_time else a
+	if minf(a_time, b_time) < maxf(float(a.get("resetAt", 0.0)), float(b.get("resetAt", 0.0))):
+		return newer  # the older copy was saved before a reset: it is dropped, not merged
 	var out := newer
 	var n := maxi(out.ch.size(), older.ch.size())
 	while out.ch.size() < n:
@@ -135,6 +147,7 @@ static func merge_progress(a: Dictionary, a_time: float, b: Dictionary, b_time: 
 	for k in older.get("skins", {}).get("owned", {}):  # skins bought on either device; the active one from the newer
 		out.skins.owned[k] = out.skins.owned.get(k, false) or older.skins.owned[k]
 	out.seenOffice = bool(out.get("seenOffice", false)) or bool(older.get("seenOffice", false))
+	out.tutorialDone = bool(out.get("tutorialDone", false)) or bool(older.get("tutorialDone", false))
 	if not out.has("revealed"):
 		out.revealed = {}
 	for k in older.get("revealed", {}):  # a portrait revealed on either device stays revealed

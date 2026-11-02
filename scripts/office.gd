@@ -1,15 +1,14 @@
 class_name Office
 extends Node2D
-## The sheriff's office home screen: the painted office (assets/painted/office.png) with the parts
-## that change laid over it, each placed in the painting's own pixels:
+## The sheriff's office home screen: the painted office (assets/painted/office.png, with the gunsmith
+## at his bench in the workshop and CONTINUE HUNT on the parchment painted in) and the parts that
+## change laid over it, each placed in the painting's own pixels:
 ##   - the wanted posters pinned to the cork board, side by side, the current hunt's in the middle;
 ##   - the bounty hunter's portrait in the empty gilt frame;
 ##   - a trophy on the cabinet's shelf for each captured bounty;
-##   - the owned guns on the rack in the workshop;
-##   - the gunsmith on the stool at his bench, seen through the doorway (its frame, the crate and the
-##     barrel are drawn over him), polishing and hammering, tipping his cap when called;
-##   - CONTINUE HUNT lettered on the blank parchment on the desk;
-##   - a gentle lamp flicker, dust in the window light, and a light vignette.
+##   - the owned guns across the workshop's rack;
+##   - a small spark now and then at the gunsmith's bench, the lamps flickering gently (the workshop's
+##     a little more), dust in the window light, and a light vignette.
 ## The painting covers the screen (16:9 shows all of it; wider phones trim some ceiling and a little
 ## desk). Most objects have a small tag beside them (a padlock on locked ones); a tapped object glows
 ## warmly for a moment before its screen opens (one tap, no hover).
@@ -17,10 +16,10 @@ extends Node2D
 
 signal act(name: String)
 
-const ART_SIZE := Vector2(1672, 941)
+const ART_SIZE := Vector2(1671, 941)
 ## On screens wider than the painting, how much of the trimmed height comes off the top (the rest off
-## the bottom): mostly ceiling, so the parchment on the desk stays in view.
-const CROP_TOP := 0.55
+## the bottom): mostly ceiling, so the parchment's painted CONTINUE HUNT stays above the home indicator.
+const CROP_TOP := 0.72
 ## Hotspots in painting pixels: the box you tap (its painted object), and the centre of its tag, beside
 ## the object and never over it. Tags are kept inside the safe area. The cabinet has no tag, and the
 ## doorway's is the painted GUNSMITH sign.
@@ -29,42 +28,42 @@ const SPOTS := [
 	{"act": "daily", "label": "Daily Bounty", "box": [376, 315, 106, 109], "tag": [403, 294], "soon": true},
 	{"act": "survival", "label": "Survival", "box": [374, 425, 108, 112], "tag": [420, 556], "soon": true},
 	{"act": "board", "label": "Bounty board", "box": [490, 82, 635, 478], "tag": [805, 582]},
-	{"act": "profile", "label": "Profile", "box": [1133, 125, 165, 203], "tag": [1215, 346]},
-	{"act": "trophies", "label": "Trophies", "box": [495, 603, 610, 129]},
-	{"act": "gunsmith", "label": "Gunsmith", "box": [1351, 127, 294, 613]},
+	{"act": "profile", "label": "Profile", "box": [1132, 125, 166, 203], "tag": [1215, 346]},
+	{"act": "trophies", "label": "Trophies", "box": [500, 603, 600, 127]},
+	{"act": "gunsmith", "label": "Gunsmith", "box": [1350, 120, 300, 620]},
 ]
-## The blank parchment on the desk (Continue Hunt), and the part of it the writing stays within.
-const PARCHMENT := Rect2(515, 750, 645, 172)
-const WRITING := Rect2(625, 764, 410, 144)
+## The parchment on the desk (the Continue Hunt hotspot), and its painted lettering.
+const PARCHMENT := Rect2(520, 752, 640, 165)
+const LETTERING := Rect2(627, 798, 436, 46)
 ## The cork board's clear middle (between the painted maps and notes): the current hunt's poster in
 ## the centre, two smaller ones each side, none overlapping ([x, y] centre, tilt).
 const BIG_SPOT := [805, 330, -0.02]
 const SMALL_SPOTS := [[694, 250, -0.03], [694, 410, 0.025], [915, 250, 0.03], [915, 410, -0.025]]
 const BIG_W := 116.0
 const SMALL_W := 88.0
-## The gilt frame's empty canvas, the cabinet's middle shelf (trophy bases), the rack's hooks.
-const FRAME_IN := Rect2(1158, 150, 117, 152)
+## The gilt frame's empty canvas, the cabinet's middle shelf (trophy bases).
+const FRAME_IN := Rect2(1162, 157, 110, 141)
 const TROPHY_AT := [Vector2(565, 663), Vector2(640, 663), Vector2(715, 663), Vector2(910, 663), Vector2(1010, 663)]
-const RACK_AT := {"repeater": Vector2(1530, 372), "legend": Vector2(1612, 372), "coach": Vector2(1530, 393),
-	"longbarrel": Vector2(1610, 393), "peacemaker": Vector2(1598, 416), "quickdraw": Vector2(1600, 438)}
-const RACK_SCALE := 0.8
-## The gunsmith's stool: the foot of its front-left leg, at the painted stool's (he hides it). He is
-## drawn small enough for the rack behind him to show above and beside his head; the doorway's front
-## layer (frame, crate, barrel) is drawn over him from DOOR_AT.
-const STOOL_FOOT := Vector2(1408, 675)
-const DOORWAY := Rect2(1351, 127, 294, 613)
-const DOOR_AT := Vector2(1290, 76)
+## The workshop rack: four rods between two rails (x 1535 to 1640), right of the gunsmith's cap. The
+## guns lie across the rods, two to a row, the bottom row resting on the hooks.
+const RACK_AT := {"repeater": Vector2(1567, 376), "quickdraw": Vector2(1621, 376), "coach": Vector2(1565, 399),
+	"peacemaker": Vector2(1618, 399), "longbarrel": Vector2(1561, 421), "legend": Vector2(1614, 421)}
+const RACK_SCALE := 0.6
+const DOORWAY := Rect2(1350, 120, 300, 620)
 ## The lamps (flame or bulb, glow size): ceiling, wall lantern, desk lantern, workshop.
-const LAMPS := [[Vector2(832, 118), 1.8], [Vector2(427, 223), 0.9], [Vector2(322, 690), 1.2], [Vector2(1502, 318), 0.7]]
-const IDLE_POSE_TIME := 2.6
+const LAMPS := [[Vector2(832, 116), 1.8], [Vector2(427, 222), 0.9], [Vector2(322, 690), 1.2], [Vector2(1505, 320), 0.7]]
+const WORKSHOP_LAMP := 3
+## The gunsmith's bench: the little anvil's face, where a spark flies now and then (every few seconds).
+const SPARK_AT := Vector2(1624, 500)
+const SPARK_EVERY := Vector2(3.5, 7.0)
+const SPARK_BITS := 5
 
 ## The safe area's insets in screen pixels (left, right, bottom), set by Main on phones.
 var safe_lrb := Vector3.ZERO
 ## A chapter just captured: its stamp lands with a thump when the office opens.
 var fresh_capture: Variant = null
-## The tags and the parchment's lettering, for the layout tests.
+## The tags, for the layout tests.
 var plates: Array[Control] = []
-var ledger: Control
 
 var _k := 1.0
 var _origin := Vector2.ZERO
@@ -73,9 +72,13 @@ var _frame := 0
 var _poster_stamps := {}
 var _motes: Array[AssetSprite] = []
 var _glows: Array[AssetSprite] = []
-var _smith: AssetSprite
-var _smith_t := 0.0
-var _tipping := false
+## The bench's spark: a quick flash and a few bits flying off, then quiet for a few seconds.
+var _spark_flash: AssetSprite
+var _spark_bits: Array[AssetSprite] = []
+var _spark_vel: Array[Vector2] = []
+var _spark_t := 0.0
+var _spark_next := 2.0
+var _sparks := 0
 var _shade: ColorRect
 var _lit := {"t": -1.0, "name": ""}
 var _stamp_anim: Variant = null
@@ -117,10 +120,17 @@ func _ready() -> void:
 			t.position = TROPHY_AT[k]
 			t.modulate = Color(0.92, 0.88, 0.8)  # seen through the cabinet glass
 	_build_rack(pg)
-	_smith = AssetSprite.make("gunsmith/polish", _art)
-	_smith.position = STOOL_FOOT
-	_smith.modulate = Color(0.96, 0.9, 0.82)  # in the workshop's lamplight
-	AssetSprite.make("office/doorway_front", _art).position = DOOR_AT  # the doorframe in front of him
+	_spark_flash = AssetSprite.make("office/glow", _art)
+	_spark_flash.position = SPARK_AT
+	_spark_flash.scale = Vector2.ONE * 0.25
+	_spark_flash.visible = false
+	for i in SPARK_BITS:
+		var bit := AssetSprite.make("office/mote", _art)
+		bit.modulate = Color(1.6, 1.15, 0.5)  # a hot yellow-white fleck
+		bit.scale = Vector2.ONE * 0.6
+		bit.visible = false
+		_spark_bits.append(bit)
+		_spark_vel.append(Vector2.ZERO)
 	for i in 9:
 		_motes.append(AssetSprite.make("office/mote", _art))
 	_shade = ColorRect.new()  # a light vignette; a chosen object glows
@@ -219,9 +229,8 @@ func _build_hotspots() -> void:
 		plates.append(tag)
 
 
-## CONTINUE HUNT, lettered big on the blank parchment like a heading on the paper. The whole parchment
-## is the button: it starts the next unfinished level of the current hunt, or opens the Bounty board
-## when no built bounty has levels left (Main decides). The lettering stays on it, inside the safe area.
+## The parchment with CONTINUE HUNT painted on it is the button: it starts the next unfinished level of
+## the current hunt, or opens the Bounty board when no built bounty has levels left (Main decides).
 func _build_parchment() -> void:
 	var b := Button.new()
 	b.theme_type_variation = &"Hotspot"
@@ -231,21 +240,11 @@ func _build_parchment() -> void:
 	b.tooltip_text = "Continue hunt"
 	b.pressed.connect(_on_act.bind("hunt", PARCHMENT))
 	add_child(b)
-	var ink := UiKit.text(self, "CONTINUE HUNT", &"ParchmentHeading")
-	ink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var room := WRITING.size * _k
-	var size: int = ink.get_theme_font_size("font_size")
-	while size > 20 and ink.get_combined_minimum_size().x > room.x:  # as big as the parchment allows
-		size -= 1
-		ink.add_theme_font_size_override("font_size", size)
-	var sz := ink.get_combined_minimum_size()
-	ink.size = sz
-	var safe := _safe_rect()
-	var top := _to_local_px(WRITING.position).y
-	var at := _to_local_px(WRITING.get_center()) - sz / 2
-	at.y = clampf(at.y, top, maxf(top, safe.end.y - 6 - sz.y))  # on the parchment, above the home indicator
-	ink.position = at
-	ledger = ink
+
+
+## The parchment's painted lettering on screen, in this node's coordinates (for the layout tests).
+func lettering_rect() -> Rect2:
+	return Rect2(_to_local_px(LETTERING.position), LETTERING.size * _k)
 
 
 ## The first visit's telegram, over the cabinet: where to start.
@@ -266,8 +265,7 @@ func _build_coach() -> void:
 	_coach = p
 
 
-## One tap: the chosen object glows warmly, then its screen opens. The gunsmith turns and tips his
-## cap first.
+## One tap: the chosen object glows warmly, then its screen opens.
 func _on_act(name: String, box: Rect2) -> void:
 	if _lit.t >= 0:
 		return  # already on its way
@@ -279,13 +277,9 @@ func _on_act(name: String, box: Rect2) -> void:
 	_lit = {"t": 0.0, "name": name}
 	var r := Rect2(_origin + box.position * _k, box.size * _k)
 	_shade.material.set_shader_parameter("spot", Vector4(r.position.x, r.position.y, r.size.x, r.size.y))
-	var wait := 0.3
 	if name == "gunsmith":
-		_tipping = true
-		_smith.show_asset("gunsmith/tip")
 		AudioManager.sfx("creak")
-		wait = 0.6
-	get_tree().create_timer(wait).timeout.connect(func():
+	get_tree().create_timer(0.3).timeout.connect(func():
 		act.emit(name)
 		get_tree().create_timer(0.8).timeout.connect(_settle))
 
@@ -295,7 +289,6 @@ func _settle() -> void:
 	if not is_inside_tree():
 		return
 	_lit = {"t": -1.0, "name": ""}
-	_tipping = false
 
 
 static func _hash(n: int) -> int:
@@ -309,19 +302,19 @@ static func _hash(n: int) -> int:
 
 func _physics_process(delta: float) -> void:
 	_frame += 1
-	# The lamps flicker gently.
+	# The lamps flicker gently; the workshop's oil lamp a little more, with a soft dip now and then.
 	for i in _glows.size():
-		_glows[i].modulate.a = 0.5 + sin(_frame * (0.05 + i * 0.013) + i) * 0.05 + sin(_frame * (0.17 + i * 0.02)) * 0.03
+		var a := 0.5 + sin(_frame * (0.05 + i * 0.013) + i) * 0.05 + sin(_frame * (0.17 + i * 0.02)) * 0.03
+		if i == WORKSHOP_LAMP:
+			a += sin(_frame * 0.31) * 0.04 + sin(_frame * 0.53 + 1.7) * 0.03 - pow(maxf(0.0, sin(_frame * 0.023)), 12.0) * 0.15
+		_glows[i].modulate.a = a
 	# Dust drifts down through the light from the window.
 	for i in _motes.size():
 		var h := _hash(i * 31)
 		var t2 := fmod(_frame * 0.25 * (1 + i % 3) + h % 400, 400.0)
 		_motes[i].position = Vector2(110 + t2 * 0.35 + h % 70, 110 + t2 * 1.0 + sin(_frame * 0.02 + i) * 6)
 		_motes[i].modulate.a = sin(t2 / 400.0 * PI) * 0.7
-	# The gunsmith works away: polishing, then hammering, slowly.
-	if not _tipping:
-		_smith_t += delta
-		_smith.show_asset("gunsmith/polish" if int(_smith_t / IDLE_POSE_TIME) % 2 == 0 else "gunsmith/hammer")
+	_step_spark(delta)
 	# A chosen object glows.
 	var lit := 0.0
 	if _lit.t >= 0:
@@ -332,6 +325,31 @@ func _physics_process(delta: float) -> void:
 		_step_stamp()
 	position = Vector2(randi_range(-4, 4), randi_range(-4, 4)) if _shake > 0 else Vector2.ZERO
 	_shake = maxi(0, _shake - 1)
+
+
+## Every few seconds a spark flies off the gunsmith's anvil: a quick flash and a few flecks that arc
+## out and fall, fading in half a second.
+func _step_spark(delta: float) -> void:
+	_spark_t += delta
+	if _spark_t >= _spark_next:
+		_spark_t = 0.0
+		_sparks += 1
+		var h := _hash(_sparks * 97)
+		_spark_next = lerpf(SPARK_EVERY.x, SPARK_EVERY.y, (h % 1000) / 1000.0)
+		for i in SPARK_BITS:
+			var hb := _hash(_sparks * 131 + i * 7)
+			_spark_bits[i].position = SPARK_AT
+			_spark_vel[i] = Vector2(lerpf(-70, 70, (hb % 100) / 100.0), lerpf(-120, -50, ((hb >> 8) % 100) / 100.0))
+	var age := _spark_t if _sparks > 0 else 9.0
+	_spark_flash.visible = age < 0.12
+	_spark_flash.modulate.a = 0.9 * (1.0 - age / 0.12)
+	for i in SPARK_BITS:
+		var bit := _spark_bits[i]
+		bit.visible = age < 0.5
+		if bit.visible:
+			_spark_vel[i].y += 400 * delta  # they fall
+			bit.position += _spark_vel[i] * delta
+			bit.modulate.a = 1.0 - age / 0.5
 
 
 func _step_stamp() -> void:

@@ -166,7 +166,6 @@
     "portrait/ch4_locked": "painted/portrait_ch4_locked.png",
     "poster/pin": {"frames": ["placeholder/ui_painted/pin.png"], "anchor": [4, 4]},
     "office/painted": {"frames": ["painted/office.png"], "anchor": "top_left"},
-    "office/doorway_front": {"frames": ["painted/office_doorway_front.png"], "anchor": "top_left"},
     "office/portrait": {"frames": ["placeholder/ui_painted/hunter_portrait.png"], "anchor": "top_left"},
     "office/glow": {"frames": ["placeholder/ui_painted/glow.png"], "anchor": "center"},
     "office/mote": {"frames": ["placeholder/ui_painted/mote.png"], "anchor": "center"},

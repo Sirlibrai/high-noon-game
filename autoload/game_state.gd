@@ -233,6 +233,12 @@ func current_hunt(pg: Dictionary, playtest: bool) -> int:
 	return h.next if h.next != null else chapters.size() - 1
 
 
+## The first launch (or the first after a reset): the splash leads straight into Main Street level 1, and
+## the office opens after its result. Once the office has been reached, launches go splash, then office.
+func first_launch(pg: Dictionary) -> bool:
+	return not (pg.get("tutorialDone", false) or pg.get("seenOffice", false))
+
+
 ## Continue Hunt: the next unfinished level to play, as {ch, level}: the first open level without a star
 ## in the current hunt, or else in any other built bounty. Null when no built bounty has levels left.
 func next_unfinished(pg: Dictionary, playtest: bool) -> Variant:

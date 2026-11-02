@@ -1,29 +1,20 @@
 extends SceneTree
 ## Brings the painted sheriff's office and the gunsmith into assets/painted:
 ##   Godot --headless --path . -s res://tools/import_office.gd
-## The office painting is copied as it is (the office scene works in its pixels), and its doorway's
-## front is cut out as a layer of its own: the doorframe, and the crate and barrel in front of the
-## workshop, drawn over the gunsmith so he is seen through the doorway, in the next room. The
-## gunsmith sheet's three poses are split at the transparent gaps between them, trimmed, scaled so
-## his stool covers the stool painted at the workbench, and anchored at the foot of the stool's
-## front-left leg. Prints the manifest entries with the anchors measured here.
+## The office painting is copied as it is (the office scene works in its pixels); the gunsmith at his
+## bench and CONTINUE HUNT on the parchment are painted into it. The gunsmith sheet's three poses (kept
+## for the Gunsmith screen) are split at the transparent gaps between them, trimmed, scaled and anchored
+## at the foot of the stool's front-left leg. Prints the manifest entries with the anchors measured here.
 
 const IN := "res://assets/incoming/"
 const OUT := "res://assets/painted/"
-const OFFICE := "Sunset Sheriff’s Office Interior.png"
+const OFFICE := "Sunset Sheriff’s Office and Gunsmith.png"
 const SMITH := "Three Poses of a Western Craftsman.png"
 const POSES := ["polish", "hammer", "tip"]
 const Cut := preload("res://tools/cut.gd")
-## The painted stool is 124 office pixels tall (seat to floor); his is 197 sheet pixels, scaled to match
-## it exactly, which makes him the right size for the room. Stored at twice that density (drawn at
-## scale 0.5), sharp on wide phones.
+## His stool was sized to the office's painted stool (124 pixels, seat to floor, from 197 sheet pixels),
+## stored at twice that density (drawn at scale 0.5), sharp on wide phones.
 const SMITH_K := 124.0 / 197.0 * 2.0
-## The doorway's front layer: the region it covers, the opening (painting pixels), and inside the
-## opening, the workshop crate (left) and the office's barrel (right, an outline) that stand in front of him.
-const DOOR_REGION := Rect2i(1290, 76, 382, 690)
-const OPENING := Rect2i(1351, 127, 294, 613)
-const CRATE := Rect2i(1351, 631, 50, 110)
-const BARREL := [Vector2(1612, 576), Vector2(1672, 576), Vector2(1672, 714), Vector2(1579, 714), Vector2(1580, 668), Vector2(1586, 640), Vector2(1597, 604)]
 
 
 func _init() -> void:
@@ -31,8 +22,6 @@ func _init() -> void:
 	office.convert(Image.FORMAT_RGB8)
 	office.save_png(ProjectSettings.globalize_path(OUT + "office.png"))
 	print('    "office/painted": {"frames": ["painted/office.png"], "anchor": "top_left"},')
-	_doorway_front(office).save_png(ProjectSettings.globalize_path(OUT + "office_doorway_front.png"))
-	print('    "office/doorway_front": {"frames": ["painted/office_doorway_front.png"], "anchor": "top_left"},  # at %s' % DOOR_REGION.position)
 	var sheet := Image.load_from_file(ProjectSettings.globalize_path(IN + SMITH))
 	sheet.convert(Image.FORMAT_RGBA8)
 	var spans := _spans(sheet)
@@ -99,18 +88,3 @@ func _stool_leg(im: Image) -> Vector2:
 				bottom = maxi(bottom, y)
 				break
 	return Vector2(left, bottom)
-
-
-## The doorway's front: the painting over DOOR_REGION, see-through in the opening except where the
-## crate and the barrel stand in front of the workshop.
-func _doorway_front(office: Image) -> Image:
-	var out := Image.create_empty(DOOR_REGION.size.x, DOOR_REGION.size.y, false, Image.FORMAT_RGBA8)
-	var barrel := PackedVector2Array(BARREL)
-	for y in DOOR_REGION.size.y:
-		for x in DOOR_REGION.size.x:
-			var p := DOOR_REGION.position + Vector2i(x, y)
-			var front := not OPENING.has_point(p) or CRATE.has_point(p) or Geometry2D.is_point_in_polygon(Vector2(p) + Vector2(0.5, 0.5), barrel)
-			if front:
-				var c := office.get_pixelv(p)
-				out.set_pixel(x, y, Color(c, 1.0))
-	return out

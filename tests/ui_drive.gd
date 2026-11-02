@@ -40,12 +40,22 @@ func _ready() -> void:
 
 
 func _screens(tag: String) -> void:
+	main.start_tutorial()  # the first launch: Main Street level 1 straight after the splash
+	await _check(tag, "first_launch_intro")
+	main._go()
+	main.level.state = "won"
+	main._on_won({"stars": 3, "pay": 60, "captured": false, "hearts": 3, "used": 1, "damaged": false, "assisted": false, "last": false})
+	await _wait(0.5)
+	await _check(tag, "first_launch_won")
+	main.tutorial = false
 	main.show_board()
 	await _check_board(tag, "board")
 	main.board.show_poster(4)  # swiped along to J.R.'s silhouette
 	await _check_board(tag, "board_jr")
 	main.show_chapter(0)
 	await _check(tag, "levels")
+	main._confirm_reset(0)
+	await _check(tag, "reset_confirm")
 	main.show_intro(0, 0)
 	await _check(tag, "intro_l1")
 	main.show_intro(0, 4)
@@ -102,7 +112,7 @@ func _screens(tag: String) -> void:
 	SaveManager.data.progress = keep
 
 
-## The office: every plate and the ledger inside the safe area, none overlapping, every hotspot
+## The office: every plate and the painted CONTINUE HUNT inside the safe area, none overlapping, every hotspot
 ## at least 44 points each way.
 func _check_office(tag: String) -> void:
 	var o: Office = main._screen
@@ -111,17 +121,15 @@ func _check_office(tag: String) -> void:
 	var s: Vector3 = main._safe_lrb
 	var safe := Rect2(s.x, 0, vis.x - s.x - s.y, vis.y - s.z)
 	var boxes: Array = o.plates.map(func(p): return [p.text.strip_edges(), p.get_global_rect()])
-	boxes.append(["ledger", o.ledger.get_global_rect()])
+	var lettering := Rect2(o.lettering_rect().position + o.global_position, o.lettering_rect().size)
+	boxes.append(["CONTINUE HUNT", lettering])
 	for b in boxes:
 		if not safe.encloses(b[1]):
 			problems.append("%s office: %s %s outside %s" % [tag, b[0], b[1], safe])
 		for c in boxes:
 			if b[0] < c[0] and b[1].intersects(c[1]):
 				problems.append("%s office: %s overlaps %s" % [tag, b[0], c[0]])
-	var sheet := Rect2(o._to_local_px(Office.PARCHMENT.position) + o.global_position, Office.PARCHMENT.size * o._k)
-	if not sheet.encloses(o.ledger.get_global_rect()):
-		problems.append("%s office: the writing %s is off the parchment %s" % [tag, o.ledger.get_global_rect(), sheet])
-	if o._coach != null and o._coach.get_global_rect().intersects(o.ledger.get_global_rect()):
+	if o._coach != null and o._coach.get_global_rect().intersects(lettering):
 		problems.append("%s office: the telegram covers CONTINUE HUNT" % tag)
 	for p in o.plates:  # tags beside their objects, never over one
 		for sp in Office.SPOTS:
@@ -134,7 +142,7 @@ func _check_office(tag: String) -> void:
 	for h in o.get_children():
 		if h is Button and h.theme_type_variation == &"Hotspot" and (h.size.x < 44 * k or h.size.y < 44 * k):
 			problems.append("%s office: hotspot %s is %s, under 44 points" % [tag, h.tooltip_text, h.size / k])
-	print("%s office: %d plates and the ledger checked" % [tag, o.plates.size()])
+	print("%s office: %d plates and CONTINUE HUNT checked" % [tag, o.plates.size()])
 
 
 ## Saves the screen and checks the card fits inside the phone's safe area.

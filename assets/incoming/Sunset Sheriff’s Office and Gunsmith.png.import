@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d3u4xaor5puv2"
-path="res://.godot/imported/office_doorway_front.png-0b1d042da91fb11923db6a3a35fd2025.ctex"
+uid="uid://oxx12qvr6usj"
+path="res://.godot/imported/Sunset Sheriff’s Office and Gunsmith.png-e58edb923b45711ca8df64006e612c59.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/painted/office_doorway_front.png"
-dest_files=["res://.godot/imported/office_doorway_front.png-0b1d042da91fb11923db6a3a35fd2025.ctex"]
+source_file="res://assets/incoming/Sunset Sheriff’s Office and Gunsmith.png"
+dest_files=["res://.godot/imported/Sunset Sheriff’s Office and Gunsmith.png-e58edb923b45711ca8df64006e612c59.ctex"]
 
 [params]
 

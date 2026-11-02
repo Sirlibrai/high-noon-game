@@ -31,14 +31,14 @@ var _hud_box: MarginContainer
 var _hearts: Array[TextureRect] = []
 var _ammo: HBoxContainer
 var _ammo_slots := -1
-var _lvl_label: Label
-var _sound_btn: Button
 var _call_layer: CanvasLayer
 var _call_label: Label
 var _call_tween: Tween
 var _call_token := 0
 var _overlay_layer: CanvasLayer
 var _overlay: Control
+## The open overlay's card column.
+var _card: VBoxContainer
 ## The Bounty board wall, while it is open.
 var board: BountyWall
 ## Debug views (debug builds only): the whole screen in greyscale (G on a keyboard, or the pause menu),
@@ -94,7 +94,7 @@ func _build_home_bar() -> void:
 
 
 func _refresh_home_bar() -> void:
-	_wallet.text = "%s  ›" % _money(int(GameState.progress.bucks))
+	_wallet.text = _money(int(GameState.progress.bucks))
 
 
 ## Centres the stage and keeps the HUD inside the safe area (notch, Dynamic Island).
@@ -292,14 +292,19 @@ func hunt() -> void:
 
 
 ## The HUD's cartridges: big enough to count at a glance on a phone.
-const BULLET_SIZE := Vector2(34, 56)
+const BULLET_SIZE := Vector2(24, 56)
 const BULLET_GAP := 12
 ## The outlaw's wanted poster on his hunt screen (its height), and his face on his keepsake's label in
 ## the trophy cabinet.
-const HUNT_POSTER := 132.0
+const HUNT_POSTER := 104.0
 const TROPHY_FACE := 48.0
 ## How long a replay's intro shows (s) before the showdown starts by itself.
 const REPLAY_INTRO := 1.2
+## The intro card is centred in this top fraction of the screen, clear of the outlaws on the street.
+const INTRO_BAND := 0.6
+## The result's stars above its card: the middle one, and the two beside it.
+const STAR_BIG := 124.0
+const STAR_SMALL := 96.0
 ## A boss's face on his intro card, and stamped CAPTURED on his capture card.
 const BOSS_FACE := 96.0
 const CAPTURE_FACE := 140.0
@@ -377,7 +382,7 @@ func show_chapter(c: int) -> void:
 		b.disabled = not GameState.level_open(c, i)
 		if b.disabled:
 			b.text = ""
-			b.icon = Assets.texture("ui/icon_lock")
+			b.icon = Assets.texture("ui/icon_lock_light")  # (cream, on a teal pill)
 			b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			b.add_theme_constant_override("icon_max_width", 30)
 		b.pressed.connect(show_intro.bind(c, i))
@@ -513,9 +518,19 @@ func _not_yet(title: String, body: String) -> void:
 	UiKit.button(UiKit.row(card), "Back", &"GhostButton").pressed.connect(show_home)
 
 
+## The Bounty Dollars counter: the number on a paper tag, the coin breaking out of its left edge.
 func _wallet_button(parent: Node) -> Button:
-	var b := UiKit.button(parent, "%s  ›" % _money(int(GameState.progress.bucks)), &"Wallet")
-	b.icon = Assets.texture("ui/coin")  # Bounty Dollars
+	var b := UiKit.button(parent, _money(int(GameState.progress.bucks)), &"Wallet")
+	b.custom_minimum_size.y = UiKit.TAP
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var coin := TextureRect.new()
+	coin.texture = Assets.texture("ui/coin")
+	coin.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	coin.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	coin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	coin.custom_minimum_size = Vector2(76, 79)
+	UiKit.attach(b, coin, Vector2(0, 0.5), Vector2(28, -4))
+	UiKit.tilt(b, -2)
 	b.tooltip_text = "Bounty Dollars. Spend them at the Gunsmith."
 	b.pressed.connect(_on_office_act.bind("gunsmith"))
 	return b
@@ -535,7 +550,20 @@ func show_intro(chapter: int, index: int) -> void:
 	li = index
 	_start_level()
 	var L := level.L
-	var card := _open_overlay()
+	var card := _open_overlay(true)
+	var panel := UiKit.panel_of(card)
+	var badge := PanelContainer.new()  # the level number on a teal badge, breaking out of the top-left corner
+	badge.theme_type_variation = &"Badge"
+	badge.custom_minimum_size = Vector2(92, 98)
+	var num := UiKit.text(badge, str(li + 1), &"BadgeLabel")
+	num.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	UiKit.attach(panel, badge, Vector2(0, 0), Vector2(18, 14))
+	UiKit.tilt(badge, -6)
+	var tack := TextureRect.new()  # pinned
+	tack.texture = Assets.texture("ui/tack")
+	tack.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tack.custom_minimum_size = Vector2(30, 30)
+	UiKit.attach(panel, tack, Vector2(0.5, 0), Vector2(0, 14))
 	var title_box: Node = card
 	if L.has("portrait"):  # a boss: his face beside his name
 		var head := UiKit.row(card)
@@ -544,8 +572,30 @@ func show_intro(chapter: int, index: int) -> void:
 		title_box = VBoxContainer.new()
 		title_box.alignment = BoxContainer.ALIGNMENT_CENTER
 		head.add_child(title_box)
-	UiKit.text(title_box, "%d. %s" % [li + 1, L.name], &"Heading")
-	var pills := UiKit.row(title_box)
+	UiKit.text(title_box, L.name.to_upper(), &"Heading")
+	_level_chips(title_box, L)
+	if replay_intro(ci, li):  # a level already beaten: the title and chips for a moment, or a tap, then play
+		_quick_start()
+		return
+	if L.has("story"):  # brief v2: one story line on the intro card
+		UiKit.text(card, L.story.intro, &"Tip", 840)
+	if L.get("puzzle", false) and level.hint_lvl >= 1:
+		UiKit.text(card, "Clue: " + L.hint, &"Tip", 840)
+	elif L.has("tip"):
+		UiKit.text(card, L.tip, &"Tip", 840)
+	# Say how the level starts: observation levels wait for your first shot, the rest don't.
+	if level.observing:
+		UiKit.text(card, "Take your time. Nobody draws until you fire.", &"Hint", 840)
+	elif not L.get("duel", false):
+		UiKit.text(card, "They're already shooting.", &"Hint", 840)
+	var levels: Array = [] if tutorial else [["ui/icon_levels", "Levels", show_chapter.bind(ci)]]
+	_edge_buttons(card, "Face him!" if L.get("duel", false) else "Draw!", _go, levels, [])
+
+
+
+## A level's facts as teal chips: its outlaws, bullets and par, or what kind of fight it is.
+func _level_chips(parent: Node, L: Dictionary) -> HBoxContainer:
+	var pills := UiKit.row(parent)
 	if L.has("jack"):
 		UiKit.pill(pills, "Boss")
 		UiKit.pill(pills, "3 phases")
@@ -564,25 +614,7 @@ func show_intro(chapter: int, index: int) -> void:
 			UiKit.pill(pills, "%d bottles" % L.bottles.size())
 		UiKit.pill(pills, "%d bullet%s" % [int(L.bullets), "" if int(L.bullets) == 1 else "s"])
 		UiKit.pill(pills, "Par %d" % int(L.par))
-	if replay_intro(ci, li):  # a level already beaten: the title and chips for a moment, or a tap, then play
-		_quick_start()
-		return
-	if L.has("story"):  # brief v2: one story line on the intro card
-		UiKit.text(card, L.story.intro, &"Tip", 840)
-	if L.get("puzzle", false) and level.hint_lvl >= 1:
-		UiKit.text(card, "Clue: " + L.hint, &"Tip", 840)
-	elif L.has("tip"):
-		UiKit.text(card, L.tip, &"Tip", 840)
-	# Say how the level starts: observation levels wait for your first shot, the rest don't.
-	if level.observing:
-		UiKit.text(card, "Take your time. Nobody draws until you fire.", &"Hint", 840)
-	elif not L.get("duel", false):
-		UiKit.text(card, "They're already shooting.", &"Hint", 840)
-	var buttons := UiKit.row(card)
-	UiKit.button(buttons, "Face him" if L.get("duel", false) else "Draw").pressed.connect(_go)
-	if not tutorial:
-		UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
-
+	return pills
 
 
 ## On a replay the intro is only a glance: it starts by itself after REPLAY_INTRO seconds, or at once on a tap.
@@ -591,7 +623,7 @@ func replay_intro(c: int, l: int) -> bool:
 
 
 func _quick_start() -> void:
-	UiKit.text(_overlay.find_children("*", "VBoxContainer", true, false)[0], "Tap to start", &"Hint")
+	UiKit.text(_card, "Tap to start", &"Hint")
 	var shade: Control = _overlay.get_child(0)
 	var card_overlay := _overlay
 	shade.gui_input.connect(func(ev: InputEvent):
@@ -625,7 +657,6 @@ func _start_level() -> void:
 	level.lost.connect(_on_lost)
 	_layout()
 	_hud.visible = true
-	_lvl_label.text = "%d. %s" % [li + 1, level.L.name]
 	_ammo_slots = -1
 
 
@@ -644,6 +675,7 @@ func _toggle_pause() -> void:
 	if level.state == "pause":
 		_close_overlay()
 		level.resume()
+		_hud.visible = true
 	elif level.state == "play":
 		level.pause()
 		_pause_card()
@@ -652,22 +684,47 @@ func _toggle_pause() -> void:
 ## The pause menu: Resume (the main action), music and restart, levels and home; debug toggles in debug builds.
 func _pause_card() -> void:
 	var card := _open_overlay()
-	UiKit.text(card, "Paused", &"Heading")
-	var resume := UiKit.button(card, "Resume", &"BigPrimaryButton")
-	resume.pressed.connect(_toggle_pause)
-	var row1 := UiKit.row(card)
-	var mus := UiKit.button(row1, "Music: " + ("on" if AudioManager.music_on else "off"), &"GhostButton")
+	_hud.visible = false  # the menu has the screen to itself, as in the mockup
+	var shade: Control = _overlay.get_child(0)
+	var title := UiKit.text(shade, "PAUSED", &"BigTitle")  # big, over the dimmed street
+	title.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	title.position.y = 18
+	title.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	UiKit.tilt(title, -2)
+	UiKit.pop_in(title, 0.0, 0.8)
+	# The level: its name, chips and best stars.
+	UiKit.text(card, level.L.name.to_upper(), &"Heading")
+	_level_chips(card, level.L)
+	var best := UiKit.row(card)
+	UiKit.text(best, "Your best", &"Hint")
+	UiKit.stars(best, GameState.stars_in(GameState.progress, ci, li), 52)
+	# The strip of round buttons down the left edge.
+	var strip := PanelContainer.new()
+	strip.theme_type_variation = &"Strip"
+	shade.add_child(strip)
+	var col := VBoxContainer.new()
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_theme_constant_override("separation", 6)
+	strip.add_child(col)
+	UiKit.round_button(col, "ui/icon_play", "Resume", "orange", 100).pressed.connect(_toggle_pause)
+	UiKit.round_button(col, "ui/icon_restart", "Restart").pressed.connect(_confirm_restart)
+	var snd := UiKit.round_button(col, _sound_icon(), "Sound")
+	snd.pressed.connect(func():
+		AudioManager.set_sound(not AudioManager.sound_on)
+		snd.icon = Assets.texture(_sound_icon()))
+	var mus := UiKit.round_button(col, _music_icon(), "Music")
 	mus.pressed.connect(func():
 		AudioManager.set_music(not AudioManager.music_on)
-		mus.text = "Music: " + ("on" if AudioManager.music_on else "off"))
-	UiKit.button(row1, "Restart", &"GhostButton").pressed.connect(_confirm_restart)
-	var row2 := UiKit.row(card)
-	if not tutorial:
-		UiKit.button(row2, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
-	UiKit.button(row2, "Home", &"GhostButton").pressed.connect(show_home)
-	for b in row1.get_children() + row2.get_children():
-		b.custom_minimum_size.x = 250
-	resume.custom_minimum_size.x = 520
+		mus.icon = Assets.texture(_music_icon()))
+	var hap := UiKit.round_button(col, _haptics_icon(), "Haptics")
+	hap.pressed.connect(func():
+		Haptics.set_enabled(not Haptics.enabled)
+		hap.icon = Assets.texture(_haptics_icon()))
+	UiKit.round_button(col, "ui/icon_home", "Back to the office", "teal").pressed.connect(show_home)
+	strip.size = strip.get_combined_minimum_size()
+	strip.position = Vector2(_safe_lrb.x + 18, (shade.size.y - _safe_lrb.z - strip.size.y) / 2)
+	UiKit.tilt(strip, 1)
+	UiKit.pop_in(strip, 0.05, 0.85)
 	if OS.is_debug_build():  # testing aids
 		var dbg := UiKit.row(card)  # one row: greyscale, hit areas, 25% speed, old or new feel
 		var g := UiKit.button(dbg, "Grey: " + ("on" if greyscale else "off"), &"SmallGhostButton")
@@ -689,10 +746,22 @@ func _pause_card() -> void:
 			f.text = "Feel: " + ("old" if FeedbackDirector.force_old else "new"))
 
 
+func _sound_icon() -> String:
+	return "ui/icon_sound_on" if AudioManager.sound_on else "ui/icon_sound_off"
+
+
+func _music_icon() -> String:
+	return "ui/icon_music" if AudioManager.music_on else "ui/icon_music_off"
+
+
+func _haptics_icon() -> String:
+	return "ui/icon_haptics" if Haptics.enabled else "ui/icon_haptics_off"
+
+
 ## Restart, from the pause menu: asked first, so a stray tap never throws a run away.
 func _confirm_restart() -> void:
 	var card := _open_overlay()
-	UiKit.text(card, "Restart this showdown?", &"Heading")
+	UiKit.text(card, "RESTART?", &"Heading")
 	UiKit.text(card, "You start again from the beginning, with every bullet back.", &"Hint", 600)
 	var buttons := UiKit.row(card)
 	UiKit.button(buttons, "Restart", &"PrimaryButton").pressed.connect(restart)
@@ -712,20 +781,21 @@ func _on_won(res: Dictionary) -> void:
 		var right := VBoxContainer.new()
 		right.alignment = BoxContainer.ALIGNMENT_CENTER
 		head.add_child(right)
-		UiKit.text(right, "%s captured" % level.L.name, &"Heading")
-		UiKit.stars(right, res.stars, 64)
+		UiKit.text(right, "%s CAPTURED!" % level.L.name.to_upper(), &"Heading")
 	else:
-		UiKit.text(card, "Outlaw captured" if res.last else "Showdown won", &"Heading")
-		UiKit.stars(card, res.stars, 80)
+		UiKit.text(card, "OUTLAW CAPTURED!" if res.last else "SHOWDOWN WON!", &"Heading")
+	_breakout_stars(card, res.stars)
 	if res.assisted:
 		UiKit.text(card, "Assisted clear: two stars at most. Beat it on your own for the third.", &"Hint", 840)
-	var line: String
+	var chips := UiKit.row(card)  # the result as chips
 	if level.duel != null:
 		var taken := 3 - int(res.hearts)
-		line = "Untouched" if taken == 0 else "%d hit%s taken" % [taken, "" if taken == 1 else "s"]
+		UiKit.pill(chips, "Untouched" if taken == 0 else "%d hit%s taken" % [taken, "" if taken == 1 else "s"])
 	else:
-		line = "%d shot%s, par %d%s" % [res.used, "" if res.used == 1 else "s", int(level.L.par), "" if res.damaged else ", untouched"]
-	UiKit.text(card, line, &"Tip")
+		UiKit.pill(chips, "%d shot%s" % [res.used, "" if res.used == 1 else "s"])
+		UiKit.pill(chips, "Par %d" % int(level.L.par))
+		if not res.damaged:
+			UiKit.pill(chips, "Untouched")
 	if level.L.has("story"):  # brief v2: the next story beat on the result screen
 		UiKit.text(card, level.L.story.result, &"Hint", 840)
 	var keep: Dictionary = GameState.keepsake_for(ci, li)
@@ -735,37 +805,44 @@ func _on_won(res: Dictionary) -> void:
 		var pay := UiKit.row(card)
 		pay.add_theme_constant_override("separation", 14)
 		if res.pay:
-			UiKit.image(pay, "ui/coin", Vector2(40, 40))
+			UiKit.image(pay, "ui/coin", Vector2(56, 58))
 			UiKit.text(pay, "+%s" % _money(res.pay), &"Pay")
 		if not keep.is_empty() and Assets.has("keepsake/" + keep.art):  # his keepsake, for the trophy cabinet
 			UiKit.image(pay, "keepsake/" + keep.art, Vector2(30, 44))
 			UiKit.text(pay, "Keepsake: " + keep.name, &"Tip")
+	# The main action, the largest (one tap on to the next showdown), with round teal Retry and Levels beside it.
+	var retry := ["ui/icon_restart", "Retry", restart]
 	if tutorial:  # the first launch's level: on to the office
-		_result_buttons(card, "On to the sheriff’s office", show_home, [["Retry", restart]])
+		_edge_buttons(card, "On to the office", show_home, [retry], [])
 		return
 	if res.last:
 		# The stamp lands on the poster when the office next opens (officeFresh).
 		if res.get("captured", false):
 			_fresh_capture = ci
-		_result_buttons(card, "See the bounty board", show_board, [["Home", show_home]])
+		_edge_buttons(card, "Bounty board", show_board, [retry], [["ui/icon_home", "Back to the office", show_home]])
 		return
+	var levels := ["ui/icon_levels", "Levels", show_chapter.bind(ci)]
 	if GameState.level_open(ci, li + 1):
-		_result_buttons(card, "Next showdown", show_intro.bind(ci, li + 1), [["Retry", restart], ["Levels", show_chapter.bind(ci)]])
+		_edge_buttons(card, "Next showdown", show_intro.bind(ci, li + 1), [retry], [levels])
 	else:
-		_result_buttons(card, "Retry", restart, [["Levels", show_chapter.bind(ci)]])
+		_edge_buttons(card, "Retry", restart, [], [levels])
 
 
-## A result card's buttons: the main action clearly the largest (one tap on to the next showdown), and
-## the rest smaller, secondary, beneath it. others: [[label, Callable], ...].
-func _result_buttons(card: Control, main_label: String, main_action: Callable, others: Array) -> void:
-	var big := UiKit.button(UiKit.row(card), main_label, &"BigPrimaryButton")
-	big.custom_minimum_size.x = 560
-	big.pressed.connect(main_action)
-	var row := UiKit.row(card)
-	for o in others:
-		var b := UiKit.button(row, o[0], &"GhostButton")
-		b.custom_minimum_size.x = 220
-		b.pressed.connect(o[1])
+## The result's stars, breaking out above the card: the middle one bigger, each bouncing in after the last.
+func _breakout_stars(card: VBoxContainer, count: int) -> void:
+	var spacer := Control.new()  # room under them on the card
+	spacer.custom_minimum_size.y = 40
+	card.add_child(spacer)
+	card.move_child(spacer, 0)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	for k in 3:
+		var s := UiKit.image(row, "ui/star_on" if k < count else "ui/star_off", Vector2.ONE * (STAR_BIG if k == 1 else STAR_SMALL))
+		s.size_flags_vertical = Control.SIZE_SHRINK_BEGIN if k == 1 else Control.SIZE_SHRINK_CENTER
+		UiKit.tilt(s, [-12.0, 0.0, 12.0][k])
+		UiKit.pop_in(s, 0.2 + k * 0.14, 0.3)
+	UiKit.attach(UiKit.panel_of(card), row, Vector2(0.5, 0), Vector2(0, -6))
 
 
 func _offer_text(offer: String) -> Array:
@@ -796,7 +873,7 @@ func _show_fail(reason: String, offer: Variant) -> void:
 		clue = "Clue: " + L.hint + (" The key spot now glows when you play." if level.hint_lvl >= 2 else "")
 	if offer != null:
 		var o := _offer_text(offer)
-		UiKit.text(card, o[0], &"HeadingDanger")
+		UiKit.text(card, o[0].to_upper(), &"HeadingDanger")
 		UiKit.text(card, o[1], &"", 840)
 		if clue != "":
 			UiKit.text(card, clue, &"Tip", 840)
@@ -806,17 +883,13 @@ func _show_fail(reason: String, offer: Variant) -> void:
 			UiKit.button(UiKit.row(card), "No ad available right now").disabled = true
 		UiKit.text(card, "Using this caps the clear at two stars.", &"Hint")
 	else:
-		UiKit.text(card, reason, &"HeadingDanger")
+		UiKit.text(card, reason.to_upper(), &"HeadingDanger")
 		UiKit.text(card, clue if clue != "" else L.get("tip", "Watch them first, then try again."), &"Hint", 840)
-	var buttons := UiKit.row(card)
 	var retry_label := "Try again"
 	if offer != null:
-		retry_label = "Start over, free" if L.get("eli", false) else "Retry level, free"
-	UiKit.button(buttons, retry_label, &"GhostButton" if offer != null else &"PrimaryButton").pressed.connect(restart)  # with no offer, trying again is the main action
-	if tutorial:
-		UiKit.button(buttons, "Sheriff’s office", &"GhostButton").pressed.connect(show_home)
-	else:
-		UiKit.button(buttons, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
+		retry_label = "Start over, free" if L.get("eli", false) else "Retry, free"
+	var away: Array = ["ui/icon_home", "Sheriff’s office", show_home] if tutorial else ["ui/icon_levels", "Levels", show_chapter.bind(ci)]
+	_edge_buttons(card, retry_label, restart, [], [away])
 
 
 func _use_offer(offer: String, reason: String) -> void:
@@ -869,8 +942,8 @@ func _build_hud() -> void:
 	var bar := HBoxContainer.new()
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hud_box.add_child(bar)
-	# Hearts and bullets on a small translucent pill over the scene (theme "HudPill"), the level name on another;
-	# round sound and pause icons. Restart is in the pause menu, behind a confirmation.
+	# Hearts and bullets straight over the scene (outlined, with their own hard shadows), and one round orange
+	# pause button. The level's name, sound and restart are in the pause menu.
 	var left := PanelContainer.new()
 	left.theme_type_variation = &"HudPill"
 	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -893,21 +966,7 @@ func _build_hud() -> void:
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(spacer)
-	var name_panel := PanelContainer.new()
-	name_panel.theme_type_variation = &"HudPill"
-	name_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	name_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	name_panel.size_flags_horizontal = Control.SIZE_SHRINK_END
-	bar.add_child(name_panel)
-	_lvl_label = UiKit.text(name_panel, "", &"HudLabel")
-	_lvl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_lvl_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_lvl_label.autowrap_mode = TextServer.AUTOWRAP_OFF  # always one line
-	_sound_btn = UiKit.icon_button(bar, "ui/icon_sound_on")
-	_sound_btn.pressed.connect(func():
-		AudioManager.set_sound(not AudioManager.sound_on)
-		_sound_btn.icon = Assets.texture("ui/icon_sound_on" if AudioManager.sound_on else "ui/icon_sound_off"))
-	UiKit.icon_button(bar, "ui/icon_pause").pressed.connect(_toggle_pause)
+	UiKit.round_button(bar, "ui/icon_pause", "Pause").pressed.connect(_toggle_pause)
 	_hud.visible = false
 
 	_call_layer = CanvasLayer.new()
@@ -968,14 +1027,43 @@ func _clear_callout() -> void:
 
 # ---------- overlays ----------
 
-func _open_overlay() -> VBoxContainer:
+## An overlay with its card: centred in the safe area, or `top`: in the upper part of the screen (the
+## intro, so the outlaws below stay in view).
+func _open_overlay(top := false) -> VBoxContainer:
 	_close_overlay()
 	_overlay = Control.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay_layer.add_child(_overlay)
 	var center := UiKit.overlay(_overlay)
 	center.offset_bottom = -_safe_lrb.z  # centred in the safe area, above the home indicator
-	return UiKit.card(center)
+	if top:
+		center.anchor_bottom = INTRO_BAND
+		center.offset_bottom = 0
+		center.offset_top = 46  # room for the badge breaking out above the card
+	_card = UiKit.card(center)
+	return _card
+
+
+## The main action and its round companions on a card's bottom edge, breaking out of it (the mockup's
+## DRAW! and NEXT SHOWDOWN). left and right: [[icon, label, Callable], ...] round teal buttons beside it.
+## A spacer keeps the card's text clear of them.
+func _edge_buttons(card: VBoxContainer, main_label: String, main_action: Callable, left: Array, right: Array) -> Button:
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 34
+	card.add_child(spacer)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	for b in left:
+		UiKit.round_button(row, b[0], b[1], "teal").pressed.connect(b[2])
+	var big := UiKit.button(row, main_label.to_upper(), &"BigPrimaryButton")
+	big.custom_minimum_size.x = 340
+	big.pressed.connect(main_action)
+	for b in right:
+		UiKit.round_button(row, b[0], b[1], "teal").pressed.connect(b[2])
+	UiKit.attach(UiKit.panel_of(card), row, Vector2(0.5, 1.0), Vector2(0, 6))
+	UiKit.pop_in(big, 0.18)
+	return big
 
 
 func _close_overlay() -> void:

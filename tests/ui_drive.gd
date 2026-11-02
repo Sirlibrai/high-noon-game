@@ -128,7 +128,7 @@ func _check_office(tag: String) -> void:
 	var k := vis.y / PHONE.y
 	var s: Vector3 = main._safe_lrb
 	var safe := Rect2(s.x, 0, vis.x - s.x - s.y, vis.y - s.z)
-	var boxes: Array = o.plates.map(func(p): return [p.text.replace("\n", " "), p.get_global_rect()])
+	var boxes: Array = o.plates.map(func(p): return [p.tooltip_text.get_slice(",", 0), p.get_global_rect()])
 	var lettering := Rect2(o.lettering_rect().position + o.global_position, o.lettering_rect().size)
 	boxes.append(["CONTINUE HUNT", lettering])
 	for b in boxes:
@@ -139,12 +139,12 @@ func _check_office(tag: String) -> void:
 				problems.append("%s office: %s overlaps %s" % [tag, b[0], c[0]])
 	if o._coach != null and o._coach.get_global_rect().intersects(lettering):
 		problems.append("%s office: the telegram covers CONTINUE HUNT" % tag)
-	for p in o.plates:  # labels beside their objects, never over another one (over their own is fine: the same tap)
+	for p in o.plates:  # tags beside their objects, never over another one's middle (an edge is fine: a tag's tap opens its own)
 		for sp in Office.SPOTS:
-			if sp.get("tag_text", sp.label) == p.text:
+			if p.tooltip_text.get_slice(",", 0) == sp.label:
 				continue
 			var box := Rect2(o._to_local_px(Vector2(sp.box[0], sp.box[1])) + o.global_position, Vector2(sp.box[2], sp.box[3]) * o._k)
-			if box.intersects(p.get_global_rect()):
+			if box.grow_individual(-box.size.x * 0.25, -box.size.y * 0.25, -box.size.x * 0.25, -box.size.y * 0.25).intersects(p.get_global_rect()):
 				problems.append("%s office: the %s tag covers the %s" % [tag, p.text, sp.label])
 	var top: Array = main._home_box.find_children("*", "Control", true, false).filter(func(c): return c.visible and (c is Label or c is Button))
 	if top.size() != 1 or top[0] != main._wallet:

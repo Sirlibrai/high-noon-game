@@ -22,14 +22,15 @@ const ART_SIZE := Vector2(1671, 941)
 ## the bottom): mostly ceiling, so the parchment's painted CONTINUE HUNT stays above the home indicator.
 const CROP_TOP := 0.72
 ## Hotspots in painting pixels: the box you tap (its painted object), and the centre of its tag, beside
-## the object, over no other object (it may overlap its own: a tap there does the same). Tags are kept
-## inside the safe area; tag_text, when given, is the label's own wording (Daily Bounty on two lines).
+## the object, over no other object's middle (an edge is fine: a tap on a tag opens its own). Tags are kept
+## inside the safe area; tag_text, when given, is the label's own wording. Each tag sits a few degrees
+## off straight.
 ## The cabinet has no tag, and the doorway's is the painted GUNSMITH sign.
 const SPOTS := [
 	{"act": "duelsoon", "label": "Duel", "box": [92, 88, 215, 447], "tag": [190, 588], "soon": true},
-	{"act": "daily", "label": "Daily Bounty", "box": [376, 315, 106, 109], "tag": [404, 252], "tag_text": "Daily\nBounty", "soon": true},
+	{"act": "daily", "label": "Daily Bounty", "box": [376, 315, 106, 109], "tag": [404, 262], "soon": true},
 	{"act": "survival", "label": "Survival", "box": [374, 425, 108, 112], "tag": [385, 572], "soon": true},
-	{"act": "board", "label": "Bounty board", "box": [490, 82, 635, 478], "tag": [805, 536]},
+	{"act": "board", "label": "Bounty board", "box": [490, 82, 635, 478], "tag": [805, 536], "tag_text": "BOUNTY BOARD"},
 	{"act": "profile", "label": "Profile", "box": [1132, 125, 166, 203], "tag": [1215, 346]},
 	{"act": "trophies", "label": "Trophies", "box": [500, 603, 600, 127]},
 	{"act": "gunsmith", "label": "Gunsmith", "box": [1350, 120, 300, 620]},
@@ -55,6 +56,8 @@ const RACK_SCALE := 0.6
 const MAIN_ACT := "board"
 ## The smallest tap area a label gets (design pixels: 46 points on a 375-point-tall phone).
 const TAP := 88.0
+## The paper tags' tilts (degrees), one after another.
+const TAG_TILTS := [-3.0, 2.0, -2.0, -1.5, 2.5]
 const DOORWAY := Rect2(1350, 120, 300, 620)
 ## The lamps (flame or bulb, glow size): ceiling, wall lantern, desk lantern, workshop.
 const LAMPS := [[Vector2(832, 116), 1.8], [Vector2(427, 222), 0.9], [Vector2(322, 690), 1.2], [Vector2(1505, 320), 0.7]]
@@ -202,13 +205,25 @@ func _build_rack(pg: Dictionary) -> void:
 		gun.modulate = Color(1.1, 1.0, 0.86) if pg.inv.equip.gun == w.id else Color(1.0, 0.9, 0.78)  # the gun in use catches the lamp
 
 
-## The labels first (each chip in an invisible tap area at least TAP pixels square), then the painted
-## objects' hotspots over them, so where a label's tap area meets another object the object wins. A press
-## lights the object (the Hotspot's pressed style) and bounces its label. The Bounty board's label is the
+## The painted objects' hotspots, then their paper tags over them (each in an invisible tap area at least
+## TAP pixels tall), so a tap on a tag always opens its own object, as in the mockup a tag may overlap a
+## neighbour's edge. A press lights the object (the Hotspot's pressed style) and bounces its label. The Bounty board's label is the
 ## primary action: orange, larger, gently pulsing.
 func _build_hotspots() -> void:
 	var safe := _safe_rect()
 	var chips := {}
+	var spots := {}
+	for s in SPOTS:
+		var box := Rect2(s.box[0], s.box[1], s.box[2], s.box[3])
+		var b := Button.new()
+		b.theme_type_variation = &"Hotspot"
+		b.focus_mode = Control.FOCUS_NONE
+		b.position = _to_local_px(box.position)
+		b.size = box.size * _k
+		b.tooltip_text = s.label + (", coming soon" if s.get("soon", false) else "")
+		b.pressed.connect(_on_act.bind(s.act, box))
+		add_child(b)
+		spots[s.act] = b
 	for s in SPOTS:
 		if not s.has("tag"):
 			continue
@@ -238,27 +253,17 @@ func _build_hotspots() -> void:
 		var at := _to_local_px(Vector2(s.tag[0], s.tag[1])) - sz / 2
 		at.x = clampf(at.x, safe.position.x + 6, safe.end.x - 6 - sz.x)
 		at.y = clampf(at.y, safe.position.y + 6, safe.end.y - 6 - sz.y)
-		area.size = Vector2(maxf(sz.x, TAP), maxf(sz.y, TAP))
+		area.size = Vector2(sz.x, maxf(sz.y, TAP))  # a full-height tap target, no wider than the label
 		area.position = at + sz / 2 - area.size / 2
 		chip.position = area.size / 2 - sz / 2
 		chip.pivot_offset = sz / 2
+		chip.rotation = deg_to_rad(TAG_TILTS[plates.size() % TAG_TILTS.size()])
 		chip.set_meta("box", box)
 		plates.append(chip)
 		chips[s.act] = chip
-	for s in SPOTS:
-		var box := Rect2(s.box[0], s.box[1], s.box[2], s.box[3])
-		var b := Button.new()
-		b.theme_type_variation = &"Hotspot"
-		b.focus_mode = Control.FOCUS_NONE
-		b.position = _to_local_px(box.position)
-		b.size = box.size * _k
-		b.tooltip_text = s.label + (", coming soon" if s.get("soon", false) else "")
-		b.pressed.connect(_on_act.bind(s.act, box))
-		if chips.has(s.act):
-			b.button_down.connect(_bounce.bind(chips[s.act]))
-		add_child(b)
-		if s.act == MAIN_ACT:
-			_main_chip = chips.get(s.act)
+	for act in chips:  # pressing an object bounces its label too
+		spots[act].button_down.connect(_bounce.bind(chips[act]))
+	_main_chip = chips.get(MAIN_ACT)
 
 
 ## A label's small bounce when its object is pressed.

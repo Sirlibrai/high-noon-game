@@ -4,6 +4,16 @@ extends Node
 ## (the export preset grants the VIBRATE permission).
 
 var enabled := true
+
+
+func _ready() -> void:
+	enabled = bool(SaveManager.get_setting("haptics", true))
+
+
+## The Haptics setting (the pause menu and Settings), saved.
+func set_enabled(on: bool) -> void:
+	enabled = on
+	SaveManager.set_setting("haptics", on)
 ## The last pattern asked for (the tests check feedback with it).
 var last_pattern: Array = []
 

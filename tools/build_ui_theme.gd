@@ -1,29 +1,33 @@
 extends SceneTree
-## Builds ui/ui_theme.tres (the project's theme) from ui/palette.tres:
+## Builds ui/ui_theme.tres (the project's theme) from ui/palette.tres and the generated art in
+## assets/ui_art (tools/make_ui_art.gd), matching the approved mockup:
 ##   Godot --headless --path . -s res://tools/build_ui_theme.gd
-## Flat styles only for the game's own UI: a solid fill, a thick dark brown outline, rounded corners and a
-## soft drop shadow. Type variations: PrimaryButton (the one main action, orange), SecondaryButton (wood),
-## InfoPanel (parchment, every card), Chip (facts on a card), HudPill (translucent, over the scene),
-## OfficeTag (the office's labels) and IconButton (round). Older names (Button, GhostButton, Card,
-## Pill...) map onto these. Pressed buttons are darker (and UiKit scales them down a little).
-## Fonts: Rye for titles only; the system's sans-serif (SF Pro on iPhone) for everything else.
+## Type variations: Panel (the torn parchment card; Card and InfoPanel are the same), Strip (the pause
+## menu's tall strip), PillOrange and PillTeal (pill buttons: Button, PrimaryButton and BigPrimaryButton are
+## orange; GhostButton, SecondaryButton and SmallGhostButton teal), RoundOrange and RoundTeal (round icon
+## buttons; IconButton is orange), Chip (teal slabs; Pill is the same), OfficeTag, OfficeTagSoon (cream paper
+## tags), OfficeTagPrimary (the orange one), Badge (the teal level-number disc), and Heading, HeadingDanger
+## and BigTitle (Rye with a thick dark brown outline and a hard shadow straight down). Pressed buttons show
+## their face sunk into the base (the pressed art) and their label moves down with it.
+## Fonts: Rye for big titles, Lilita One for buttons, labels, chips and numbers.
+## Nine-slice margins are in design pixels: the game swaps each texture for one that reports half its
+## pixel size (Assets._halve_ui_art), so the 2x art draws sharp at its design size.
 ##
-## The wanted posters, the CAPTURED stamp, the telegram and the office illustration's own styles are
-## copied unchanged from ui/theme.tres, with the fonts they had pinned so nothing about them moves.
+## The wanted posters, the CAPTURED stamp, the telegram and the office's own styles are copied unchanged
+## from ui/theme.tres, with the fonts they had pinned.
 
 const SOURCE := "res://ui/theme.tres"
 const OUT := "res://ui/ui_theme.tres"
 const PALETTE := "res://ui/palette.tres"
+const ART := "res://assets/ui_art/"
 const RYE := "res://ui/fonts/Rye-Regular.ttf"
+const LILITA := "res://ui/fonts/LilitaOne-Regular.ttf"
 const LORA := "res://ui/fonts/Lora-Variable.ttf"
-## Minimum text sizes (design pixels on the 720-pixel-tall screen; 26 is about 13.5 points on the
-## smallest landscape iPhone): body and chips, and button labels.
+## Minimum text size (design pixels; 26 is about 13.5 points on the smallest landscape iPhone).
 const MIN_TEXT := 26
-const BUTTON_TEXT := 30
-## Buttons are at least this tall (88 design pixels: 46 points on a 375-point-tall phone).
-const TAP := 88
-const OUTLINE := 3
-const RADIUS := 14
+## How far a pressed face sinks (design pixels), as drawn by make_ui_art.gd.
+const PILL_DEPTH := 10
+const ROUND_DEPTH := 8
 ## Types the posters, stamps, telegram and old office ledger use: left exactly as they were.
 const KEEP := ["Poster", "PosterWanted", "PosterName", "PosterCrime", "PosterReward", "PortraitFrame", "WallPoster",
 	"PosterBigName", "PosterTitle", "RewardBanner", "RewardLabel", "StampFaded", "StampFadedLabel", "PosterStars",
@@ -31,150 +35,86 @@ const KEEP := ["Poster", "PosterWanted", "PosterName", "PosterCrime", "PosterRew
 	"DeskValue", "Plaque", "PlaqueSoon", "ParchmentHeading", "Logo", "InkTitle", "TapPrompt", "Title"]
 
 var P: UiPalette
-var sans: SystemFont
-var sans_bold: SystemFont
+var lilita: FontFile
+var rye: FontFile
 
 
 func _init() -> void:
 	P = load(PALETTE)
 	var old: Theme = load(SOURCE)
 	var t := Theme.new()
-	var lora := load(LORA) as FontFile
-	var rye := load(RYE) as FontFile
-	sans = SystemFont.new()
-	sans.font_names = PackedStringArray(["SF Pro Text", "Helvetica Neue", "Helvetica", "sans-serif"])
-	sans.font_weight = 600
-	sans_bold = sans.duplicate()
-	sans_bold.font_weight = 800
-	t.default_font = sans
+	lilita = load(LILITA)
+	rye = load(RYE)
+	t.default_font = lilita
 	t.default_font_size = 30
-	# The kept types: copied as they were. Those that used the old default font (Lora) keep it.
 	for type in KEEP:
 		_copy(old, t, type)
-		if not old.has_font("font", type) and not _inherits_font(old, type):
-			t.set_font("font", type, old.default_font if old.default_font != null else lora)
-	# Office styles: the tags are rebuilt below; the hotspot gets a press highlight.
-	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
-	# Buttons.
-	_button(t, "Button", P.primary, P.cream, BUTTON_TEXT, sans_bold)
-	_button(t, "PrimaryButton", P.primary, P.cream, BUTTON_TEXT, sans_bold, "Button")
-	_button(t, "SecondaryButton", P.wood, P.cream, BUTTON_TEXT, sans_bold, "Button")
-	_button(t, "GhostButton", P.wood, P.cream, BUTTON_TEXT, sans_bold, "Button")
-	_button(t, "SmallGhostButton", P.wood, P.cream, 28, sans_bold, "Button")
-	_button(t, "DangerButton", P.danger, P.cream, BUTTON_TEXT, sans_bold, "Button")
-	_button(t, "BigPrimaryButton", P.primary, P.cream, 38, sans_bold, "Button", 24)
-	for type in ["Button", "PrimaryButton", "SecondaryButton", "GhostButton", "SmallGhostButton", "DangerButton", "BigPrimaryButton"]:
-		t.set_color("font_outline_color", type, P.outline)
-		t.set_constant("outline_size", type, 6)
-	# Round icon buttons (the HUD's sound and pause): a wood circle.
-	t.set_type_variation("IconButton", "Button")
-	var circle := _flat(P.wood, 999, 22)
-	circle.content_margin_top = 18
-	circle.content_margin_bottom = 18
-	circle.content_margin_left = 18
-	circle.content_margin_right = 18
-	t.set_stylebox("normal", "IconButton", circle)
-	t.set_stylebox("hover", "IconButton", circle)
-	t.set_stylebox("pressed", "IconButton", _darker(circle))
-	t.set_stylebox("disabled", "IconButton", circle)
-	t.set_constant("icon_max_width", "IconButton", 44)
-	# The wallet: a translucent pill with the coin and a gold number.
-	t.set_type_variation("Wallet", "Button")
-	var wallet := _flat(P.hud_pill, 999, 0)
-	wallet.content_margin_left = 20
-	wallet.content_margin_right = 22
-	wallet.content_margin_top = 24
-	wallet.content_margin_bottom = 24
-	wallet.shadow_size = 0
-	t.set_stylebox("normal", "Wallet", wallet)
-	t.set_stylebox("hover", "Wallet", wallet)
-	t.set_stylebox("pressed", "Wallet", _darker(wallet))
-	t.set_font("font", "Wallet", sans_bold)
-	t.set_font_size("font_size", "Wallet", 32)
-	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		t.set_color(c, "Wallet", P.gold)
-	t.set_color("font_outline_color", "Wallet", P.outline)
-	t.set_constant("outline_size", "Wallet", 6)
-	t.set_constant("icon_max_width", "Wallet", 36)
-	t.set_constant("h_separation", "Wallet", 10)
-	# Panels: parchment for information; chips; the dim behind cards; HUD pills.
-	var paper := _flat(P.parchment, 22, 40)
-	paper.content_margin_top = 22
-	paper.content_margin_bottom = 22
-	paper.border_width_left = 4
-	paper.border_width_top = 4
-	paper.border_width_right = 4
-	paper.border_width_bottom = 4
-	paper.shadow_size = 18
-	paper.shadow_offset = Vector2(0, 8)
-	for type in ["InfoPanel", "Card"]:
-		t.set_type_variation(type, "PanelContainer")
-		t.set_stylebox("panel", type, paper)
-	var chip := _flat(P.parchment_deep, 999, 20)
-	chip.content_margin_top = 6
-	chip.content_margin_bottom = 6
-	chip.border_width_left = 2
-	chip.border_width_top = 2
-	chip.border_width_right = 2
-	chip.border_width_bottom = 2
-	chip.shadow_size = 0
-	for type in ["Chip", "Pill"]:
-		t.set_type_variation(type, "PanelContainer")
-		t.set_stylebox("panel", type, chip)
+		if not old.get_font_list(type).has("font") and not _inherits_font(old, type):  # (has_font counts the default font)
+			t.set_font("font", type, old.default_font if old.default_font != null else load(LORA))
+	# Pill buttons.
+	for type in ["Button", "PillOrange", "PrimaryButton", "BigPrimaryButton", "DangerButton"]:
+		_pill(t, type, "orange", 48 if type == "BigPrimaryButton" else 36)
+	for type in ["PillTeal", "GhostButton", "SecondaryButton", "SmallGhostButton"]:
+		_pill(t, type, "teal", 30 if type == "SmallGhostButton" else 34)
+	# Round icon buttons.
+	for type in ["RoundOrange", "IconButton"]:
+		_round(t, type, "orange")
+	_round(t, "RoundTeal", "teal")
+	# Panels.
+	_nine(t, "Panel", "panel", "panel_cream", Rect2(44, 40, 44, 48), Rect2(50, 28, 50, 36))
+	for type in ["Card", "InfoPanel"]:
+		t.set_type_variation(type, "Panel")
+	_nine(t, "Strip", "panel", "panel_strip", Rect2(30, 30, 30, 38), Rect2(22, 26, 22, 30))
+	_nine(t, "Chip", "panel", "chip_teal", Rect2(16, 14, 16, 18), Rect2(16, 4, 16, 8))
+	t.set_type_variation("Pill", "Chip")
 	for type in ["ChipLabel", "PillLabel"]:
-		t.set_type_variation(type, "Label")
-		t.set_font("font", type, sans_bold)
-		t.set_font_size("font_size", type, 28)
-		t.set_color("font_color", type, P.ink)
+		_label(t, type, P.cream, 26, lilita)
+	_nine(t, "Badge", "panel", "badge_teal", Rect2(0, 0, 0, 0), Rect2(16, 10, 16, 18))
+	_label(t, "BadgeLabel", P.cream, 52, rye)
+	_outlined(t, "BadgeLabel", 10, 4)
+	# The dim behind cards, and no panel behind the HUD.
 	var dim := StyleBoxFlat.new()
 	dim.bg_color = P.dim
 	t.set_type_variation("Shade", "Panel")
 	t.set_stylebox("panel", "Shade", dim)
-	var pill := _flat(P.hud_pill, 999, 16)
-	pill.content_margin_top = 8
-	pill.content_margin_bottom = 8
-	pill.border_width_left = 0
-	pill.border_width_top = 0
-	pill.border_width_right = 0
-	pill.border_width_bottom = 0
-	pill.shadow_size = 0
 	for type in ["HudPill", "HudPanel", "HudPlaque"]:
 		t.set_type_variation(type, "PanelContainer")
-		t.set_stylebox("panel", type, pill)
-	# Labels: ink on parchment; Rye for headings only.
+		t.set_stylebox("panel", type, StyleBoxEmpty.new())
+	# Labels: ink Lilita on parchment; Rye titles in orange (red for failure, cream over the scene).
 	t.set_color("font_color", "Label", P.ink)
 	t.set_font_size("font_size", "Label", 30)
-	_label(t, "Heading", P.ink, 56, rye)
-	t.set_color("font_shadow_color", "Heading", Color(P.primary, 0.35))
-	t.set_constant("shadow_offset_x", "Heading", 0)
-	t.set_constant("shadow_offset_y", "Heading", 3)
-	_label(t, "HeadingDanger", P.danger, 56, rye, "Heading")
-	_label(t, "Tip", P.ink, 30, sans)
-	_label(t, "Hint", P.ink_soft, MIN_TEXT + 2, sans)
-	_label(t, "Pay", P.gold, 38, sans_bold)
-	t.set_color("font_outline_color", "Pay", P.outline)
-	t.set_constant("outline_size", "Pay", 8)
-	_label(t, "AdTag", P.ink_soft, MIN_TEXT, sans_bold)
-	_label(t, "HudLabel", P.cream, 28, sans_bold)
-	t.set_color("font_outline_color", "HudLabel", P.outline)
-	t.set_constant("outline_size", "HudLabel", 6)
-	_label(t, "HudPlaqueLabel", P.cream, 28, sans_bold, "HudLabel")
-	t.set_color("font_outline_color", "HudPlaqueLabel", P.outline)
-	t.set_constant("outline_size", "HudPlaqueLabel", 6)
-	# Callouts over the scene: Rye, cream, a thick outline.
+	_label(t, "Heading", P.primary, 64, rye)
+	_outlined(t, "Heading", 12, 6)
+	_label(t, "HeadingDanger", P.danger, 64, rye, "Heading")
+	_label(t, "BigTitle", P.cream, 128, rye, "Heading")
+	_outlined(t, "BigTitle", 20, 10)
+	_label(t, "Tip", P.ink, 30, lilita)
+	_label(t, "Hint", P.ink_soft, MIN_TEXT + 2, lilita)
+	_label(t, "Pay", P.ink, 48, lilita)
+	_label(t, "AdTag", P.ink_soft, MIN_TEXT, lilita)
+	_label(t, "HudLabel", P.cream, 28, lilita)
+	_outlined(t, "HudLabel", 8, 0)
+	_label(t, "HudPlaqueLabel", P.cream, 28, lilita, "HudLabel")
 	_label(t, "Callout", P.cream, 96, rye)
-	t.set_color("font_outline_color", "Callout", P.outline)
-	t.set_constant("outline_size", "Callout", 16)
-	t.set_color("font_shadow_color", "Callout", P.shadow)
-	t.set_constant("shadow_offset_y", "Callout", 6)
+	_outlined(t, "Callout", 18, 8)
 	_label(t, "CalloutSmall", P.cream, 54, rye, "Callout")
-	# The office's labels: chips by the objects; the Bounty board's is the primary action.
-	_office_tag(t, "OfficeTag", P.parchment, P.ink)
-	_office_tag(t, "OfficeTagSoon", Color(P.parchment_deep, 0.92), P.ink_soft)
-	_office_tag(t, "OfficeTagPrimary", P.primary, P.cream)
-	t.set_font_size("font_size", "OfficeTagPrimary", 32)
+	_outlined(t, "CalloutSmall", 12, 5)
+	# The office's paper tags; the Bounty board's is the orange one. The wallet is a tag too.
+	_tag(t, "OfficeTag", "tag_cream", P.ink)
+	_tag(t, "OfficeTagSoon", "tag_cream", P.ink_soft)
+	_tag(t, "OfficeTagPrimary", "tag_orange", P.cream)
+	t.set_font_size("font_size", "OfficeTagPrimary", 34)
 	t.set_color("font_outline_color", "OfficeTagPrimary", P.outline)
-	t.set_constant("outline_size", "OfficeTagPrimary", 6)
+	t.set_constant("outline_size", "OfficeTagPrimary", 8)
+	_tag(t, "Wallet", "tag_cream", P.ink)
+	t.set_font_size("font_size", "Wallet", 36)
+	for s in ["normal", "hover", "pressed", "hover_pressed"]:  # room for the coin breaking out of its left edge
+		var w := (t.get_stylebox(s, "Wallet") as StyleBoxTexture).duplicate() as StyleBoxTexture
+		w.content_margin_left = 62
+		w.content_margin_right = 24
+		w.content_margin_top = 14
+		w.content_margin_bottom = 18
+		t.set_stylebox(s, "Wallet", w)
 	t.set_type_variation("Hotspot", "Button")
 	var none := StyleBoxEmpty.new()
 	var glow := StyleBoxFlat.new()  # pressed: a warm highlight over the painted object
@@ -185,16 +125,16 @@ func _init() -> void:
 	for s in ["normal", "hover", "disabled", "focus"]:
 		t.set_stylebox(s, "Hotspot", none)
 	t.set_stylebox("pressed", "Hotspot", glow)
-	t.set_type_variation("TapArea", "Button")  # an invisible, larger tap area round a small label
+	t.set_type_variation("TapArea", "Button")
 	for s in ["normal", "hover", "pressed", "disabled", "focus"]:
 		t.set_stylebox(s, "TapArea", none)
-	# Containers and bars.
 	t.set_constant("separation", "VBoxContainer", 12)
-	t.set_constant("separation", "HBoxContainer", 18)
-	var back := _flat(Color(P.outline, 0.6), 999, 0)
-	back.shadow_size = 0
-	var fill := _flat(P.gold, 999, 0)
-	fill.shadow_size = 0
+	t.set_constant("separation", "HBoxContainer", 16)
+	var back := StyleBoxFlat.new()
+	back.bg_color = Color(P.outline, 0.6)
+	back.set_corner_radius_all(999)
+	var fill := back.duplicate() as StyleBoxFlat
+	fill.bg_color = P.gold
 	t.set_stylebox("background", "ProgressBar", back)
 	t.set_stylebox("fill", "ProgressBar", fill)
 	var err := ResourceSaver.save(t, OUT)
@@ -212,56 +152,83 @@ func _copy(from: Theme, to: Theme, type: String) -> void:
 
 func _inherits_font(th: Theme, type: String) -> bool:
 	var base := th.get_type_variation_base(type)
-	while base != &"":
-		if th.has_font("font", base):
+	var seen := {}
+	while base != &"" and not seen.has(base):  # (guarded: a chain of bases could loop)
+		seen[base] = true
+		if th.get_font_list(base).has("font"):
 			return true
 		base = th.get_type_variation_base(base)
 	return false
 
 
-## A flat panel: fill, a thick dark brown outline, rounded corners, a soft shadow below.
-func _flat(fill: Color, radius: int, side: int) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = fill
-	s.border_color = P.outline
-	s.set_border_width_all(OUTLINE)
-	s.set_corner_radius_all(radius)
-	s.shadow_color = P.shadow
-	s.shadow_size = 6
-	s.shadow_offset = Vector2(0, 5)
-	s.content_margin_left = side
-	s.content_margin_right = side
-	s.anti_aliasing = true
+## A nine-slice from the generated art. margins: the texture's slice margins (left, top, right, bottom),
+## content: the content margins (design pixels).
+func _box(art: String, margins: Rect2, content: Rect2) -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = load(ART + art + ".png")
+	s.texture_margin_left = margins.position.x
+	s.texture_margin_top = margins.position.y
+	s.texture_margin_right = margins.size.x
+	s.texture_margin_bottom = margins.size.y
+	s.content_margin_left = content.position.x
+	s.content_margin_top = content.position.y
+	s.content_margin_right = content.size.x
+	s.content_margin_bottom = content.size.y
 	return s
 
 
-func _darker(s: StyleBoxFlat) -> StyleBoxFlat:
-	var d := s.duplicate() as StyleBoxFlat
-	d.bg_color = s.bg_color.darkened(P.press_darken)
-	d.shadow_offset = Vector2(0, 2)
-	d.shadow_size = 3
-	return d
+func _nine(t: Theme, type: String, slot: String, art: String, margins: Rect2, content: Rect2) -> void:
+	t.set_type_variation(type, "PanelContainer")
+	t.set_stylebox(slot, type, _box(art, margins, content))
 
 
-func _button(t: Theme, type: String, fill: Color, text: Color, size: int, font: Font, base := "", pad := 26) -> void:
-	if base != "":
-		t.set_type_variation(type, base)
-	var n := _flat(fill, RADIUS, pad + 10)
-	n.content_margin_top = pad
-	n.content_margin_bottom = pad
-	var off := n.duplicate() as StyleBoxFlat
-	off.bg_color = fill.lerp(Color(0.6, 0.55, 0.5), 0.55)
-	t.set_stylebox("normal", type, n)
-	t.set_stylebox("hover", type, n)
-	t.set_stylebox("pressed", type, _darker(n))
+## A button whose face sinks into its base when pressed: the pressed art, and its label lower by the depth.
+func _press_styles(t: Theme, type: String, up: StyleBoxTexture, down: StyleBoxTexture) -> void:
+	if type != "Button":
+		t.set_type_variation(type, "Button")
+	t.set_stylebox("normal", type, up)
+	t.set_stylebox("hover", type, up)
+	t.set_stylebox("pressed", type, down)
+	t.set_stylebox("hover_pressed", type, down)
+	var off := up.duplicate() as StyleBoxTexture
+	off.modulate_color = Color(0.75, 0.72, 0.68, 0.75)
 	t.set_stylebox("disabled", type, off)
 	t.set_stylebox("focus", type, StyleBoxEmpty.new())
-	t.set_font("font", type, font)
+
+
+func _pill(t: Theme, type: String, kind: String, size: int) -> void:
+	var m := Rect2(48, 30, 48, 40)
+	var up := _box("pill_%s_up" % kind, m, Rect2(40, 22, 40, 22 + PILL_DEPTH))
+	var down := _box("pill_%s_down" % kind, m, Rect2(40, 22 + PILL_DEPTH, 40, 22))
+	_press_styles(t, type, up, down)
+	t.set_font("font", type, lilita)
 	t.set_font_size("font_size", type, size)
 	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
-		t.set_color(c, type, text)
-	t.set_color("font_disabled_color", type, Color(text, 0.6))
+		t.set_color(c, type, P.cream)
+	t.set_color("font_disabled_color", type, Color(P.cream, 0.7))
+	t.set_color("font_outline_color", type, P.outline)
+	t.set_constant("outline_size", type, maxi(8, int(size * 0.22)))
 	t.set_constant("h_separation", type, 10)
+
+
+## A round button: the art stretched whole (no slices), the icon centred on the face.
+func _round(t: Theme, type: String, kind: String) -> void:
+	var up := _box("round_%s_up" % kind, Rect2(), Rect2(20, 16, 20, 16 + ROUND_DEPTH))
+	var down := _box("round_%s_down" % kind, Rect2(), Rect2(20, 16 + ROUND_DEPTH, 20, 16))
+	_press_styles(t, type, up, down)
+	t.set_constant("icon_max_width", type, 44)
+
+
+func _tag(t: Theme, type: String, art: String, text: Color) -> void:
+	var s := _box(art, Rect2(16, 14, 16, 18), Rect2(18, 8, 18, 12))
+	_press_styles(t, type, s, s)
+	t.set_font("font", type, lilita)
+	t.set_font_size("font_size", type, 28)
+	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color", "font_hover_pressed_color"]:
+		t.set_color(c, type, text)
+	t.set_constant("outline_size", type, 0)
+	t.set_constant("h_separation", type, 8)
+	t.set_constant("icon_max_width", type, 22)
 
 
 func _label(t: Theme, type: String, colour: Color, size: int, font: Font, base := "Label") -> void:
@@ -271,20 +238,12 @@ func _label(t: Theme, type: String, colour: Color, size: int, font: Font, base :
 	t.set_font("font", type, font)
 
 
-func _office_tag(t: Theme, type: String, fill: Color, text: Color) -> void:
-	t.set_type_variation(type, "Button")
-	var s := _flat(fill, 22, 16)
-	s.content_margin_top = 6
-	s.content_margin_bottom = 6
-	t.set_stylebox("normal", type, s)
-	t.set_stylebox("hover", type, s)
-	t.set_stylebox("pressed", type, _darker(s))
-	t.set_stylebox("disabled", type, s)
-	t.set_stylebox("focus", type, StyleBoxEmpty.new())
-	t.set_font("font", type, sans_bold)
-	t.set_font_size("font_size", type, MIN_TEXT + 2)
-	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color"]:
-		t.set_color(c, type, text)
-	t.set_constant("h_separation", type, 6)
-	t.set_constant("icon_max_width", type, 22)
-	t.set_constant("outline_size", type, 0)  # (Button's outline is for buttons on the scene)
+## A thick dark brown outline, and a hard shadow straight down (drop pixels) that carries the outline too.
+func _outlined(t: Theme, type: String, outline: int, drop: int) -> void:
+	t.set_color("font_outline_color", type, P.outline)
+	t.set_constant("outline_size", type, outline)
+	if drop > 0:
+		t.set_color("font_shadow_color", type, P.outline)
+		t.set_constant("shadow_offset_x", type, 0)
+		t.set_constant("shadow_offset_y", type, drop)
+		t.set_constant("shadow_outline_size", type, outline)

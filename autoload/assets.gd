@@ -168,3 +168,29 @@ func _apply_theme() -> void:
 			else:
 				errors.append("%s: theme slot %s is not a StyleBoxTexture in ui/ui_theme.tres" % [name, slot])
 				push_error(errors[-1])
+	_halve_ui_art(theme)
+
+
+## The generated UI art (assets/ui_art, tools/make_ui_art.gd) is stored at twice its design size so it stays
+## sharp on the phone: each nine-slice in the theme that uses it gets a texture that reports half the
+## pixel size (its margins are given in design pixels), so it draws at its design size from 2x pixels.
+func _halve_ui_art(theme: Theme) -> void:
+	for type in theme.get_type_list():
+		for style in theme.get_stylebox_list(type):
+			var sb := theme.get_stylebox(style, type) as StyleBoxTexture
+			if sb == null or sb.texture == null or not sb.texture.resource_path.begins_with("res://assets/ui_art/"):
+				continue
+			sb.texture = half_size(sb.texture)
+
+
+var _halves := {}
+
+
+func half_size(tex: Texture2D) -> Texture2D:
+	if not _halves.has(tex.resource_path):
+		var img := tex.get_image()
+		var t := ImageTexture.create_from_image(img)
+		t.set_size_override(Vector2i(roundi(img.get_width() / 2.0), roundi(img.get_height() / 2.0)))
+		t.resource_name = tex.resource_path  # (for the tests)
+		_halves[tex.resource_path] = t
+	return _halves[tex.resource_path]

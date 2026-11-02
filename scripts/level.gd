@@ -93,6 +93,13 @@ var _prompt_q: Array = []
 
 var fx: FxLayer
 var _hitbox := Vector2(14, 19)
+## The scene's (or level's) character sizes: every outlaw's art and hit area grow together about his feet
+## by character_scale, a boss's (Black Jack, Iron Eli) by boss_scale on top. Puzzle reach (blasts, the
+## sign's crush) stays in units, so a puzzle reaches exactly what it did.
+var char_k := 1.0
+var boss_k := 1.0
+## The smallest hit area a shootable thing gets, in units (min_touch_pt on the reference phone).
+var min_touch := 0.0
 ## This level's cover layout (see _layout): old and new cover centres, and the spread p.
 var _spread := {"p": 1.0, "old": [160.0], "new": [160.0]}
 var _decal_layer: Node2D
@@ -107,6 +114,13 @@ var _hostage_layer: Node2D
 var _ring_layer: Node2D
 var _throw_layer: Node2D
 var _hint_glow: NinePatchRect
+## The look (brief: gameplay apart from scenery): the background's treatment, outlined characters and
+## props, and the glinting shootable props: [node, "sweep" or "pulse"].
+var _backdrop: ShaderMaterial
+var _glints: Array = []
+var _hit_overlay: Node2D
+## Debug views (desktop keys, or the pause menu in debug builds): every hit area drawn over the level.
+static var show_hit_areas := false
 var _duel_layer: Node2D
 var _tumble: AssetSprite
 var _arrow: AssetSprite
@@ -128,11 +142,15 @@ func setup(chapter: int, index: int) -> void:
 	PPU = float(G.pixels_per_unit)
 	W = int(G.stage.width)
 	H = int(G.stage.height)
-	_hitbox = _vec(G.outlaw.hitbox)
 	L = GameState.level(ci, li).duplicate(true)  # Iron Eli's last stage turns his level into a duel
 	hint_lvl = GameState.hint_level(ci, li)
 	SC = GameState.scene_for(ci)
-	GY = int(SC.GY)
+	char_k = float(L.get("character_scale", SC.get("character_scale", 1.0)))
+	boss_k = float(L.get("boss_scale", SC.get("boss_scale", 1.0)))
+	_hitbox = _vec(G.outlaw.hitbox) * char_k
+	GY = int(SC.GY + float(SC.get("plane_offset_y", 0)))  # the gameplay plane can sit lower or higher on the painting
+	var T: Dictionary = G.touch
+	min_touch = float(T.min_pt) / (float(T.reference_pt_per_px) * PPU)
 	touch = GameState.touch_mode
 	weapon = GameState.equipped_weapon()
 	var eq: Dictionary = GameState.progress.inv.equip
@@ -395,11 +413,36 @@ func pad(d: Dictionary) -> float:
 	return float(d.touch if touch else d.mouse)
 
 
+## An enemy's hit-area size: the outlaw's, or a boss's (bigger).
+func _hb(e: Dictionary) -> Vector2:
+	return _hitbox * boss_k if is_boss(e) else _hitbox
+
+
+static func is_boss(e: Dictionary) -> bool:
+	return e.get("kind", "") == "jack" or e.get("eli", false)
+
+
+## Where a tap counts for something shootable (brief: at least about 44 points on the phone, even when only a
+## hat peeks out): its area grown by its touch pad, then to min_touch each way, about its middle. The hostage
+## doesn't use this: he keeps his tight area.
+func touch_rect(r: Rect2, pad_units: float) -> Rect2:
+	var t := r.grow(pad_units)
+	if t.size.x < min_touch:
+		t = t.grow_individual((min_touch - t.size.x) / 2, 0, (min_touch - t.size.x) / 2, 0)
+	if t.size.y < min_touch:
+		t = t.grow_individual(0, (min_touch - t.size.y) / 2, 0, (min_touch - t.size.y) / 2)
+	return t
+
+
+func in_touch(p: Vector2, r: Rect2, pad_units: float) -> bool:
+	return r.size.x > 0 and touch_rect(r, pad_units).has_point(p)
+
+
 ## An outlaw's hitbox position (top-left) and the clip that hides him.
 func geo(e: Dictionary) -> Dictionary:
-	var hw := _hitbox.x / 2.0
+	var hw := _hb(e).x / 2.0
 	if e.kind == "jack":  # standing at his crate, then at his barrel (jack_rect() is what a tap can hit)
-		return {"x": e.x - hw, "y": GY - _hitbox.y, "clip": null}
+		return {"x": e.x - hw, "y": GY - _hb(e).y, "clip": null}
 	if e.kind == "window":
 		var w: Dictionary = SC.windows[e.w]
 		var top_h: float = w.y + w.h + G.window_outlaw.hidden_below_sill
@@ -408,28 +451,28 @@ func geo(e: Dictionary) -> Dictionary:
 	if e.kind == "hostage":
 		return {"x": e.hx - hw + roundf(e.lean * e.exp * G.hostage.lean), "y": GY - float(G.hostage.captor_top_above_ground), "clip": null}
 	if e.kind == "stand" or e.kind == "walker":  # in the open, on the street
-		return {"x": e.x - hw, "y": GY - _hitbox.y, "clip": null, "running": e.kind == "walker" and e.state == "walk"}
+		return {"x": e.x - hw, "y": GY - _hb(e).y, "clip": null, "running": e.kind == "walker" and e.state == "walk"}
 	if e.kind == "runner" and e.state == "run":
 		var a: Dictionary = covers[e.from]
 		var b: Dictionary = covers[e.to]
 		var ax: float = a.x + a.w / 2.0 - hw
 		var bx: float = b.x + b.w / 2.0 - hw
-		return {"x": roundf(ax + (bx - ax) * e.run_p), "y": GY - _hitbox.y, "clip": null, "running": true}
+		return {"x": roundf(ax + (bx - ax) * e.run_p), "y": GY - _hb(e).y, "clip": null, "running": true}
 	var c: Dictionary = covers[e.c]
 	var cx: float = c.x + c.w / 2.0 - hw
 	if not c.alive:
-		return {"x": cx, "y": GY - _hitbox.y, "clip": null}
+		return {"x": cx, "y": GY - _hb(e).y, "clip": null}
 	var hid_top: float = GY - c.h - G.outlaw.hide_gap
 	var ground := Rect2(-1000, -1000, 3000, 1000 + GY)
 	if e.side == "left" or e.side == "right":
 		var dx: float = (-1 if e.side == "left" else 1) * roundf((c.w / 2.0 + G.outlaw.peek_side_extra) * e.exp)
-		return {"x": cx + dx, "y": maxf(GY - _hitbox.y, hid_top), "clip": ground}
+		return {"x": cx + dx, "y": maxf(GY - _hb(e).y, hid_top), "clip": ground}
 	return {"x": cx, "y": roundf(hid_top - G.outlaw.peek_up * e.exp), "clip": ground}
 
 
 func rect_of(e: Dictionary) -> Rect2:
 	var gm := geo(e)
-	var r := Rect2(gm.x, gm.y, _hitbox.x, _hitbox.y)
+	var r := Rect2(gm.x, gm.y, _hb(e).x, _hb(e).y)
 	if gm.clip != null:
 		r = r.intersection(gm.clip)
 	return r
@@ -504,8 +547,16 @@ func jack_rect() -> Rect2:
 	if _jack.state == "crate":
 		var c: Dictionary = covers[_jack.c]
 		var J: Dictionary = G.jack
-		return Rect2(_jack.x - float(J.peek[0]) / 2, GY - c.h - float(J.peek[1]), float(J.peek[0]), float(J.peek[1]))
+		var pk := _vec(J.peek) * boss_k
+		return Rect2(_jack.x - pk.x / 2, GY - c.h - pk.y, pk.x, pk.y)
 	return rect_of(_jack)
+
+
+## Where Black Jack stands to flip his cards: so the barrel painted in his flip pose (drawn at his size)
+## stands where his barrel is.
+func jack_cards_x() -> float:
+	var b: Dictionary = covers[_jack.barrel]
+	return b.x + b.w / 2 - Assets.point("black_jack/flip", "barrel").x * float(Assets.meta("black_jack/flip", "scale", 1.0)) * boss_k / PPU
 
 
 ## The finale's window: the ace is showing on his barrel.
@@ -582,7 +633,7 @@ func eli_stage(n: int) -> void:
 
 func eli_hit(e: Dictionary, how: String) -> void:
 	var r := geo(e)
-	var cx: float = r.x + _hitbox.x / 2
+	var cx: float = r.x + _hb(e).x / 2
 	if e.armor:
 		if how != "tnt" and how != "sign":
 			AudioManager.sfx("ping")
@@ -697,7 +748,7 @@ func kill(e: Dictionary, how := "") -> void:
 	fx.particle(e.get("hat", "fx/hat"), 0, r.x + 3, r.y, (randf() - 0.5) * 1.4, -2.6, 42)  # the hat flies off
 	if e.kind == "jack":
 		callout.emit("Black Jack’s down!", true, 1200)
-	fx.burst(r.x + _hitbox.x / 2, r.y + 8, 8, "fx/blood", 1.2)
+	fx.burst(r.x + _hb(e).x / 2, r.y + 8, 8, "fx/blood", 1.2)
 
 
 func explode(c: Dictionary) -> void:
@@ -720,7 +771,7 @@ func explode(c: Dictionary) -> void:
 				return
 			continue
 		var r := geo(e)
-		if Vector2(r.x + _hitbox.x / 2 - cx, r.y + _hitbox.y / 2 - cy).length() < T.kill_radius * _spread.p and e.kind != "window":
+		if Vector2(r.x + _hb(e).x / 2 - cx, r.y + _hb(e).y / 2 - cy).length() < T.kill_radius * _spread.p and e.kind != "window":
 			kill(e, "tnt")
 	for o in covers:
 		if o.alive and not is_same(o, c) and absf(o.x + o.w / 2.0 - cx) < T.cover_radius * _spread.p:
@@ -842,12 +893,16 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 			kill(e)
 			return
 	for e in enemies:
-		if e.alive and e.state == "run" and in_r(p, rect_of(e), pad(G.runner.hit_pad)):
+		if e.alive and e.state == "run" and in_touch(p, rect_of(e), pad(G.runner.hit_pad)):
 			kill(e)
 			return
-	if _jack != null and _jack.alive and in_r(p, jack_rect(), pad(G.outlaw.hit_pad)):
+	if _jack != null and _jack.alive and in_touch(p, jack_rect(), pad(G.outlaw.hit_pad)):
 		_shoot_jack(p)
 		return
+	for c in covers:  # powder is a target: its tap area is padded like one
+		if c.alive and c.type == "tnt" and in_touch(p, cover_rect(c), 0.0):
+			explode(c)
+			return
 	for c in covers:
 		if c.alive and in_r(p, cover_rect(c)):
 			if c.type == "tnt":
@@ -861,7 +916,7 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 			return
 	if hang_sign != null and hang_sign.state == "hang":
 		for chain in chain_rects():  # the sign hangs from two chains; a shot at either drops it
-			if in_r(p, chain, pad(G.sign.chain_pad)):
+			if in_touch(p, chain, pad(G.sign.chain_pad)):
 				hang_sign.state = "fall"
 				AudioManager.sfx("clank")
 				fx.burst(chain.get_center().x, hang_sign.chain_top + 2, 5, "fx/chain")
@@ -872,7 +927,7 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 			return
 	if strongbox != null and strongbox.state == "hang":
 		var ch := strongbox_chain_rect()
-		if in_r(p, ch, pad(G.strongbox.chain_pad)):  # the chain: the box drops
+		if in_touch(p, ch, pad(G.strongbox.chain_pad)):  # the chain: the box drops
 			strongbox.state = "fall"
 			events.append("strongbox_drop")
 			AudioManager.sfx("clank")
@@ -885,7 +940,7 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 			return
 	if bucket != null and bucket.state == "hang":
 		for r in bucket_rects():  # the bucket or its rope: either drops it
-			if in_r(p, r, pad(G.bucket.hit_pad)):
+			if in_touch(p, r, pad(G.bucket.hit_pad)):
 				bucket.state = "fall"
 				events.append("bucket_drop")
 				AudioManager.sfx("clank")
@@ -899,11 +954,11 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 				continue
 			if e.kind == "hostage" and e.exp < G.hostage.exposed_min:
 				continue
-			if in_r(p, r, pd):
+			if (in_touch(p, r, pd) if pd > 0 else in_r(p, r)):
 				kill(e)
 				return
 	for b in bottles:
-		if b.alive and in_r(p, bottle_rect(b), pad(G.bottle.hit_pad)):
+		if b.alive and in_touch(p, bottle_rect(b), pad(G.bottle.hit_pad)):
 			_break_bottle(b, "shot")
 			return
 	# A miss: dust, a ricochet and a red crosshair.
@@ -1047,7 +1102,7 @@ func _step_jack(e: Dictionary, dt: float) -> void:
 			if not covers[e.c].alive:
 				e.state = "taunt"
 				e.t = float(J.taunt)
-				e.x = float(J.cards_x)
+				e.x = jack_cards_x()
 				events.append("jack_exposed")
 				callout.emit("“Care for a hand, stranger?”", true, 1300)
 		"taunt":
@@ -1291,7 +1346,7 @@ func _step(dt: float) -> void:
 				if e.exp >= 1:
 					if is_eli and e.get("stage2", false) and e.hp == 1:  # he throws dynamite instead of firing
 						var gm := geo(e)
-						throws.append({"x0": gm.x + _hitbox.x / 2, "y0": gm.y + 6, "p": 0.0})
+						throws.append({"x0": gm.x + _hb(e).x / 2, "y0": gm.y + 6, "p": 0.0})
 						events.append("throw")
 						AudioManager.sfx("tick")
 						e.threw = true
@@ -1402,7 +1457,7 @@ func _update_sign() -> void:
 		var m: float = G.sign.crush_margin_v2 if v2 else G.sign.crush_margin
 		for e in enemies:
 			if e.alive and e.kind != "window" and e.kind != "hostage":
-				var cx: float = geo(e).x + _hitbox.x / 2
+				var cx: float = geo(e).x + _hb(e).x / 2
 				if cx > s.x - m and cx < s.x + s.w + m:
 					kill(e, "sign")
 		if v2 and support != null and support.type == "tnt":  # brief v2 trigger: a falling object sets off TNT
@@ -1652,6 +1707,7 @@ func _build_benches() -> void:
 
 ## Iron Eli's last stage swaps the street for a duel: start the view again.
 func _rebuild_view() -> void:
+	_glints.clear()
 	for c in get_children():
 		remove_child(c)
 		c.queue_free()
@@ -1669,9 +1725,19 @@ func _rebuild_view() -> void:
 func _build_view() -> void:
 	var scene_key: String = GameState.SCENE_LEVEL_KEY[GameState.chapters[ci].scene]
 	var art: Dictionary = Assets.scenes[scene_key]
-	var bg := _layer()
+	var bg := _layer()  # the scenery, on its own layer with its own treatment
+	_backdrop = ShaderMaterial.new()
+	_backdrop.shader = load("res://ui/backdrop.gdshader")
+	var BD: Dictionary = SC.get("backdrop", {})
+	for k in ["desaturate", "haze", "dim", "quiet_blur", "quiet_desaturate", "quiet_haze"]:
+		if BD.has(k):
+			_backdrop.set_shader_parameter(k, float(BD[k]))
+	if BD.has("haze_colour"):
+		_backdrop.set_shader_parameter("haze_colour", Color(BD.haze_colour[0], BD.haze_colour[1], BD.haze_colour[2]))
+	_backdrop.set_shader_parameter("feather", float(BD.get("feather", 3)) * PPU)
+	bg.material = _backdrop
 	for layer in art.layers:
-		AssetSprite.make(layer, bg)
+		AssetSprite.make(layer, bg).use_parent_material = true
 	_decal_layer = _layer()
 	_shadow_layer = _layer()  # soft contact shadows, on the street behind everything standing on it
 	for i in SC.windows.size():
@@ -1686,6 +1752,7 @@ func _build_view() -> void:
 		var b: Dictionary = bottles[i]
 		b.look = i % 3
 		b.node = AssetSprite.make("bottle/whole%d" % b.look, _back_props)
+		_outline(b.node)
 		b.shadow = _cast(bottle_rect(b).get_center().x, b.y, bottle_rect(b).size.x * 1.6)
 		_place(b.node, Vector2(bottle_rect(b).get_center().x, b.y))
 	if tut != null:
@@ -1696,6 +1763,9 @@ func _build_view() -> void:
 		_hanger(hang_sign.beam_y, xs)
 		_sign_nodes.chains = xs.map(func(x): return _chain(x, hang_sign.beam_y, hang_sign.y))
 		_sign_nodes.board = AssetSprite.make("prop/sign", _back_props)
+		_outline(_sign_nodes.board, "sweep")
+		for c in _sign_nodes.chains:
+			_glints.append([c, "pulse"])
 		_sign_nodes.board.extra_scale = Vector2.ONE * k
 	if bucket != null:  # the bucket's bail on a hook, on a chain from the arm
 		var H: Dictionary = G.hanging
@@ -1711,6 +1781,8 @@ func _build_view() -> void:
 		_sign_nodes.hook.extra_scale = Vector2.ONE * hk
 		_place(_sign_nodes.hook, eye)
 		_sign_nodes.bucket = AssetSprite.make("prop/bucket", _back_props)
+		_outline(_sign_nodes.bucket, "sweep")
+		_glints.append([_sign_nodes.bucket_chain, "pulse"])
 	if strongbox != null:  # Black Jack's strongbox, on a chain from the arm to its ring
 		var sx: float = strongbox.x + strongbox.w / 2
 		_hanger(strongbox.rope_top, [sx], 1.0 if L.strongbox.get("post", "left") == "right" else -1.0)
@@ -1720,6 +1792,10 @@ func _build_view() -> void:
 	_cover_layer = _layer()
 	for c in covers:
 		c.node = AssetSprite.make("prop/" + c.type, _cover_layer)
+		if c.type == "tnt":  # powder is shootable: outlined, and it glints
+			_outline(c.node, "sweep")
+		if _jack != null and is_same(c, covers[_jack.barrel]):  # the stand-in for the barrel in his flip pose, at his size
+			c.node.extra_scale = Vector2.ONE * boss_k
 		if c.type == "crate" and strongbox != null:  # what's left once the strongbox lands on it
 			c.smashed_node = AssetSprite.make("prop/crate_smashed", _cover_layer)
 			c.smashed_node.visible = false
@@ -1729,6 +1805,8 @@ func _build_view() -> void:
 	_front = _layer()
 	if strongbox != null:
 		_sign_nodes.strongbox = AssetSprite.make("prop/strongbox", _front)
+		_outline(_sign_nodes.strongbox, "sweep")
+		_glints.append([_sign_nodes.strongbox_chain, "pulse"])
 	if L.get("puzzle", false) and L.has("hintTarget") and hint_lvl >= 2:
 		_hint_glow = NinePatchRect.new()
 		_hint_glow.texture = Assets.texture("fx/hint_glow")
@@ -1746,6 +1824,7 @@ func _build_view() -> void:
 		_duel_layer = _layer()
 		var dn := {}
 		dn.boss = AssetSprite.make(boss_set + "/idle", _duel_layer)
+		_outline(dn.boss)
 		dn.boss.extra_scale = Vector2.ONE * float(G.duel.boss_scale)  # duel bosses stand closer
 		dn.twitch = AssetSprite.make("duel/twitch", _duel_layer)
 		if L.get("cards", false):
@@ -1765,6 +1844,8 @@ func _build_view() -> void:
 	_gun = AssetSprite.make(gun_asset + "/idle", self)
 	_muzzle_flash = AssetSprite.make("fx/muzzle_flash", self)
 	_cross = AssetSprite.make("crosshair/hit", self)
+	_hit_overlay = Node2D.new()  # debug: every hit area
+	add_child(_hit_overlay)
 	var overlay := CanvasLayer.new()
 	overlay.layer = 4
 	add_child(overlay)
@@ -1839,6 +1920,149 @@ func _sync_view() -> void:
 		_place(_cross, Vector2(roundf(ch.x), roundf(ch.y)))
 	_hurt.visible = hurt_flash > 0
 	_hurt.modulate.a = hurt_flash / 30.0
+	_sync_look()
+
+
+## A character or shootable prop: the dark brown outline, and for props that glint, their place in the glints.
+func _outline(n: CanvasItem, glint := "") -> void:
+	var LK: Dictionary = SC.get("look", {})
+	var m := ShaderMaterial.new()
+	m.shader = load("res://ui/outline.gdshader")
+	if LK.has("outline_colour"):
+		m.set_shader_parameter("outline_colour", Color(LK.outline_colour[0], LK.outline_colour[1], LK.outline_colour[2]))
+	m.set_shader_parameter("glint_strength", float(LK.get("glint_strength", 0.45)))
+	n.material = m
+	_fit_outline(n, false)
+	if glint != "":
+		_glints.append([n, glint])
+
+
+## The outline's width in the sprite's own texels (it is outline_px on screen whatever the art's scale), and
+## which way the sprite is drawn.
+func _fit_outline(n: CanvasItem, flipped: bool) -> void:
+	var m: ShaderMaterial = n.material
+	if m == null:
+		return
+	var k := absf((n as Node2D).scale.x)
+	m.set_shader_parameter("width", float(SC.get("look", {}).get("outline_px", 2.0)) / maxf(k, 0.01))
+	m.set_shader_parameter("flip_x", -1.0 if flipped else 1.0)
+
+
+## Glints on (unless the level switches them off): every glint_every seconds a sweep crosses each prop and
+## its chain or rope brightens, one after another. Also the quiet zones' place on screen and the debug overlay.
+func glints_on() -> bool:
+	return bool(L.get("glint", SC.get("look", {}).get("glint", true)))
+
+
+func _sync_look() -> void:
+	var LK: Dictionary = SC.get("look", {})
+	var every: float = LK.get("glint_every", 2.6)
+	var span: float = LK.get("glint_time", 0.5)
+	for i in _glints.size():
+		var n: CanvasItem = _glints[i][0]
+		var t := fposmod(frame / 60.0 - i * 0.12, every)
+		var on := glints_on() and t < span
+		if _glints[i][1] == "sweep":
+			(n.material as ShaderMaterial).set_shader_parameter("glint", t / span * 1.4 - 0.2 if on else -1.0)
+		else:
+			var g := sin(t / span * PI) * 0.45 if on else 0.0
+			n.modulate = Color(1.0 + g, 1.0 + g * 0.9, 1.0 + g * 0.6)
+	var zones := quiet_zones()
+	var packed: Array[Vector4] = []
+	for z in zones.slice(0, 4):
+		var r: Rect2 = get_global_transform() * Rect2(z.position * PPU, z.size * PPU)
+		packed.append(Vector4(r.position.x, r.position.y, r.size.x, r.size.y))
+	while packed.size() < 4:
+		packed.append(Vector4.ZERO)
+	_backdrop.set_shader_parameter("quiet", packed)
+	_backdrop.set_shader_parameter("quiet_n", mini(4, zones.size()))
+	_hit_overlay.visible = show_hit_areas
+	if show_hit_areas:
+		_show_hit_areas()
+
+
+## The level's quiet zones (units): where busy scenery behind its spawn points is softened. A list of
+## {x, y, w, h}, or "spawns": one zone behind each outlaw's spot, each window he shows in, and the bottles.
+func quiet_zones() -> Array:
+	var q: Variant = L.get("quiet", [])
+	var out: Array = []
+	if q is Array:
+		for z in q:
+			out.append(Rect2(float(z.x), float(z.y), float(z.w), float(z.h)))
+		return out
+	for d in L.get("enemies", []):
+		if d.has("w"):
+			var w: Dictionary = SC.windows[int(d.w)]
+			out.append(Rect2(w.x, w.y, w.w, w.h))
+			continue
+		var xs: Array = [float(d.stand)] if d.has("stand") else ([] if not d.has("route") else d.route.map(func(pt): return float(pt.x)))
+		if d.has("c"):
+			xs = [float(L.covers[int(d.c)].x)]
+		if xs.is_empty():
+			continue
+		out.append(Rect2(xs.min() - 8, GY - 48, xs.max() - xs.min() + 16, 50))  # its soft edge (feather) spreads it further
+	if L.has("jack"):
+		var cx: float = L.covers[int(L.jack.crate)].x
+		out.append(Rect2(cx - 12, GY - 56, 34, 58))
+	if not bottles.is_empty():
+		var bx: Array = bottles.map(func(b): return bottle_rect(b).get_center().x)
+		out.append(Rect2(bx.min() - 6, float(G.bottle.rail_y) - 26, bx.max() - bx.min() + 12, 30))
+	return out
+
+
+## Every hit area as the game tests taps (touch pads and the 44-point minimum included), for the debug
+## overlay and the tests: [rect, kind], kind "target" (shoot it), "prop" (shootable scenery: powder,
+## chains, ropes), "cover" (stops a bullet) or "avoid" (the hostage: tight, never padded).
+func hit_areas() -> Array:
+	var out: Array = []
+	var op := pad(G.outlaw.hit_pad)
+	for e in enemies:
+		if e.kind == "hostage":
+			out.append([hostage_rect(e).grow(pad(G.hostage.body_pad)), "avoid"])
+		if not e.alive or e.state == "hidden" or e.kind == "jack":
+			continue
+		var r := visible_rect(e)
+		if r.size.x >= 1 and r.size.y >= 1:
+			out.append([touch_rect(r, op), "target"])
+	if _jack != null and _jack.alive:
+		out.append([touch_rect(jack_rect(), op), "target"])
+	for b in bottles:
+		if b.alive:
+			out.append([touch_rect(bottle_rect(b), pad(G.bottle.hit_pad)), "target"])
+	for c in covers:
+		if c.alive:
+			out.append([touch_rect(cover_rect(c), 0.0) if c.type == "tnt" else cover_rect(c), "prop" if c.type == "tnt" else "cover"])
+	if hang_sign != null and hang_sign.state == "hang":
+		for ch in chain_rects():
+			out.append([touch_rect(ch, pad(G.sign.chain_pad)), "prop"])
+	if bucket != null and bucket.state == "hang":
+		for r in bucket_rects():
+			out.append([touch_rect(r, pad(G.bucket.hit_pad)), "prop"])
+	if strongbox != null and strongbox.state == "hang":
+		out.append([touch_rect(strongbox_chain_rect(), pad(G.strongbox.chain_pad)), "prop"])
+	if duel != null:
+		out.append([duel_zone().grow(pad(G.duel.zone_pad)), "target"])
+	return out
+
+
+## The debug overlay: each hit area as a tinted box with a border (green: shoot it, yellow: shootable
+## props, grey: cover, red: the hostage), rebuilt each frame while it is on.
+func _show_hit_areas() -> void:
+	const COLOURS := {"target": Color(0.2, 1.0, 0.35), "prop": Color(1.0, 0.85, 0.2), "cover": Color(0.75, 0.75, 0.75), "avoid": Color(1.0, 0.25, 0.25)}
+	for c in _hit_overlay.get_children():
+		c.free()
+	for h in hit_areas():
+		var fill := ColorRect.new()
+		fill.color = Color(COLOURS[h[1]], 0.18)
+		var edge := ReferenceRect.new()
+		edge.editor_only = false
+		edge.border_color = COLOURS[h[1]]
+		edge.border_width = 2.0
+		for n: Control in [fill, edge]:
+			n.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			n.position = h[0].position * PPU
+			n.size = h[0].size * PPU
+			_hit_overlay.add_child(n)
 
 
 func _sync_sign() -> void:
@@ -1885,14 +2109,17 @@ func _ensure_enemy_nodes(e: Dictionary) -> void:
 	var who := _art(e)
 	if not e.has("node"):
 		e.node = AssetSprite.make(who + "/idle", _enemy_parent(e))
+		_outline(e.node)
 		if e.kind != "window":
-			e.shadow = _cast(0, GY, _hitbox.x * 1.1)
+			e.shadow = _cast(0, GY, _hb(e).x * 1.1)
 		if e.kind == "hostage":
 			e.hostage_node = AssetSprite.make("hostage/idle", _hostage_layer)
-			e.hostage_shadow = _cast(e.hx, GY, _hitbox.x * 1.1)
+			_outline(e.hostage_node)
+			e.hostage_shadow = _cast(e.hx, GY, _hb(e).x * 1.1)
 		if e.kind == "runner" or e.kind == "walker":  # in the open he is drawn in front of the cover
 			e.run_node = AssetSprite.make(who + "/run_right", _front)
-			e.run_shadow = _cast(0, GY, _hitbox.x * 1.1)
+			_outline(e.run_node)
+			e.run_shadow = _cast(0, GY, _hb(e).x * 1.1)
 		if e.kind == "jack":  # the card he has just flipped onto the barrel
 			e.card_node = AssetSprite.make("card/back", _front)
 		if e.get("eli", false):  # his breastplate rides on whichever sprite shows him
@@ -1952,7 +2179,7 @@ func _sync_enemy(e: Dictionary) -> void:
 		e.run_node.visible = running
 		if running:
 			var to_right: bool = e.dir > 0 if e.kind == "walker" else covers[e.to].x > covers[e.from].x
-			var at := Vector2(gm.x + _hitbox.x / 2, gm.y + _hitbox.y)
+			var at := Vector2(gm.x + _hb(e).x / 2, gm.y + _hb(e).y)
 			if e.kind == "walker" and Assets.has(who + "walk_right"):
 				# The walk cycle (two steps), one frame per frame_step units walked so it keeps pace with his speed;
 				# a slight bob mid-step.
@@ -1966,7 +2193,7 @@ func _sync_enemy(e: Dictionary) -> void:
 			else:
 				e.run_node.show_asset(who + ("run_right" if to_right else "run_left"))
 			_place(e.run_node, at)
-			_place(e.run_shadow, Vector2(gm.x + _hitbox.x / 2, GY))
+			_place(e.run_shadow, Vector2(gm.x + _hb(e).x / 2, GY))
 		e.run_shadow.visible = running
 	n.visible = not running
 	n.rotation = 0.0
@@ -1974,10 +2201,15 @@ func _sync_enemy(e: Dictionary) -> void:
 	var p := _pose(e)
 	n.show_asset(who + p[0])
 	n.flip_h = p[1]
-	var fig: float = float(G.window_outlaw.figure_scale) if e.kind == "window" else 1.0  # upstairs is further away
+	_fit_outline(n, p[1])
+	if e.has("run_node"):
+		_fit_outline(e.run_node, false)
+	var fig: float = (float(G.window_outlaw.figure_scale) if e.kind == "window" else 1.0) * char_k * (boss_k if is_boss(e) else 1.0)  # upstairs is further away
+	if e.has("run_node") and e.run_node.extra_scale.x != fig:
+		e.run_node.extra_scale = Vector2.ONE * fig
 	if n.extra_scale.x != fig:
 		n.extra_scale = Vector2.ONE * fig
-	var feet := Vector2(gm.x + _hitbox.x / 2, gm.y + _hitbox.y)
+	var feet := Vector2(gm.x + _hb(e).x / 2, gm.y + _hb(e).y)
 	if p[2]:
 		feet.y = gm.y + Assets.anchor(who + p[0]).y * n.scale.y / PPU
 	if p[0] == "crouch":  # Black Jack's crouch is anchored at the crate's rim
@@ -2015,7 +2247,7 @@ func _sync_card(e: Dictionary, feet: Vector2) -> void:
 		return
 	c.show_asset("card/" + e.card)
 	var k: float = Assets.meta("black_jack/flip", "scale", 1.0)
-	_place(c, feet + Assets.point("black_jack/flip", "card") * k / PPU)
+	_place(c, feet + Assets.point("black_jack/flip", "card") * k * boss_k / PPU)
 	c.extra_scale = Vector2(maxf(0.08, absf(1.0 - 2.0 * e.flip_t / float(G.jack.flip_time))), 1)
 
 
@@ -2036,10 +2268,10 @@ func _sync_rings() -> void:
 		var marked: bool = e.alive and e.get("alert_t", 0.0) > 0  # the first shot: he's alert now
 		e.alert.visible = marked
 		if marked:
-			_place(e.alert, Vector2(r.x + _hitbox.x / 2 - 1, r.y - 6))
+			_place(e.alert, Vector2(r.x + _hb(e).x / 2 - 1, r.y - 6))
 		if not on:
 			continue
-		var center := Vector2(r.x + _hitbox.x / 2, r.y + _hitbox.y * 0.45)
+		var center := Vector2(r.x + _hb(e).x / 2, r.y + _hb(e).y * 0.45)
 		var k := minf(1.0, e.t / (e.aim_max if e.aim_max > 0 else L.aim))
 		var urgent := k < 0.35
 		var tex := Assets.texture("fx/draw_ring_urgent" if urgent else "fx/draw_ring")

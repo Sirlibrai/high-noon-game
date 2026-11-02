@@ -10,6 +10,7 @@
       "aim": 2.0,
       "objective": "bottles",
       "observation": true,
+      "quiet": "spawns",
       "story": {
         "intro": "Dustwater's sheriff is gone and Iron Eli's gang runs the town. Warm up that trigger finger.",
         "result": "Steady hand. The gang's powder store is next."
@@ -43,6 +44,7 @@
       "aim": 1.8,
       "objective": "eliminate_all",
       "observation": true,
+      "quiet": "spawns",
       "story": {
         "intro": "Two of Eli's men stand guard over the gang's powder.",
         "result": "The blast alerts the gang's lookouts."
@@ -70,6 +72,7 @@
       "aim": 1.8,
       "objective": "eliminate_all",
       "observation": true,
+      "quiet": "spawns",
       "story": {
         "intro": "The lookouts have the street covered: one upstairs, one behind a barrel, one on the move.",
         "result": "Three lookouts down. The gang knows you're coming."
@@ -107,6 +110,7 @@
       "aim": 1.8,
       "objective": "eliminate_all",
       "observation": true,
+      "quiet": "spawns",
       "story": {
         "intro": "Three more of the gang loiter under the old inn sign, right beside their powder.",
         "result": "Word reaches Black Jack. He's dealing himself in."
@@ -136,6 +140,7 @@
       "aim": 1.8,
       "objective": "eliminate_all",
       "observation": true,
+      "quiet": "spawns",
       "portrait": "portrait/black_jack",
       "story": {
         "intro": "Black Jack, Iron Eli's lieutenant, deals the gang's last hand: two henchmen on the powder, and himself behind a crate.",
@@ -148,10 +153,9 @@
       ],
       "strongbox": {"x": 176, "bottom": 100, "rope_top": 66, "post": "right"},
       "jack": {
-        "_about": "Black Jack (brief v2 §6): crouched behind cover 1 under the strongbox; when the box smashes the crate he stands and taunts, then flips cards onto the barrel (cover 2) beside him, standing at cards_x. The deck repeats; he can only be hit while the ace shows (ace_time seconds), and a shot on any other card is a wasted bullet.",
+        "_about": "Black Jack (brief v2 §6): crouched behind cover 1 under the strongbox; when the box smashes the crate he stands and taunts, then flips cards onto the barrel (cover 2) beside him, standing so the barrel in his flip pose is cover 2. The deck repeats; he can only be hit while the ace shows (ace_time seconds), and a shot on any other card is a wasted bullet.",
         "crate": 1,
         "barrel": 2,
-        "cards_x": 186,
         "taunt": 1.4,
         "deck": ["back", "K", "7", "A", "3", "K", "back", "A", "7", "3", "A"],
         "card_time": 1.1,

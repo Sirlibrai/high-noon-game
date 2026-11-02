@@ -328,6 +328,7 @@ func _ready() -> void:
 	_playthroughs()
 	_puzzle_first()
 	_black_jack()
+	_readability()
 	_office()
 	_launch()
 	_batch1()
@@ -1456,7 +1457,7 @@ func _black_jack() -> void:
 		lv.enemies.filter(func(e): return e.kind == "stand").size() == 2 and jack.state == "crate" and crate.alive
 		and lv.strongbox.state == "hang" and absf(lv.strongbox.x + lv.strongbox.w / 2 - (crate.x + crate.w / 2)) < 1)
 	var barrel: Dictionary = lv.covers[jack.barrel]
-	var pose_barrel: float = float(L.jack.cards_x) + Assets.point("black_jack/flip", "barrel").x * float(Assets.meta("black_jack/flip", "scale", 1.0)) / lv.PPU
+	var pose_barrel: float = lv.jack_cards_x() + Assets.point("black_jack/flip", "barrel").x * float(Assets.meta("black_jack/flip", "scale", 1.0)) * lv.boss_k / lv.PPU
 	ok("The barrel he flips cards onto stands beside his crate, where the flip pose paints its barrel",
 		absf(pose_barrel - (barrel.x + barrel.w / 2)) < 1 and barrel.x >= crate.x + crate.w, "pose barrel at %.1f, prop at %.1f" % [pose_barrel, barrel.x + barrel.w / 2])
 	lv.shoot(lv.cover_rect(lv.covers[0]).get_center(), true)
@@ -1521,3 +1522,123 @@ func _black_jack() -> void:
 		and G.keepsakes_earned(fresh()).is_empty() and r.pay == 120, str(r))
 	ok("His parting line closes the fight: “Eli's waiting at the bank. You won't get near him.”",
 		L.story.result.contains("Eli's waiting at the bank. You won't get near him.") and L.portrait == "portrait/black_jack")
+
+
+## Readability on Main Street (targets first): character and boss scale, 44-point touch targets with a
+## tight hostage, the toned-down scenery with its quiet zones, outlined and glinting props, and the debug views.
+func _readability() -> void:
+	var G := GameState
+	var geo: Dictionary = G.geometry
+	var street: Dictionary = G.scene_for(0)
+	var pt := func(units: float) -> float: return units * geo.pixels_per_unit * float(geo.touch.reference_pt_per_px)
+	# Scale: outlaws at 22-23% of the screen's height, bosses bigger, both from the scene's data.
+	var lv := _new_level(4)
+	lv._sync_view()
+	var tall := func(n: AssetSprite) -> float: return n.sprite_frames.get_frame_texture(n.animation, 0).get_height() * n.scale.y / 720.0
+	var hench: Dictionary = lv.enemies[0]
+	var jack: Dictionary = lv._jack
+	jack.state = "taunt"
+	lv._sync_view()
+	ok("Scale: outlaws stand about 23% of the screen's height; Black Jack, a boss, is bigger (boss_scale)",
+		absf(tall.call(hench.node) - 0.229) < 0.01 and tall.call(jack.node) > tall.call(hench.node) * 1.1
+		and float(street.boss_scale) > 1.0 and lv._hb(jack).y > lv._hb(hench).y, "outlaw %.3f, Black Jack %.3f" % [tall.call(hench.node), tall.call(jack.node)])
+	_drop(lv)
+	var data: Dictionary = G.level(0, 1)
+	data.character_scale = 1.25
+	var big := _new_level(1)
+	data.erase("character_scale")
+	var plain := _new_level(1)
+	big._sync_view()
+	plain._sync_view()
+	var e1: Dictionary = big.enemies[0]
+	var e0: Dictionary = plain.enemies[0]
+	ok("character_scale grows outlaws' art and hit areas together, feet on the same ground, puzzle reach unchanged",
+		absf(big.rect_of(e1).size.y / plain.rect_of(e0).size.y - 1.25) < 0.01 and absf(e1.node.scale.y / e0.node.scale.y - 1.25) < 0.01
+		and big.rect_of(e1).end.y == plain.rect_of(e0).end.y and big.G.tnt.kill_radius == plain.G.tnt.kill_radius)
+	_drop(big)
+	_drop(plain)
+	# Touch targets: everything shootable at least 44 points each way; the hostage stays tight.
+	var small: Array = []
+	for li in G.levels_for(0).size():
+		var l := Level.new()
+		add_child(l)
+		l.setup(0, li)
+		l.touch = true
+		for e in l.enemies:
+			if e.kind != "jack":
+				e.exp = 1.0
+				e.state = "aim"
+		for h in l.hit_areas():
+			if h[1] in ["target", "prop"] and (pt.call(h[0].size.x) < 43.99 or pt.call(h[0].size.y) < 43.99):
+				small.append("%s: %s %.0fx%.0f pt" % [l.L.name, h[1], pt.call(h[0].size.x), pt.call(h[0].size.y)])
+			if h[1] == "avoid":
+				var host: Dictionary = l.enemies.filter(func(x): return x.kind == "hostage")[0]
+				if h[0] != l.hostage_rect(host).grow(float(geo.hostage.body_pad.touch)):
+					small.append("%s: the hostage's area was padded" % l.L.name)
+		_drop(l)
+	ok("Touch: every outlaw, boss, bottle, powder keg, chain and rope is at least 44 points each way on the phone; the hostage keeps his tight area",
+		small.is_empty(), ", ".join(small))
+	var cr := _new_level(3)  # Chain Reaction: a tap just beside the chain, inside the 44 points, drops the sign
+	var chain: Rect2 = cr.chain_rects()[0]
+	var beside := Vector2(chain.end.x + float(geo.sign.chain_pad.touch) + 1.0, chain.get_center().y)
+	cr.shoot(beside, true)
+	ok("Touch: a tap a little beside the thin chain (inside its 44 points) still drops the sign", cr.hang_sign.state == "fall", str(beside))
+	_drop(cr)
+	# The look: scenery toned down on its own layer; characters and shootable props at full colour, outlined.
+	var pk := _new_level(1)  # Powder Keg
+	pk._sync_view()
+	var bg: Node2D = pk.get_child(0)
+	var bg_mat := bg.material as ShaderMaterial
+	var outlined := func(n: CanvasItem) -> bool: return n.material is ShaderMaterial and (n.material as ShaderMaterial).shader.resource_path.ends_with("outline.gdshader")
+	ok("Scenery on its own layer: desaturated about 25%, hazed and dimmed; nothing else uses that treatment",
+		bg_mat != null and bg_mat.shader.resource_path.ends_with("backdrop.gdshader") and bg.get_children().all(func(c): return c.use_parent_material)
+		and absf(float(bg_mat.get_shader_parameter("desaturate")) - 0.25) < 0.051 and float(street.backdrop.haze) > 0
+		and pk.enemies.all(func(e): return e.node.material != bg_mat))
+	var tnt: Dictionary = pk.covers[0]
+	var colour: Color = (pk.enemies[0].node.material as ShaderMaterial).get_shader_parameter("outline_colour")
+	ok("Characters and shootable props get a dark brown outline (not black); plain cover doesn't",
+		pk.enemies.all(func(e): return outlined.call(e.node)) and outlined.call(tnt.node) and colour.r > colour.b + 0.08 and colour.v > 0.12 and colour.v < 0.35,
+		str(colour))
+	var glinted := false
+	for f in 240:
+		pk.frame += 1
+		pk._sync_look()
+		glinted = glinted or float((tnt.node.material as ShaderMaterial).get_shader_parameter("glint")) >= 0.0
+	ok("The powder keg glints now and then", glinted and pk.glints_on())
+	pk.L.glint = false
+	var any := false
+	for f in 240:
+		pk.frame += 1
+		pk._sync_look()
+		any = any or float((tnt.node.material as ShaderMaterial).get_shader_parameter("glint")) >= 0.0
+	ok("A level can switch the glints off (\"glint\": false)", not any)
+	ok("Quiet zones: the level marks the scenery behind its outlaws, and the scenery's shader softens it",
+		pk.quiet_zones().size() == 2 and int(bg_mat.get_shader_parameter("quiet_n")) == 2
+		and pk.quiet_zones().all(func(z): return pk.enemies.any(func(e): return z.has_point(Vector2(e.x, pk.GY - 10)))))
+	_drop(pk)
+	var plain_l := Level.new()
+	add_child(plain_l)
+	plain_l.setup(0, 2)  # Crossfire: its barrel is cover, not a target
+	ok("Plain cover isn't outlined or glinting", plain_l.covers.all(func(c): return c.node.material == null))
+	_drop(plain_l)
+	# Debug views: greyscale over everything, and every hit area drawn.
+	var keep: Dictionary = SaveManager.data.progress
+	SaveManager.data.progress = fresh()
+	var main: Node = load("res://scenes/main.tscn").instantiate()
+	add_child(main)
+	main.set_greyscale(true)
+	ok("Debug: a greyscale view over everything (above the skins' final layer)", main._grey_layer.visible and main._grey_layer.layer > Skins.FINAL_LAYER)
+	main.set_greyscale(false)
+	main.show_intro(0, 3)
+	main._go()
+	Level.show_hit_areas = true
+	main.level._sync_view()
+	var shown: int = main.level._hit_overlay.get_child_count()
+	Level.show_hit_areas = false
+	main.level._sync_view()
+	ok("Debug: every hit area drawn over the level, and off again", shown == main.level.hit_areas().size() * 2 and shown > 0 and not main.level._hit_overlay.visible,
+		"%d nodes for %d areas" % [shown, main.level.hit_areas().size()])
+	ok("Debug views start off", not main._grey_layer.visible and not Level.show_hit_areas)
+	remove_child(main)
+	main.free()
+	SaveManager.data.progress = keep

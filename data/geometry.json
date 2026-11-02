@@ -25,6 +25,11 @@
     "_about": "Overrides for the kit's scenes.json, measured on the painted art. Main Street (assets/painted/main_street.png) is drawn 720 pixels tall and centred, so 1 painting pixel = 0.877 screen pixels: windows are the dark openings between the shutters of the saloon's and bank's upper floors, and the ground line is the dirt in front of the boardwalks.",
     "street": {
       "GY": 156,
+      "character_scale": 1.0,
+      "boss_scale": 1.15,
+      "plane_offset_y": 0,
+      "backdrop": {"_about": "The painting behind the gameplay: desaturated, hazed toward haze_colour and dimmed a little, so characters and props (full colour) stand out. Inside a level's quiet zones it is softened further: blurred (blur texels), and desaturated and hazed by the quiet amounts on top; feather is the zones' soft edge in units.", "desaturate": 0.25, "haze": 0.1, "haze_colour": [0.93, 0.78, 0.62], "dim": 0.05, "quiet_blur": 1.6, "quiet_desaturate": 0.25, "quiet_haze": 0.1, "feather": 14},
+      "look": {"_about": "Characters and shootable props get a dark brown outline (outline_px screen pixels at 1280x720) over full colour; shootable props also glint now and then (every glint_every seconds, a sweep lasting glint_time), unless a level sets \"glint\": false.", "outline_colour": [0.227, 0.133, 0.078], "outline_px": 2.0, "glint": true, "glint_every": 2.6, "glint_time": 0.5, "glint_strength": 0.45},
       "windows": [
         {"x": 25.5, "y": 60.3, "w": 14.5, "h": 16.4},
         {"x": 71.2, "y": 60.3, "w": 14.5, "h": 16.4},
@@ -34,6 +39,7 @@
     }
   },
 
+  "touch": {"_about": "The smallest tap area anything shootable gets (Apple's minimum touch target): min_pt points each way on the reference phone, a landscape iPhone 375 points tall (SE and mini, the smallest; on the 14 Pro's 393 it is a little larger), which shows the 720-pixel-tall game at reference_pt_per_px points a pixel. The hostage keeps his tight area.", "min_pt": 44, "reference_pt_per_px": 0.5208},
   "outlaw": {
     "hitbox": [28, 38],
     "hide_gap": 3,

@@ -41,6 +41,10 @@ var _overlay_layer: CanvasLayer
 var _overlay: Control
 ## The Bounty board wall, while it is open.
 var board: BountyWall
+## Debug views (debug builds only): the whole screen in greyscale (G on a keyboard, or the pause menu),
+## and every hit area drawn over the level (H, or the pause menu; Level.show_hit_areas).
+static var greyscale := false
+var _grey_layer: CanvasLayer
 
 
 func _ready() -> void:
@@ -51,6 +55,16 @@ func _ready() -> void:
 	_overlay_layer = CanvasLayer.new()
 	_overlay_layer.layer = 10
 	add_child(_overlay_layer)
+	_grey_layer = CanvasLayer.new()
+	_grey_layer.layer = 1100  # above everything, the skins' final layer (1000) too
+	var grey := ColorRect.new()
+	grey.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	grey.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	grey.material = ShaderMaterial.new()
+	grey.material.shader = load("res://ui/debug_greyscale.gdshader")
+	_grey_layer.add_child(grey)
+	add_child(_grey_layer)
+	set_greyscale(greyscale)
 	get_viewport().size_changed.connect(_layout)
 	CloudSync.merged.connect(func():
 		if _screen is Office and _overlay == null:
@@ -109,6 +123,11 @@ func _layout() -> void:
 # ---------- input ----------
 
 func _input(event: InputEvent) -> void:
+	if OS.is_debug_build() and event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_G:
+			set_greyscale(not greyscale)
+		elif event.keycode == KEY_H:
+			Level.show_hit_areas = not Level.show_hit_areas
 	# Music never starts before the first tap (audio.md).
 	if (event is InputEventMouseButton or event is InputEventScreenTouch) and event.pressed:
 		AudioManager.unlock()
@@ -139,6 +158,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_SPACE, KEY_ENTER:
 				if level.state == "play" and level.duel != null:
 					level.shoot(Vector2(level.SC.duelX, level.GY - 22), false)
+
+
+func set_greyscale(on: bool) -> void:
+	greyscale = on
+	_grey_layer.visible = on
 
 
 ## A tap in gameplay units (the level node itself is shaken, so use its parent).
@@ -575,6 +599,16 @@ func _toggle_pause() -> void:
 		if not tutorial:
 			UiKit.button(card, "Levels", &"GhostButton").pressed.connect(show_chapter.bind(ci))
 		UiKit.button(card, "Home", &"GhostButton").pressed.connect(show_home)
+		if OS.is_debug_build():  # testing aids
+			var dbg := UiKit.row(card)
+			var g := UiKit.button(dbg, "Greyscale: " + ("on" if greyscale else "off"), &"SmallGhostButton")
+			g.pressed.connect(func():
+				set_greyscale(not greyscale)
+				g.text = "Greyscale: " + ("on" if greyscale else "off"))
+			var h := UiKit.button(dbg, "Hit areas: " + ("on" if Level.show_hit_areas else "off"), &"SmallGhostButton")
+			h.pressed.connect(func():
+				Level.show_hit_areas = not Level.show_hit_areas
+				h.text = "Hit areas: " + ("on" if Level.show_hit_areas else "off"))
 
 
 func _on_won(res: Dictionary) -> void:

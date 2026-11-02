@@ -41,7 +41,9 @@ func _ready() -> void:
 
 func _screens(tag: String) -> void:
 	main.show_board()
-	await _check(tag, "board")
+	await _check_board(tag, "board")
+	main.board.show_poster(4)  # swiped along to J.R.'s silhouette
+	await _check_board(tag, "board_jr")
 	main.show_chapter(0)
 	await _check(tag, "levels")
 	main.show_intro(0, 0)
@@ -140,6 +142,30 @@ func _check(tag: String, name: String) -> void:
 	print("%s %-20s card %s %s" % [tag, name, r, "fits" if fits else "OVER " + str(safe)])
 	if not fits:
 		problems.append("%s %s: card %s outside %s" % [tag, name, r, safe])
+
+
+## The Bounty board wall: no card. The centred poster is 75 to 80% of the screen tall and inside the
+## safe area, and the Home button and the Bounty Dollars sit in the top corners inside it.
+func _check_board(tag: String, name: String) -> void:
+	await _wait(0.4)
+	await _shot("%s_%s" % [tag, name])
+	var vis := get_viewport().get_visible_rect().size
+	var k := vis.y / PHONE.y
+	var safe := Rect2(INSET.x * k, INSET.y * k, vis.x - (INSET.x + INSET.z) * k, vis.y - (INSET.y + INSET.w) * k)
+	if tag == "16x9":
+		safe = Rect2(Vector2.ZERO, vis)
+	var b: BountyWall = main.board
+	var p: Button = b.posters[b.centred()]
+	var r := Rect2(p.get_global_transform() * Vector2.ZERO, Vector2.ZERO).expand(p.get_global_transform() * p.size)
+	var share := p.size.y / vis.y
+	if share < 0.75 or share > 0.8:
+		problems.append("%s %s: poster %.0f%% of the screen tall" % [tag, name, share * 100])
+	if not safe.grow(2).encloses(r):
+		problems.append("%s %s: centred poster %s outside %s" % [tag, name, r, safe])
+	for c in main._overlay.find_children("*", "Button", true, false):
+		if c is Button and not c in b.posters and not safe.encloses(c.get_global_rect()):
+			problems.append("%s %s: %s %s outside %s" % [tag, name, c.text, c.get_global_rect(), safe])
+	print("%s %-20s poster %d, %.0f%% tall, %s" % [tag, name, b.centred(), share * 100, r])
 
 
 func _find_card(n: Node) -> Control:

@@ -6,6 +6,7 @@ const KIT := "res://port_kit/high-noon-port-kit/"
 const DATA_DIR := KIT + "data/"
 const MUSIC_DIR := KIT + "audio/music/"
 const GEOMETRY := "res://data/geometry.json"
+const CHAPTERS_EXTRA := "res://data/chapters.json"
 ## The game's own campaign levels (data/levels/<key>.json) replace the kit's list for that scene.
 const CAMPAIGN_DIR := "res://data/levels/"
 
@@ -37,6 +38,9 @@ var touch_mode := OS.has_feature("mobile")
 
 func _ready() -> void:
 	chapters = _load("chapters")
+	var extra: Variant = JSON.parse_string(FileAccess.get_file_as_string(CHAPTERS_EXTRA))  # the posters' names and titles
+	for i in mini(chapters.size(), extra.chapters.size()):
+		chapters[i].merge(extra.chapters[i], true)
 	level_lists = _load("levels")
 	for key in level_lists.keys():
 		var own: String = CAMPAIGN_DIR + str(key) + ".json"

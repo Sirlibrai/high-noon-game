@@ -196,6 +196,9 @@
     "ui/desk_plaque_pressed": {"frames": ["placeholder/ui_painted/desk_pressed.png"], "theme": ["DeskPlaque/pressed"]},
     "ui/poster_paper": {"frames": ["painted/ui_poster.png"], "theme": ["Poster/normal", "Poster/hover", "Poster/pressed"]},
     "ui/poster_paper_locked": {"frames": ["painted/ui_poster_locked.png"], "theme": ["Poster/disabled"]},
+    "ui/poster_big": {"frames": ["painted/ui_poster_big.png"], "theme": ["WallPoster/normal", "WallPoster/hover", "WallPoster/pressed"]},
+    "ui/poster_big_faded": {"frames": ["painted/ui_poster_big_faded.png"], "theme": ["WallPoster/disabled"]},
+    "wall/planks": {"frames": ["painted/wall_planks.png"], "anchor": "top_left"},
     "ui/telegram": {"frames": ["painted/ui_parchment.png"], "theme": ["Telegram/panel"]},
     "ui/stamp_box": {"frames": ["placeholder/ui_painted/stamp_box.png"], "theme": ["Stamp/panel"]},
 

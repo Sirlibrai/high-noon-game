@@ -541,6 +541,12 @@ func _ui() -> void:
 	var dark: Image = p.duplicate()
 	dark.adjust_bcs(0.55, 1.0, 0.45)
 	_save("ui_poster_locked", dark)
+	var big := Cut.scale(poster, 0.95)  # the Bounty board wall's posters, about 80% of the screen tall
+	_save("ui_poster_big", big)
+	var faded: Image = big.duplicate()
+	faded.adjust_bcs(0.82, 1.0, 0.55)  # a bounty not yet on the trail
+	_save("ui_poster_big_faded", faded)
+	print("    poster_big %s" % big.get_size())
 	_save("ui_stamp_captured", Cut.scale(_piece(UI, Rect2i(1298, 448, 472, 268), "all"), 0.66))
 	for f in ["ui_panel", "ui_panel_small", "ui_parchment", "ui_button_wood", "ui_button_gold", "ui_button_round", "ui_stamp_captured"]:
 		print("    %s %s" % [f, Image.load_from_file(ProjectSettings.globalize_path(OUT + f + ".png")).get_size()])

@@ -1,0 +1,10 @@
+{
+  "_about": "Adds to the kit's chapters.json, by index: what each bounty's wanted poster on the Bounty board wall says. poster_name is the outlaw (big Rye lettering); title is the one line under it.",
+  "chapters": [
+    {"poster_name": "Iron Eli", "title": "The Iron Gunslinger"},
+    {"poster_name": "Cole Haggerty", "title": "Leader of the Coal Gang"},
+    {"poster_name": "Digger McCall", "title": "The Claim Jumper"},
+    {"poster_name": "The Lantern Man", "title": "The Ghost of Silver Creek"},
+    {"poster_name": "J.R.", "title": "Name Unknown"}
+  ]
+}

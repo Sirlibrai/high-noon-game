@@ -38,6 +38,8 @@ var _call_tween: Tween
 var _call_token := 0
 var _overlay_layer: CanvasLayer
 var _overlay: Control
+## The Bounty board wall, while it is open.
+var board: BountyWall
 
 
 func _ready() -> void:
@@ -237,8 +239,6 @@ func hunt() -> void:
 	show_intro(st.ch, st.level)
 
 
-## A poster's width on the Bounty board: five fit side by side inside a phone's safe area.
-const POSTER_W := 214.0
 ## The HUD's cartridges: big enough to count at a glance on a phone.
 const BULLET_SIZE := Vector2(34, 56)
 const BULLET_GAP := 12
@@ -248,27 +248,35 @@ const TROPHY_FACE := 48.0
 
 
 ## The Bounty board: all five posters, open, captured, locked or coming soon.
-func show_board() -> void:
+## `focus`: the poster to centre (the bounty just looked at); otherwise the current hunt.
+func show_board(focus := -1) -> void:
 	_office_backdrop()
-	var card := _open_overlay()
-	var top := UiKit.row(card)  # one row keeps the board inside a phone's safe area
-	UiKit.button(top, "‹ Home", &"SmallGhostButton").pressed.connect(show_home)
-	UiKit.text(top, "Bounty board", &"Heading")
-	_wallet_button(top)
-	UiKit.text(card, "Pick a poster and go after the outlaw.", &"Hint")
-	var posters := UiKit.row(card)
-	var pg: Dictionary = GameState.progress
-	var pt := GameState.playtest()
-	var tilt := [-2.0, 1.5, -1.0, 2.0, -1.5]
-	for i in GameState.chapters.size():
-		var ch: Dictionary = GameState.chapters[i]
-		var state := GameState.poster_state(pg, i, pt)
-		var b := Office.wanted_poster(i, state, POSTER_W)
-		b.tooltip_text = "%s: %s, %s%s" % [ch.name, ch.who, ch.reward, ", captured" if state == "captured" else ""]
-		b.pressed.connect(show_chapter.bind(i))
-		posters.add_child(b)
-		b.pivot_offset = Vector2(POSTER_W / 2, b.custom_minimum_size.y / 2)
-		b.rotation = deg_to_rad(tilt[i])
+	_close_overlay()
+	_overlay = Control.new()
+	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overlay_layer.add_child(_overlay)
+	board = BountyWall.new()
+	_overlay.add_child(board)
+	board.chosen.connect(show_chapter)
+	if focus >= 0:
+		board.show_poster(focus)
+	# Only a small Home button and the Bounty Dollars, in the top corners inside the safe area.
+	var corners := MarginContainer.new()
+	corners.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	corners.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	corners.add_theme_constant_override("margin_left", int(12 + _safe_lrb.x))
+	corners.add_theme_constant_override("margin_right", int(12 + _safe_lrb.y))
+	corners.add_theme_constant_override("margin_top", 10)
+	_overlay.add_child(corners)
+	var bar := HBoxContainer.new()
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	corners.add_child(bar)
+	UiKit.button(bar, "‹ Home", &"SmallGhostButton").pressed.connect(show_home)
+	var gap := Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_child(gap)
+	_wallet_button(bar)
 
 
 ## One bounty's levels (the prototype's menu(c)).
@@ -277,7 +285,7 @@ func show_chapter(c: int) -> void:
 	ci = c
 	var card := _open_overlay()
 	var top := UiKit.row(card)
-	UiKit.button(top, "‹ Bounty board", &"SmallGhostButton").pressed.connect(show_board)
+	UiKit.button(top, "‹ Bounty board", &"SmallGhostButton").pressed.connect(show_board.bind(c))
 	_wallet_button(top)
 	var ch: Dictionary = GameState.chapters[c]
 	var head := UiKit.row(card)  # the outlaw's portrait beside the bounty's name

@@ -331,6 +331,7 @@ func _ready() -> void:
 	_batch1()
 	_scale_guide()
 	_portraits()
+	_bounty_wall()
 	_iron_eli_rules()
 
 	var passed := results.filter(func(x): return x[1]).size()
@@ -1086,3 +1087,74 @@ func _portraits() -> void:
 		and Office.portrait_for(1, false) == "portrait/ch1")
 	eli.free()
 	jr_locked.free()
+
+
+## The Bounty board wall: big posters side by side on the planks, swiping with snapping, starting on
+## the current hunt, and a tap opening a hunt.
+func _bounty_wall() -> void:
+	var G := GameState
+	var keep: Dictionary = SaveManager.data.progress
+	var was_pt: bool = SaveManager.data.settings.get("playtest", false)
+	SaveManager.data.settings.playtest = false
+	var pg := fresh()
+	G.chapter_progress(pg, 0).stars[str(G.levels_for(0).size() - 1)] = 3  # Iron Eli captured: the hunt moves on
+	SaveManager.data.progress = pg
+	var w := BountyWall.new()
+	add_child(w)
+	w.size = Vector2(1280, 720)
+	var cur := G.current_hunt(pg, false)
+	ok("The wall opens on the current hunt, centred", w.centred() == cur and w.scroll == cur * BountyWall.step())
+	ok("Posters are 75 to 80% of the screen tall, side by side", BountyWall.POSTER.y / 720.0 >= 0.75 and BountyWall.POSTER.y / 720.0 <= 0.8
+		and w.posters.size() == G.chapters.size() and w.posters[1].position.x - w.posters[0].position.x == BountyWall.step())
+	var p0 := w.posters[0]
+	var texts: Array = p0.find_children("*", "Label", true, false).map(func(l): return l.text)
+	ok("A poster shows the name, its one-line title and the reward on a red banner", texts.has("Iron Eli") and texts.has("— THE IRON GUNSLINGER —") and texts.has(G.chapters[0].reward)
+		and p0.find_children("*", "PanelContainer", true, false).any(func(c): return c.theme_type_variation == &"RewardBanner"))
+	ok("Every bounty has its poster name and title", G.chapters.all(func(c): return c.has("poster_name") and c.has("title"))
+		and G.chapters[1].poster_name == "Cole Haggerty" and G.chapters[4].title == "Name Unknown")
+	var stamp_of := func(i: int) -> Variant: return w.posters[i].get_meta("stamp") if w.posters[i].has_meta("stamp") else null
+	ok("Stamps: CAPTURED across a captured portrait, COMING SOON in faded ink, J.R. a silhouette",
+		(stamp_of.call(0) as TextureRect).texture == Assets.texture("ui/stamp_captured")
+		and (stamp_of.call(2) as PanelContainer).theme_type_variation == &"StampFaded"
+		and w.posters[4].find_children("*", "TextureRect", true, false).any(func(t): return t.texture == Assets.texture("portrait/ch4_locked")))
+	var stars_shown := func(i: int) -> bool: return w.posters[i].find_children("*", "Label", true, false).any(func(l): return l.theme_type_variation == &"PosterStars")
+	ok("Star progress shows on started bounties only", stars_shown.call(0) and not stars_shown.call(1))
+	# Swipe left by more than half a poster: the wall snaps to the next one.
+	var drag := func(dx: float, speed: float) -> void:
+		var press := InputEventMouseButton.new()
+		press.button_index = MOUSE_BUTTON_LEFT
+		press.pressed = true
+		press.position = Vector2(640, 360)
+		w._gui_input(press)
+		for k in 4:
+			var m := InputEventMouseMotion.new()
+			m.position = Vector2(640 + dx * (k + 1) / 4.0, 360)
+			m.velocity = Vector2(speed, 0)
+			w._gui_input(m)
+		var up := InputEventMouseButton.new()
+		up.button_index = MOUSE_BUTTON_LEFT
+		up.position = Vector2(640 + dx, 360)
+		w._gui_input(up)
+		for k in 60:
+			w._process(1.0 / 60)
+	w.show_poster(0)
+	drag.call(-BountyWall.step() * 0.6, -200)
+	ok("Swiping along the wall snaps to the next poster", w.centred() == 1 and w.scroll == BountyWall.step())
+	drag.call(BountyWall.step() * 0.2, 150)
+	ok("A short, slow swipe settles back on the same poster", w.centred() == 1 and w.scroll == BountyWall.step())
+	drag.call(-60, -1500)
+	ok("A flick moves on one poster", w.centred() == 2)
+	w.show_poster(4)
+	drag.call(-BountyWall.step() * 0.8, -300)
+	ok("The wall stops at its last poster", w.centred() == 4 and w.scroll == 4 * BountyWall.step())
+	var opened: Array = []
+	w.chosen.connect(func(i): opened.append(i))
+	w.show_poster(1)
+	drag.call(0, 0)
+	w.show_poster(2)
+	drag.call(0, 0)  # a coming-soon poster can't be opened
+	ok("Tapping a poster that can be hunted opens its hunt screen; others do nothing", opened == [1])
+	remove_child(w)
+	w.free()
+	SaveManager.data.progress = keep
+	SaveManager.data.settings.playtest = was_pt

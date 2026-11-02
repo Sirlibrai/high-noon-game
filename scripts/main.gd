@@ -239,6 +239,9 @@ func hunt() -> void:
 
 ## A poster's width on the Bounty board: five fit side by side inside a phone's safe area.
 const POSTER_W := 200.0
+## The HUD's cartridges: big enough to count at a glance on a phone.
+const BULLET_SIZE := Vector2(34, 56)
+const BULLET_GAP := 12
 
 
 ## The Bounty board: all five posters, open, captured, locked or coming soon.
@@ -612,7 +615,7 @@ func _build_hud() -> void:
 	for i in 3:
 		_hearts.append(UiKit.image(hearts, "ui/heart_full"))
 	_ammo = HBoxContainer.new()
-	_ammo.add_theme_constant_override("separation", 3)
+	_ammo.add_theme_constant_override("separation", BULLET_GAP)  # clear gaps, so they're easy to count
 	_ammo.alignment = BoxContainer.ALIGNMENT_CENTER
 	stock.add_child(_ammo)
 	var spacer := Control.new()
@@ -662,7 +665,7 @@ func _process(_delta: float) -> void:
 			c.queue_free()
 			_ammo.remove_child(c)
 		for i in want:
-			UiKit.image(_ammo, "ui/bullet_full")
+			UiKit.image(_ammo, "ui/bullet_full", BULLET_SIZE)
 	var slots := _ammo.get_children()
 	for i in slots.size():
 		slots[i].texture = Assets.texture("ui/bullet_full" if i < level.bullets else "ui/bullet_empty")

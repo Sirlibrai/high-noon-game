@@ -329,6 +329,7 @@ func _ready() -> void:
 	_puzzle_first()
 	_office()
 	_batch1()
+	_scale_guide()
 	_iron_eli_rules()
 
 	var passed := results.filter(func(x): return x[1]).size()
@@ -897,9 +898,18 @@ func _batch1() -> void:
 	sp._update_scene()
 	ok("The hands sweep to twelve as the bell tolls, and the bell swings", absf(sp._minute.rotation) < 0.01 and absf(sp._hour.rotation) < 0.01
 		and sp._tolled and absf(sp._bell.rotation) > 0.01)
-	var vis := get_viewport().get_visible_rect().size
-	var face_bottom: float = sp._art.position.y + (Splash.CLOCK_PIN.y + Splash.CLOCK_R) * sp._art.scale.y
-	ok("The title stamps in below the clock face", Splash.TITLE_TOP * vis.y > face_bottom, "title at %d, face to %d" % [Splash.TITLE_TOP * vis.y, face_bottom])
+	# The title's text, tilted and growing as it stamps in, never reaches the clock face.
+	var highest := INF
+	var t0: float = sp._t0
+	for dt in [3.2, 3.3, 3.4, 3.6, 5.0]:
+		sp._now = t0 + dt
+		sp._update_scene()
+		var l: Label = sp._title
+		var w: float = l.get_theme_font("font").get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, l.get_theme_font_size("font_size")).x
+		var x0: float = (l.size.x - w) / 2
+		for c in [Vector2(x0, 0), Vector2(x0 + w, 0)]:
+			highest = minf(highest, (l.get_global_transform() * c).y)
+	ok("The HIGH NOON title stays clear of the clock face, tilted and stamping in", highest > sp.face_bottom(), "title top %d, face to %d" % [highest, sp.face_bottom()])
 	ok("Two dark figures face each other across the street", sp._hero.scale.x > 0 and sp._rival.scale.x < 0 and sp._hero.position.x < Splash.CLOCK_PIN.x and sp._rival.position.x > Splash.CLOCK_PIN.x)
 	sp.tap()
 	ok("Tap to draw fires", sp._shot_at >= 0)
@@ -980,3 +990,76 @@ func _arm_covers(lv: Level, xs: Array) -> bool:
 	var a: float = lv._posts[0] + Assets.point("prop/signpost", "arm_from").x * k / lv.PPU
 	var b: float = lv._posts[0] + Assets.point("prop/signpost", "arm_to").x * k / lv.PPU
 	return xs.all(func(x): return x >= minf(a, b) - 0.01 and x <= maxf(a, b) + 0.01)
+
+
+## On-screen size of a sprite, in pixels of the 720-pixel-tall screen: its opaque pixels, through its
+## transform, cut to the screen (0 to 720 down) and to its clip (a window's opening). `below` cuts it
+## at a height too (the top of the cover a peeker hides behind).
+static func screen_rect(s: AssetSprite, below := INF) -> Rect2:
+	var t: Texture2D = s.sprite_frames.get_frame_texture(s.animation, s.frame)
+	var used := t.get_image().get_used_rect()
+	var xf := s.get_global_transform()
+	var local := Rect2(s.offset + Vector2(used.position), Vector2(used.size))
+	if s.flip_h:
+		local.position.x = -s.offset.x - used.end.x if s.centered else s.offset.x + t.get_width() - used.end.x
+	var r := Rect2(xf * local.position, Vector2.ZERO)
+	for c in [local.position, Vector2(local.end.x, local.position.y), local.end, Vector2(local.position.x, local.end.y)]:
+		r = r.expand(xf * c)
+	var cut := Rect2(-10000, 0, 20000, minf(720, below))
+	var p := s.get_parent()
+	if p is Control and p.clip_contents:
+		cut = cut.intersection(Rect2(p.global_position, p.size))
+	return r.intersection(cut)
+
+
+## The brief v2 scale guide, measured as each sprite's opaque pixels on the 720-pixel-tall screen
+## (what the phone shows: the art is never scaled to the screen's width), and every prop's art
+## against its own hit area, so art swaps can't quietly shrink or grow the gameplay plane.
+func _scale_guide() -> void:
+	var G := GameState
+	var ppu: float = G.geometry.pixels_per_unit
+	var pct := func(px: float) -> float: return px / 7.2
+	var problems: Array = []
+	var check := func(what: String, got: float, want: float, tol: float) -> void:
+		if absf(got - want) > tol:
+			problems.append("%s %.1f%% (want %.0f%% ± %.0f)" % [what, got, want, tol])
+	for li in [2, 3]:  # Crossfire: a window, a peeker, a walker, a barrel; Chain Reaction: three standing, the TNT, the sign
+		var lv := _new_level(li)
+		lv.observing = false
+		for e in lv.enemies:
+			e.exp = 1.0
+			e.state = "aim"
+		lv._sync_view()
+		for e in lv.enemies:
+			match e.kind:
+				"stand", "walker":
+					check.call("standing outlaw", pct.call(screen_rect(e.node).size.y), 22, 1.5)
+				"window":
+					var wh: float = lv.SC.windows[e.w].h * ppu
+					check.call("window outlaw (of his window)", screen_rect(e.node).size.y / wh * 100, 70, 8)
+					if screen_rect(e.node).end.y > (lv.SC.windows[e.w].y + lv.SC.windows[e.w].h) * ppu + 0.5:
+						problems.append("window outlaw shows below the sill")
+				"cover":  # only head, hat and gun over the cover: about a third of him
+					var top: float = (lv.GY - lv.covers[e.c].h) * ppu
+					var full: float = screen_rect(e.node).size.y
+					check.call("peeker over cover (of his height)", screen_rect(e.node, top).size.y / full * 100, 38, 10)
+		_drop(lv)
+	var art := func(n: String) -> Vector2:  # drawn size in units
+		var used := Assets.texture(n).get_image().get_used_rect().size
+		return Vector2(used) * float(Assets.meta(n, "scale", 1.0)) / ppu
+	check.call("barrel", art.call("prop/barrel").y * ppu / 7.2, 13, 1.5)
+	var gun: Vector2 = art.call("gun_peacemaker_0/idle")
+	check.call("revolver", gun.y * ppu / 7.2, 20, 2)
+	# Every other prop in proportion: its art against its hit area.
+	var sizes: Dictionary = G.geometry.cover_sizes
+	for t in ["barrel", "crate", "tnt", "wagon", "trough"]:
+		var hide: float = sizes[t][1]
+		check.call("prop/%s (of its cover height)" % t, art.call("prop/" + t).y / hide * 100, 100, 30)
+	check.call("tall bottle (of its hit height)", art.call("bottle/whole0").y / G.geometry.bottle.hitbox[1] * 100, 100, 12)
+	check.call("bench (from the bottles' rail to the street)", art.call("prop/bench").y / (G.geometry.scenes.street.GY - G.geometry.bottle.rail_y) * 100, 100, 15)
+	check.call("INN sign (of its board width)", art.call("prop/sign").x / G.geometry.sign.board[0] * 100, 100, 15)
+	check.call("bucket (of its hit width)", art.call("prop/bucket").x / G.geometry.bucket.size[0] * 100, 100, 15)
+	var main_s: Script = load("res://scripts/main.gd")
+	ok("HUD bullets are big and spaced out, so they're easy to count", main_s.BULLET_SIZE.y >= 52 and main_s.BULLET_GAP >= 10)
+	ok("Scale guide: standing outlaws 22%, barrels 13%, window outlaws 70% of the window, peekers head and hat only, revolver 20%, props in proportion",
+		problems.is_empty(), "; ".join(problems))

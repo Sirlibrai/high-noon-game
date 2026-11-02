@@ -17,7 +17,11 @@ const RIVAL_AT := Vector2(1475, 804)
 const FIGURE_SCALE := 2.1
 const HAZE := Rect2(0, 430, 1915, 230)  # the street from the far buildings to the middle distance
 const TUMBLE_Y := 792
-const TITLE_TOP := 0.435  # of the screen's height: between the clock face and the figures' hats
+## The title's top sits this far (screen pixels) below the clock face, and it stamps in from its top edge,
+## so neither its tilt nor its stamp-in growth ever reaches the face.
+const TITLE_GAP := 14.0
+const TITLE_TILT := -4.0
+const STAMP_GROW := 0.6  # it stamps in from 1.6 times its size
 
 var _t0 := -1.0  # seconds since "begin"; -1 until the first tap
 var _shot_at := -1.0
@@ -75,10 +79,9 @@ func _ready() -> void:
 	_black = _screen(ui, "fx/screen_black")
 	_title = UiKit.text(ui, "HIGH NOON", &"InkTitle")
 	_title.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	_title.anchor_top = TITLE_TOP
-	_title.anchor_bottom = TITLE_TOP
+	_title.offset_top = title_top()
 	_title.modulate.a = 0.0
-	_title.rotation = deg_to_rad(-4)
+	_title.rotation = deg_to_rad(TITLE_TILT)
 	_tap = UiKit.text(ui, "TAP TO DRAW", &"TapPrompt")
 	_tap.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	_tap.anchor_top = 0.86
@@ -162,11 +165,23 @@ func _update_scene() -> void:
 		_black.modulate.a = 0.92 if t < 0 else (minf(0.92, 1 - t / 0.8) if t < 0.8 else 0.0)
 	# The title stamps in at noon; "Tap to draw" fades in, then blinks.
 	_title.modulate.a = clampf((t - 3.2) / 0.35, 0, 1) if t >= 0 else 0.0
-	_title.scale = Vector2.ONE * (1 + 1.6 * (1 - _title.modulate.a))
-	_title.pivot_offset = _title.size / 2
+	_title.scale = Vector2.ONE * (1 + STAMP_GROW * (1 - _title.modulate.a))
+	_title.pivot_offset = Vector2(_title.size.x / 2, 0)  # grows downwards, away from the clock
 	if f >= 0:
 		_tap.modulate.a = 0.0
 	elif t > 4.4:
 		_tap.modulate.a = 1.0 - 0.75 * (0.5 - 0.5 * cos((t - 4.4) / 1.2 * TAU))
 	else:
 		_tap.modulate.a = clampf((t - 3.8) / 0.5, 0, 1) if t >= 0 else 0.0
+
+
+## The bottom of the clock face on screen.
+func face_bottom() -> float:
+	return _art.position.y + (CLOCK_PIN.y + CLOCK_R) * _art.scale.y
+
+
+## Where the title's top goes: below the face, with room for its tilt (it pivots on its top centre,
+## so its ends rise by half the text's width times the tilt, at its biggest while it stamps in).
+func title_top() -> float:
+	var w: float = _title.get_theme_font("font").get_string_size(_title.text, HORIZONTAL_ALIGNMENT_LEFT, -1, _title.get_theme_font_size("font_size")).x
+	return face_bottom() + TITLE_GAP + w / 2 * (1 + STAMP_GROW) * absf(sin(deg_to_rad(TITLE_TILT)))

@@ -29,7 +29,7 @@ const SPOTS := [
 ## The cork board: the big poster in the middle, two small ones each side ([x, y] centre, tilt).
 const BIG_SPOT := [803, 305, -0.02]
 const SMALL_SPOTS := [[636, 235, -0.07], [636, 369, 0.05], [970, 235, 0.06], [970, 369, -0.04]]
-const BIG_W := 136.0
+const BIG_W := 126.0
 const SMALL_W := 96.0
 ## The gilt frame's empty canvas, the cabinet's top shelf (trophy bases), the rack's pegs.
 const FRAME_IN := Rect2(1147, 218, 115, 180)
@@ -44,6 +44,8 @@ const LAMPS := [[Vector2(805, 108), 2.4], [Vector2(1478, 281), 1.1]]
 ## The row of rivets along the desk's front edge: the ledger sits on the desk above it.
 const DESK_RIVETS := 900.0
 const IDLE_POSE_TIME := 2.6
+## The poster's portrait frame (its side, in poster pixels at the design width).
+const PORTRAIT_SIDE := 116.0
 
 ## The safe area's insets in screen pixels (left, right, bottom), set by Main on phones.
 var safe_lrb := Vector3.ZERO
@@ -149,6 +151,12 @@ func _big_rect() -> Rect2:
 	return Rect2(BIG_SPOT[0] - BIG_W / 2, BIG_SPOT[1] - h / 2, BIG_W, h)
 
 
+## A bounty's portrait: its silhouette (if it has one) until it can be hunted, then the full face.
+static func portrait_for(i: int, open: bool) -> String:
+	var dark := "portrait/ch%d_locked" % i
+	return dark if not open and Assets.has(dark) else "portrait/ch%d" % i
+
+
 ## A wanted poster as the Bounty board shows it, designed `width` pixels wide. The compact one
 ## (small on the office's cork board) keeps only WANTED, the portrait and the reward. Its stamp
 ## (captured, locked, coming soon) is in its "stamp" meta.
@@ -168,9 +176,17 @@ static func wanted_poster(i: int, state: String, width: float, compact := false)
 	v.add_theme_constant_override("separation", 2)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(v)
-	var pic := UiKit.image(v, "portrait/ch%d" % i, Vector2(minf(100, inner), minf(78, inner * 0.78)))
-	if not open:
-		pic.modulate = Color(0, 0, 0, 0.75)
+	# The portrait, square in an inked frame. A bounty with a silhouette (J.R.) shows only that until
+	# he can be hunted; the others show darkened.
+	var frame := PanelContainer.new()
+	frame.theme_type_variation = &"PortraitFrame"
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	v.add_child(frame)
+	var side := minf(PORTRAIT_SIDE, inner)
+	var pic := UiKit.image(frame, portrait_for(i, open), Vector2(side, side))
+	if not open and not Assets.has("portrait/ch%d_locked" % i):
+		pic.modulate = Color(0.35, 0.3, 0.28)
 	if not compact:
 		UiKit.text(v, ch.who, &"PosterName", inner)
 		UiKit.text(v, ch.crime, &"PosterCrime", inner)
@@ -207,7 +223,7 @@ static func wanted_poster(i: int, state: String, width: float, compact := false)
 				b.add_child(stamp)
 		var sz := stamp.get_combined_minimum_size()
 		stamp.size = sz
-		stamp.position = Vector2((width - sz.x) / 2, sb.content_margin_top + pic.custom_minimum_size.y / 2 - sz.y / 2)  # across the portrait
+		stamp.position = Vector2((width - sz.x) / 2, sb.content_margin_top + frame.get_combined_minimum_size().y / 2 - sz.y / 2)  # across the portrait
 		stamp.pivot_offset = sz / 2
 		stamp.rotation = deg_to_rad(tilt)
 		b.set_meta("stamp", stamp)

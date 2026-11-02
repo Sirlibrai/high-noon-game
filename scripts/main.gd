@@ -238,10 +238,13 @@ func hunt() -> void:
 
 
 ## A poster's width on the Bounty board: five fit side by side inside a phone's safe area.
-const POSTER_W := 200.0
+const POSTER_W := 214.0
 ## The HUD's cartridges: big enough to count at a glance on a phone.
 const BULLET_SIZE := Vector2(34, 56)
 const BULLET_GAP := 12
+## The outlaw's portrait on his hunt screen, and on his keepsake's label in the trophy cabinet.
+const HUNT_PORTRAIT := 104.0
+const TROPHY_FACE := 48.0
 
 
 ## The Bounty board: all five posters, open, captured, locked or coming soon.
@@ -277,9 +280,18 @@ func show_chapter(c: int) -> void:
 	UiKit.button(top, "‹ Bounty board", &"SmallGhostButton").pressed.connect(show_board)
 	_wallet_button(top)
 	var ch: Dictionary = GameState.chapters[c]
-	UiKit.text(card, ch.name, &"Heading")
+	var head := UiKit.row(card)  # the outlaw's portrait beside the bounty's name
+	head.add_theme_constant_override("separation", 20)
+	var frame := PanelContainer.new()
+	frame.theme_type_variation = &"PortraitFrame"
+	head.add_child(frame)
+	UiKit.image(frame, Office.portrait_for(c, true), Vector2(HUNT_PORTRAIT, HUNT_PORTRAIT))
+	var names := VBoxContainer.new()
+	names.alignment = BoxContainer.ALIGNMENT_CENTER
+	head.add_child(names)
+	UiKit.text(names, ch.name, &"Heading").horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var built := GameState.is_built(c, 0)
-	UiKit.text(card, ("%s, %s. Gold levels are duels." % [ch.who, ch.reward]) if built else "%s’s levels arrive with the next build." % ch.who, &"Hint")
+	UiKit.text(names, ("%s, %s. Gold levels are duels." % [ch.who, ch.reward]) if built else "%s’s levels arrive with the next build." % ch.who, &"Hint").horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var grid := GridContainer.new()
 	grid.columns = 5
 	card.add_child(grid)
@@ -350,7 +362,12 @@ func show_trophies() -> void:
 			var cell := VBoxContainer.new()
 			shelf.add_child(cell)
 			UiKit.image(cell, "trophy_office/ch%d" % i, Vector2(72, 84))
-			UiKit.text(cell, GameState.chapters[i].who, &"Hint")
+			var label := UiKit.row(cell)  # each keepsake's label: the outlaw's face and name
+			var frame := PanelContainer.new()
+			frame.theme_type_variation = &"PortraitFrame"
+			label.add_child(frame)
+			UiKit.image(frame, "portrait/ch%d" % i, Vector2(TROPHY_FACE, TROPHY_FACE))
+			UiKit.text(label, GameState.chapters[i].who, &"Hint")
 		UiKit.text(card, "%d of %d outlaws captured" % [got.size(), GameState.chapters.size()], &"Tip")
 	UiKit.button(UiKit.row(card), "Back", &"GhostButton").pressed.connect(show_home)
 

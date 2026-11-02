@@ -95,6 +95,8 @@ func _screens(tag: String) -> void:
 	await _wait(0.5)
 	await _shot(tag + "_office_later")
 	_check_office(tag + " later")
+	main.show_trophies()  # the keepsakes, labelled with their outlaws' faces
+	await _check(tag, "trophies_later")
 	SaveManager.data.progress = keep
 
 

@@ -158,11 +158,12 @@
     "fx/screen_black": "placeholder/fx/screen_black.png",
 
 
-    "portrait/ch0": "placeholder/ui_painted/portrait_ch0.png",
-    "portrait/ch1": "placeholder/ui_painted/portrait_ch1.png",
-    "portrait/ch2": "placeholder/ui_painted/portrait_ch2.png",
-    "portrait/ch3": "placeholder/ui_painted/portrait_ch3.png",
-    "portrait/ch4": "placeholder/ui_painted/portrait_ch4.png",
+    "portrait/ch0": "painted/portrait_ch0.png",
+    "portrait/ch1": "painted/portrait_ch1.png",
+    "portrait/ch2": "painted/portrait_ch2.png",
+    "portrait/ch3": "painted/portrait_ch3.png",
+    "portrait/ch4": "painted/portrait_ch4.png",
+    "portrait/ch4_locked": "painted/portrait_ch4_locked.png",
     "poster/pin": {"frames": ["placeholder/ui_painted/pin.png"], "anchor": [4, 4]},
     "office/painted": {"frames": ["painted/office.png"], "anchor": "top_left"},
     "office/portrait": {"frames": ["placeholder/ui_painted/hunter_portrait.png"], "anchor": "top_left"},

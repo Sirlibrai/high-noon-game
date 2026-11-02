@@ -750,24 +750,6 @@ func _painted_cards() -> void:
 		if d > 6.5:
 			return clear
 		return rim if d > 5.2 else brass(1.1 - Vector2(px - 6, py - 6).length() / 6.0)), "ui_painted/pin.png")
-	# Wanted-poster portraits: the painted outlaw's head and shoulders, inked in sepia (placeholders).
-	var src := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/outlaw_idle.png"))
-	var tints := [Color("#5A3A22"), Color("#3E3A30"), Color("#4A2E2A"), Color("#2E3A3A"), Color("#4A3A1E")]
-	for c in 5:
-		var head := src.get_region(Rect2i(0, 0, src.get_width(), 84))
-		head.resize(int(head.get_width() * 156.0 / 84.0), 156, Image.INTERPOLATE_LANCZOS)
-		if c % 2 == 1:
-			head.flip_x()
-		var out := img(168, 156)
-		var ox := (168 - head.get_width()) / 2
-		for y in 156:
-			for x in 168:
-				var paper := Color("#EAD6A8").darkened(Vector2((x - 84) / 84.0, (y - 78) / 78.0).length_squared() * 0.18)
-				var hx := x - ox
-				var px_c := head.get_pixel(hx, y) if hx >= 0 and hx < head.get_width() else Color(0, 0, 0, 0)
-				var ink: Color = Color(tints[c]).lerp(Color("#EAD6A8"), clampf(px_c.get_luminance() * 1.6, 0, 1) * 0.7)
-				out.set_pixel(x, y, paper.lerp(ink, px_c.a))
-		save_exact(out, "ui_painted/portrait_ch%d.png" % c)
 
 
 ## Overlays for the painted sheriff's office (assets/painted/office.png), in its own pixels:

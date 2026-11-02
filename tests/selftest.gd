@@ -330,6 +330,7 @@ func _ready() -> void:
 	_office()
 	_batch1()
 	_scale_guide()
+	_portraits()
 	_iron_eli_rules()
 
 	var passed := results.filter(func(x): return x[1]).size()
@@ -1063,3 +1064,25 @@ func _scale_guide() -> void:
 	ok("HUD bullets are big and spaced out, so they're easy to count", main_s.BULLET_SIZE.y >= 52 and main_s.BULLET_GAP >= 10)
 	ok("Scale guide: standing outlaws 22%, barrels 13%, window outlaws 70% of the window, peekers head and hat only, revolver 20%, props in proportion",
 		problems.is_empty(), "; ".join(problems))
+
+
+## The five bounty portraits: square painted faces in each poster's frame; J.R. is a silhouette until
+## his bounty can be hunted.
+func _portraits() -> void:
+	var squares := true
+	for i in 5:
+		var t := Assets.texture("portrait/ch%d" % i)
+		squares = squares and t.resource_path.contains("assets/painted/") and t.get_width() == t.get_height()
+	ok("Each bounty has its own square painted portrait", squares)
+	var pic_of := func(b: Button) -> TextureRect:
+		return b.find_children("*", "TextureRect", true, false).filter(func(t): return t.get_parent() is PanelContainer and t.get_parent().theme_type_variation == &"PortraitFrame")[0]
+	var eli := Office.wanted_poster(0, "open", 200)
+	var jr_locked := Office.wanted_poster(4, "soon", 200)
+	ok("The poster shows its outlaw's portrait, enlarged and square in its frame", (pic_of.call(eli) as TextureRect).texture == Assets.texture("portrait/ch0")
+		and (pic_of.call(eli) as TextureRect).custom_minimum_size == Vector2(Office.PORTRAIT_SIDE, Office.PORTRAIT_SIDE))
+	ok("J.R.'s locked poster shows only his dark silhouette", (pic_of.call(jr_locked) as TextureRect).texture == Assets.texture("portrait/ch4_locked")
+		and (pic_of.call(jr_locked) as TextureRect).modulate == Color.WHITE)
+	ok("J.R.'s full portrait shows once his bounty is available", Office.portrait_for(4, true) == "portrait/ch4" and Office.portrait_for(4, false) == "portrait/ch4_locked"
+		and Office.portrait_for(1, false) == "portrait/ch1")
+	eli.free()
+	jr_locked.free()

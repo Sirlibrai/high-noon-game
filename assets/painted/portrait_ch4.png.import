@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://7tuprcihhl4k"
-path="res://.godot/imported/portrait_ch1.png-ce06563a9f31701be279069a6ab5afcd.ctex"
+uid="uid://cmi4g7rs0k1lh"
+path="res://.godot/imported/portrait_ch4.png-f048e4a7951ea0e45b08cd89c0263592.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/placeholder/ui_painted/portrait_ch1.png"
-dest_files=["res://.godot/imported/portrait_ch1.png-ce06563a9f31701be279069a6ab5afcd.ctex"]
+source_file="res://assets/painted/portrait_ch4.png"
+dest_files=["res://.godot/imported/portrait_ch4.png-f048e4a7951ea0e45b08cd89c0263592.ctex"]
 
 [params]
 

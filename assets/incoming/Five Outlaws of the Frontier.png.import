@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b2pgeilk3ke8p"
-path="res://.godot/imported/portrait_ch0.png-bae62a4a7cd0ce74ab0382928ab63a97.ctex"
+uid="uid://dat38lvlvyl42"
+path="res://.godot/imported/Five Outlaws of the Frontier.png-47e49ed355c9e08cd66a335c37c10755.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/placeholder/ui_painted/portrait_ch0.png"
-dest_files=["res://.godot/imported/portrait_ch0.png-bae62a4a7cd0ce74ab0382928ab63a97.ctex"]
+source_file="res://assets/incoming/Five Outlaws of the Frontier.png"
+dest_files=["res://.godot/imported/Five Outlaws of the Frontier.png-47e49ed355c9e08cd66a335c37c10755.ctex"]
 
 [params]
 

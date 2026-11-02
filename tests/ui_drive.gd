@@ -60,6 +60,10 @@ func _screens(tag: String) -> void:
 	await _check(tag, "reset_confirm")
 	main.show_intro(0, 0)
 	await _check(tag, "intro_l1")
+	for l in GameState.levels_for(0).size():  # every intro card clears the outlaws below its buttons
+		main.show_intro(0, l)
+		await _wait(0.3)
+		_check_intro_gap("%s level %d" % [tag, l + 1])
 	main.show_intro(0, 4)
 	await _check(tag, "intro_l5")
 	main.show_intro(0, 1)
@@ -153,6 +157,34 @@ func _check_office(tag: String) -> void:
 		if h is Button and h.theme_type_variation == &"Hotspot" and (h.size.x < 44 * k or h.size.y < 44 * k):
 			problems.append("%s office: hotspot %s is %s, under 44 points" % [tag, h.tooltip_text, h.size / k])
 	print("%s office: %d plates and CONTINUE HUNT checked" % [tag, o.plates.size()])
+
+
+## The intro card's DRAW! and Levels buttons leave a clear gap above the outlaws' hats.
+func _check_intro_gap(tag: String) -> void:
+	var buttons: Array = []
+	var stack: Array = [main._overlay]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is Button:
+			buttons.append(n)
+		for i in n.get_child_count(true):
+			stack.append(n.get_child(i, true))
+	var bottom := 0.0
+	var span := Vector2(INF, -INF)
+	for b in buttons:
+		var r: Rect2 = b.get_global_rect()
+		bottom = maxf(bottom, r.end.y)
+		span = Vector2(minf(span.x, r.position.x), maxf(span.y, r.end.x))
+	var hats := INF
+	for e in main.level.enemies:  # those standing under the buttons
+		var n: AssetSprite = e.node
+		var o := n.get_global_transform_with_canvas().origin
+		var half := Assets.texture(n.asset).get_width() * n.global_scale.x / 2
+		if o.x + half > span.x and o.x - half < span.y and n.is_visible_in_tree():
+			hats = minf(hats, o.y - Assets.anchor(n.asset).y * n.global_scale.y)
+	if bottom > hats - 16:
+		problems.append("%s intro: its buttons reach y %.0f, the outlaws' hats start at %.0f" % [tag, bottom, hats])
+	print("%s intro gap: buttons end at %.0f, hats at %.0f" % [tag, bottom, hats])
 
 
 ## Saves the screen and checks the card fits inside the phone's safe area.

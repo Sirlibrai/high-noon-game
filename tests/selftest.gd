@@ -351,6 +351,7 @@ func _ready() -> void:
 	_readability()
 	_feel()
 	await _ui_pass()
+	_hud_count()
 	_office()
 	_launch()
 	_batch1()
@@ -1414,6 +1415,19 @@ func _launch() -> void:
 	SaveManager.data.progress = keep
 
 
+## Every TextureRect under root (internal children included).
+func _overlay_textures(root: Node) -> Array:
+	var out: Array = []
+	var stack: Array = [root]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is TextureRect:
+			out.append(n)
+		for i in n.get_child_count(true):
+			stack.append(n.get_child(i, true))
+	return out
+
+
 ## Every label's text under root (internal children included).
 func _overlay_labels(root: Node) -> Array:
 	var out: Array = []
@@ -1848,12 +1862,33 @@ func _ui_pass() -> void:
 	audit.call("levels")
 	main.show_settings(0)
 	audit.call("settings")
+	G.apply_win(G.progress, 0, 1, 3, o10(1000))  # Powder Keg, three stars: the pause menu shows them
+	G.progress.bucks = 3140
+	main.show_home()
+	main._refresh_home_bar()
+	var wallet: Button = main._wallet
+	var coin: Control = wallet.get_child(0, true)
+	var text_from: float = wallet.get_theme_stylebox("normal").content_margin_left
+	var text_w: float = wallet.get_theme_font("font").get_string_size(wallet.text, HORIZONTAL_ALIGNMENT_LEFT, -1, wallet.get_theme_font_size("font_size")).x
+	ok("The coin counter has room for five characters (3,140) clear of the coin breaking out of its edge",
+		wallet.text == "3,140" and coin.position.x < 0 and coin.position.x + coin.size.x < text_from
+		and text_from + text_w + wallet.get_theme_stylebox("normal").content_margin_right <= wallet.size.x + 0.5, "%s: coin to %.0f, text from %.0f, %.0f wide in %.0f" % [wallet.text, coin.position.x + coin.size.x, text_from, text_w, wallet.size.x])
 	main.show_intro(0, 1)
 	audit.call("intro")
 	var hud_icons: Array = main._hud_box.find_children("*", "Button", true, false).map(func(b): return (b as Button).icon.resource_path.get_file())
 	main._go()
+	main._process(0.0)  # (the HUD fills in its cartridges each frame)
+	var heart: Control = main._hearts[0]
+	var bullet: Control = main._ammo.get_child(0) if main._ammo.get_child_count() > 0 else null
 	main._toggle_pause()
 	audit.call("pause")
+	var best_row: Array = _overlay_textures(main._overlay).filter(func(t): return t.texture == Assets.texture("ui/star_on"))
+	var resume_b: Button = _button_named(main._overlay, "Resume")
+	var restart_b: Button = _button_named(main._overlay, "Restart")
+	ok("Pause: Your best shows the saved stars (Powder Keg, 3), and Resume is clearly the largest round button",
+		best_row.size() == 3 and resume_b.custom_minimum_size.x >= restart_b.custom_minimum_size.x * 1.3, "%d stars, %s vs %s" % [best_row.size(), resume_b.custom_minimum_size, restart_b.custom_minimum_size])
+	ok("The HUD's hearts and bullets are about 1.6 times their art's size, as in the mockup",
+		heart.custom_minimum_size.y >= 52 * 1.5 and bullet != null and bullet.custom_minimum_size.y >= 59 * 1.5, "%s, %s" % [heart.custom_minimum_size, bullet.custom_minimum_size if bullet else null])
 	ok("Every tap target is at least 44 points each way on the smallest phone (office, levels, settings, intro, HUD, pause)", small.is_empty(), ", ".join(small))
 	var strip: Array = _button_texts(main._overlay)
 	ok("The HUD has hearts, bullets and one round pause button: no level name, sound or restart", hud_icons == ["pause.svg"]
@@ -1861,6 +1896,18 @@ func _ui_pass() -> void:
 	ok("Pause: a strip of round buttons (resume, restart, sound, music, haptics, back to the office), PAUSED, the level's card with its best stars",
 		["Resume", "Restart", "Sound", "Music", "Haptics", "Back to the office"].all(func(n): return strip.has(n))
 		and _overlay_labels(main._overlay).has("PAUSED") and _overlay_labels(main._overlay).has("Your best") and not main._hud.visible, str(strip))
+	ok("Debug builds show the testing toggles in the pause menu", _button_texts(main._overlay).has("Grey: off") == OS.is_debug_build())
+	main._toggle_pause()
+	main.debug_tools = false  # as in a release build
+	main._toggle_pause()
+	ok("A release build has no testing toggles (Grey, Hits, Slow, Feel), and its keys do nothing",
+		not ["Grey", "Hits", "Slow", "Feel"].any(func(n): return _button_named(main._overlay, n) != null))
+	var g_key := InputEventKey.new()
+	g_key.keycode = KEY_G
+	g_key.pressed = true
+	main._input(g_key)
+	ok("…its G key leaves the screen in colour", not main.greyscale)
+	main.debug_tools = OS.is_debug_build()
 	_button_named(main._overlay, "Restart").pressed.emit()
 	var ask: Array = _button_texts(main._overlay)
 	var used_before: int = main.level.used
@@ -1881,10 +1928,11 @@ func _ui_pass() -> void:
 		and levels_btn.theme_type_variation == &"RoundTeal" and retry.get_global_rect().get_center().x < next.get_global_rect().get_center().x
 		and levels_btn.get_global_rect().get_center().x > next.get_global_rect().get_center().x
 		and next.get_global_rect().position.y < card_panel.get_global_rect().end.y and next.get_global_rect().end.y > card_panel.get_global_rect().end.y)
-	var stars_on: Array = card_panel.find_children("*", "TextureRect", true, false).filter(func(t): return t.texture == Assets.texture("ui/star_on"))
-	ok("Results: three stars breaking out above the card, the middle one bigger", stars_on.size() == 3
-		and stars_on.all(func(s): return s.get_global_rect().position.y < card_panel.get_global_rect().position.y)
-		and stars_on[1].size.x > stars_on[0].size.x)
+	var stars_on: Array = _overlay_textures(card_panel).filter(func(t): return t.texture == Assets.texture("ui/star_on"))
+	ok("Results: three big stars breaking well out above the card, tilted, the middle one largest and highest", stars_on.size() == 3
+		and stars_on.all(func(s): return s.global_position.y < card_panel.global_position.y - s.size.y * 0.3)
+		and stars_on[1].size.x >= 160 and stars_on[1].size.x > stars_on[0].size.x * 1.25 and absf(stars_on[0].offset_transform_rotation) >= deg_to_rad(15) - 0.001
+		and stars_on[1].global_position.y < stars_on[0].global_position.y, "card at %s; %s" % [card_panel.global_position, stars_on.map(func(s): return [s.global_position, s.size, snappedf(rad_to_deg(s.offset_transform_rotation), 0.1)])])
 	next.pressed.emit()
 	ok("A completed level reaches the next showdown in one tap", main.li == 2 and main.level != null)
 	# Replays: the title and chips for a moment, then play (or at once on a tap).
@@ -1910,6 +1958,24 @@ func _ui_pass() -> void:
 	ok("Office: pressing an object lights it (a press style) and bounces its label", spot.get_theme_stylebox("pressed") is StyleBoxFlat and board_chip.scale.x > 1.05)
 	ok("Office: the Bounty board's label is the primary action", board_chip.theme_type_variation == &"OfficeTagPrimary"
 		and o.plates.filter(func(p): return p.theme_type_variation == &"OfficeTagPrimary").size() == 1)
+	remove_child(main)
+	main.free()
+	SaveManager.data.progress = keep
+
+
+## A long chase's cartridges (Iron Eli tops up to 16): one cartridge and the count, not a row across the screen.
+func _hud_count() -> void:
+	var keep: Dictionary = SaveManager.data.progress
+	SaveManager.data.progress = fresh()
+	var main: Node = load("res://scenes/main.tscn").instantiate()
+	add_child(main)
+	main.show_intro(0, 1)
+	main._go()
+	main.level.bullets = 16
+	main._process(0.0)
+	var kids: Array = main._ammo.get_children()
+	ok("More than six cartridges show as one cartridge and the count (×16)", kids.size() == 2 and kids[0] is TextureRect and kids[1] is Label
+		and (kids[1] as Label).text == "×16", str(kids.map(func(k): return k.get_class())))
 	remove_child(main)
 	main.free()
 	SaveManager.data.progress = keep

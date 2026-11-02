@@ -708,9 +708,9 @@ corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_0dwe7"]
 content_margin_left = 22.0
-content_margin_top = 26.0
+content_margin_top = 18.0
 content_margin_right = 22.0
-content_margin_bottom = 30.0
+content_margin_bottom = 24.0
 texture = ExtResource("18_wdjbf")
 texture_margin_left = 30.0
 texture_margin_top = 30.0
@@ -764,9 +764,9 @@ modulate_color = Color(0.75, 0.72, 0.68, 0.75)
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_p5mle"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_e2ye1"]
-content_margin_left = 62.0
+content_margin_left = 84.0
 content_margin_top = 14.0
-content_margin_right = 24.0
+content_margin_right = 26.0
 content_margin_bottom = 18.0
 texture = ExtResource("12_65sk3")
 texture_margin_left = 16.0
@@ -775,9 +775,9 @@ texture_margin_right = 16.0
 texture_margin_bottom = 18.0
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_dsxnc"]
-content_margin_left = 62.0
+content_margin_left = 84.0
 content_margin_top = 14.0
-content_margin_right = 24.0
+content_margin_right = 26.0
 content_margin_bottom = 18.0
 texture = ExtResource("12_65sk3")
 texture_margin_left = 16.0
@@ -786,9 +786,9 @@ texture_margin_right = 16.0
 texture_margin_bottom = 18.0
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_xnvkt"]
-content_margin_left = 62.0
+content_margin_left = 84.0
 content_margin_top = 14.0
-content_margin_right = 24.0
+content_margin_right = 26.0
 content_margin_bottom = 18.0
 texture = ExtResource("12_65sk3")
 texture_margin_left = 16.0
@@ -797,9 +797,9 @@ texture_margin_right = 16.0
 texture_margin_bottom = 18.0
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_eh1yf"]
-content_margin_left = 62.0
+content_margin_left = 84.0
 content_margin_top = 14.0
-content_margin_right = 24.0
+content_margin_right = 26.0
 content_margin_bottom = 18.0
 texture = ExtResource("12_65sk3")
 texture_margin_left = 16.0
@@ -983,6 +983,16 @@ Hotspot/styles/focus = SubResource("StyleBoxEmpty_fly0v")
 Hotspot/styles/hover = SubResource("StyleBoxEmpty_fly0v")
 Hotspot/styles/normal = SubResource("StyleBoxEmpty_fly0v")
 Hotspot/styles/pressed = SubResource("StyleBoxFlat_c7k5b")
+HudCount/base_type = &"Label"
+HudCount/colors/font_color = Color(0.968627, 0.909804, 0.784314, 1)
+HudCount/colors/font_outline_color = Color(0.231373, 0.141176, 0.0862745, 1)
+HudCount/colors/font_shadow_color = Color(0.231373, 0.141176, 0.0862745, 1)
+HudCount/constants/outline_size = 12
+HudCount/constants/shadow_offset_x = 0
+HudCount/constants/shadow_offset_y = 4
+HudCount/constants/shadow_outline_size = 12
+HudCount/font_sizes/font_size = 48
+HudCount/fonts/font = ExtResource("1_cd8m4")
 HudLabel/base_type = &"Label"
 HudLabel/colors/font_color = Color(0.968627, 0.909804, 0.784314, 1)
 HudLabel/colors/font_outline_color = Color(0.231373, 0.141176, 0.0862745, 1)

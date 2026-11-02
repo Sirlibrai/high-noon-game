@@ -64,7 +64,7 @@ func _init() -> void:
 	_nine(t, "Panel", "panel", "panel_cream", Rect2(44, 40, 44, 48), Rect2(50, 28, 50, 36))
 	for type in ["Card", "InfoPanel"]:
 		t.set_type_variation(type, "Panel")
-	_nine(t, "Strip", "panel", "panel_strip", Rect2(30, 30, 30, 38), Rect2(22, 26, 22, 30))
+	_nine(t, "Strip", "panel", "panel_strip", Rect2(30, 30, 30, 38), Rect2(22, 18, 22, 24))
 	_nine(t, "Chip", "panel", "chip_teal", Rect2(16, 14, 16, 18), Rect2(16, 4, 16, 8))
 	t.set_type_variation("Pill", "Chip")
 	for type in ["ChipLabel", "PillLabel"]:
@@ -95,6 +95,8 @@ func _init() -> void:
 	_label(t, "HudLabel", P.cream, 28, lilita)
 	_outlined(t, "HudLabel", 8, 0)
 	_label(t, "HudPlaqueLabel", P.cream, 28, lilita, "HudLabel")
+	_label(t, "HudCount", P.cream, 48, lilita)  # the HUD's cartridge count in a long chase
+	_outlined(t, "HudCount", 12, 4)
 	_label(t, "Callout", P.cream, 96, rye)
 	_outlined(t, "Callout", 18, 8)
 	_label(t, "CalloutSmall", P.cream, 54, rye, "Callout")
@@ -110,8 +112,8 @@ func _init() -> void:
 	t.set_font_size("font_size", "Wallet", 36)
 	for s in ["normal", "hover", "pressed", "hover_pressed"]:  # room for the coin breaking out of its left edge
 		var w := (t.get_stylebox(s, "Wallet") as StyleBoxTexture).duplicate() as StyleBoxTexture
-		w.content_margin_left = 62
-		w.content_margin_right = 24
+		w.content_margin_left = 84
+		w.content_margin_right = 26
 		w.content_margin_top = 14
 		w.content_margin_bottom = 18
 		t.set_stylebox(s, "Wallet", w)

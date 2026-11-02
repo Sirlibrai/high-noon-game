@@ -44,6 +44,9 @@ var board: BountyWall
 ## Debug views (debug builds only): the whole screen in greyscale (G on a keyboard, or the pause menu),
 ## and every hit area drawn over the level (H, or the pause menu; Level.show_hit_areas).
 static var greyscale := false
+## The testing aids (greyscale, hit areas, slow motion, old/new feel: pause menu row and G, H, S, F keys)
+## exist only in debug builds, never in a release.
+var debug_tools := OS.is_debug_build()
 var _grey_layer: CanvasLayer
 ## The new feel's player hit: the red glow at the screen's edges.
 var _vignette: ColorRect
@@ -125,7 +128,7 @@ func _layout() -> void:
 # ---------- input ----------
 
 func _input(event: InputEvent) -> void:
-	if OS.is_debug_build() and event is InputEventKey and event.pressed and not event.echo:
+	if debug_tools and event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_G:
 			set_greyscale(not greyscale)
 		elif event.keycode == KEY_S:
@@ -291,9 +294,13 @@ func hunt() -> void:
 	show_intro(next.ch, next.level)
 
 
+## The HUD's hearts (about 1.6 times their art's size, as in the mockup).
+const HEART_SIZE := Vector2(78, 84)
 ## The HUD's cartridges: big enough to count at a glance on a phone.
-const BULLET_SIZE := Vector2(24, 56)
+const BULLET_SIZE := Vector2(38, 90)
 const BULLET_GAP := 12
+## More cartridges than this (Iron Eli's chase) show as one cartridge and a count.
+const MAX_BULLET_ICONS := 6
 ## The outlaw's wanted poster on his hunt screen (its height), and his face on his keepsake's label in
 ## the trophy cabinet.
 const HUNT_POSTER := 104.0
@@ -301,10 +308,14 @@ const TROPHY_FACE := 48.0
 ## How long a replay's intro shows (s) before the showdown starts by itself.
 const REPLAY_INTRO := 1.2
 ## The intro card is centred in this top fraction of the screen, clear of the outlaws on the street.
-const INTRO_BAND := 0.6
+const INTRO_BAND := 0.5
 ## The result's stars above its card: the middle one, and the two beside it.
-const STAR_BIG := 124.0
-const STAR_SMALL := 96.0
+## The pause strip's Resume button: clearly the largest (the others are UiKit.TAP).
+const RESUME_SIZE := 124.0
+## The coin counter's tag: wide enough for five characters (3,140) beside the coin.
+const WALLET_MIN_WIDTH := 210.0
+const STAR_BIG := 168.0
+const STAR_SMALL := 124.0
 ## A boss's face on his intro card, and stamped CAPTURED on his capture card.
 const BOSS_FACE := 96.0
 const CAPTURE_FACE := 140.0
@@ -529,6 +540,7 @@ func _wallet_button(parent: Node) -> Button:
 	coin.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	coin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	coin.custom_minimum_size = Vector2(76, 79)
+	b.custom_minimum_size.x = WALLET_MIN_WIDTH  # room for five characters (3,140) clear of the coin
 	UiKit.attach(b, coin, Vector2(0, 0.5), Vector2(28, -4))
 	UiKit.tilt(b, -2)
 	b.tooltip_text = "Bounty Dollars. Spend them at the Gunsmith."
@@ -572,13 +584,14 @@ func show_intro(chapter: int, index: int) -> void:
 		title_box = VBoxContainer.new()
 		title_box.alignment = BoxContainer.ALIGNMENT_CENTER
 		head.add_child(title_box)
-	UiKit.text(title_box, L.name.to_upper(), &"Heading")
+	UiKit.text(title_box, L.name.to_upper(), &"Heading").add_theme_font_size_override("font_size", 54)
+	card.add_theme_constant_override("separation", 8)  # compact: the outlaws below stay clear
 	_level_chips(title_box, L)
 	if replay_intro(ci, li):  # a level already beaten: the title and chips for a moment, or a tap, then play
 		_quick_start()
 		return
 	if L.has("story"):  # brief v2: one story line on the intro card
-		UiKit.text(card, L.story.intro, &"Tip", 840)
+		UiKit.text(card, L.story.intro, &"Tip", 840).add_theme_font_size_override("font_size", 28)
 	if L.get("puzzle", false) and level.hint_lvl >= 1:
 		UiKit.text(card, "Clue: " + L.hint, &"Tip", 840)
 	elif L.has("tip"):
@@ -589,7 +602,7 @@ func show_intro(chapter: int, index: int) -> void:
 	elif not L.get("duel", false):
 		UiKit.text(card, "They're already shooting.", &"Hint", 840)
 	var levels: Array = [] if tutorial else [["ui/icon_levels", "Levels", show_chapter.bind(ci)]]
-	_edge_buttons(card, "Face him!" if L.get("duel", false) else "Draw!", _go, levels, [])
+	_edge_buttons(card, "Face him!" if L.get("duel", false) else "Draw!", _go, levels, [], 18.0)
 
 
 
@@ -704,9 +717,9 @@ func _pause_card() -> void:
 	shade.add_child(strip)
 	var col := VBoxContainer.new()
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	col.add_theme_constant_override("separation", 6)
+	col.add_theme_constant_override("separation", 2)
 	strip.add_child(col)
-	UiKit.round_button(col, "ui/icon_play", "Resume", "orange", 100).pressed.connect(_toggle_pause)
+	UiKit.round_button(col, "ui/icon_play", "Resume", "orange", RESUME_SIZE).pressed.connect(_toggle_pause)
 	UiKit.round_button(col, "ui/icon_restart", "Restart").pressed.connect(_confirm_restart)
 	var snd := UiKit.round_button(col, _sound_icon(), "Sound")
 	snd.pressed.connect(func():
@@ -725,7 +738,7 @@ func _pause_card() -> void:
 	strip.position = Vector2(_safe_lrb.x + 18, (shade.size.y - _safe_lrb.z - strip.size.y) / 2)
 	UiKit.tilt(strip, 1)
 	UiKit.pop_in(strip, 0.05, 0.85)
-	if OS.is_debug_build():  # testing aids
+	if debug_tools:  # testing aids (debug builds only)
 		var dbg := UiKit.row(card)  # one row: greyscale, hit areas, 25% speed, old or new feel
 		var g := UiKit.button(dbg, "Grey: " + ("on" if greyscale else "off"), &"SmallGhostButton")
 		g.pressed.connect(func():
@@ -831,7 +844,7 @@ func _on_won(res: Dictionary) -> void:
 ## The result's stars, breaking out above the card: the middle one bigger, each bouncing in after the last.
 func _breakout_stars(card: VBoxContainer, count: int) -> void:
 	var spacer := Control.new()  # room under them on the card
-	spacer.custom_minimum_size.y = 40
+	spacer.custom_minimum_size.y = 62
 	card.add_child(spacer)
 	card.move_child(spacer, 0)
 	var row := HBoxContainer.new()
@@ -839,10 +852,10 @@ func _breakout_stars(card: VBoxContainer, count: int) -> void:
 	row.add_theme_constant_override("separation", 10)
 	for k in 3:
 		var s := UiKit.image(row, "ui/star_on" if k < count else "ui/star_off", Vector2.ONE * (STAR_BIG if k == 1 else STAR_SMALL))
-		s.size_flags_vertical = Control.SIZE_SHRINK_BEGIN if k == 1 else Control.SIZE_SHRINK_CENTER
-		UiKit.tilt(s, [-12.0, 0.0, 12.0][k])
+		s.size_flags_vertical = Control.SIZE_SHRINK_BEGIN if k == 1 else Control.SIZE_SHRINK_END  # the middle one highest
+		UiKit.tilt(s, [-20.0, 0.0, 20.0][k])
 		UiKit.pop_in(s, 0.2 + k * 0.14, 0.3)
-	UiKit.attach(UiKit.panel_of(card), row, Vector2(0.5, 0), Vector2(0, -6))
+	UiKit.attach(UiKit.panel_of(card), row, Vector2(0.5, 0), Vector2(0, -14))
 
 
 func _offer_text(offer: String) -> Array:
@@ -957,7 +970,7 @@ func _build_hud() -> void:
 	hearts.alignment = BoxContainer.ALIGNMENT_CENTER
 	stock.add_child(hearts)
 	for i in 3:
-		_hearts.append(UiKit.image(hearts, "ui/heart_full"))
+		_hearts.append(UiKit.image(hearts, "ui/heart_full", HEART_SIZE))
 	_ammo = HBoxContainer.new()
 	_ammo.add_theme_constant_override("separation", BULLET_GAP)  # clear gaps, so they're easy to count
 	_ammo.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -992,9 +1005,16 @@ func _process(_delta: float) -> void:
 		for c in _ammo.get_children():
 			c.queue_free()
 			_ammo.remove_child(c)
-		for i in want:
+		for i in (1 if want > MAX_BULLET_ICONS else want):
 			UiKit.image(_ammo, "ui/bullet_full", BULLET_SIZE)
+		if want > MAX_BULLET_ICONS:  # a long chase: one cartridge and the count
+			var n := UiKit.text(_ammo, "", &"HudCount")
+			n.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var slots := _ammo.get_children()
+	if want > MAX_BULLET_ICONS:
+		slots[0].texture = Assets.texture("ui/bullet_full" if level.bullets > 0 else "ui/bullet_empty")
+		(slots[-1] as Label).text = "×%d" % level.bullets
+		return
 	for i in slots.size():
 		slots[i].texture = Assets.texture("ui/bullet_full" if i < level.bullets else "ui/bullet_empty")
 
@@ -1039,7 +1059,7 @@ func _open_overlay(top := false) -> VBoxContainer:
 	if top:
 		center.anchor_bottom = INTRO_BAND
 		center.offset_bottom = 0
-		center.offset_top = 46  # room for the badge breaking out above the card
+		center.offset_top = 40  # room for the badge breaking out above the card
 	_card = UiKit.card(center)
 	return _card
 
@@ -1047,9 +1067,9 @@ func _open_overlay(top := false) -> VBoxContainer:
 ## The main action and its round companions on a card's bottom edge, breaking out of it (the mockup's
 ## DRAW! and NEXT SHOWDOWN). left and right: [[icon, label, Callable], ...] round teal buttons beside it.
 ## A spacer keeps the card's text clear of them.
-func _edge_buttons(card: VBoxContainer, main_label: String, main_action: Callable, left: Array, right: Array) -> Button:
+func _edge_buttons(card: VBoxContainer, main_label: String, main_action: Callable, left: Array, right: Array, room := 30.0) -> Button:
 	var spacer := Control.new()
-	spacer.custom_minimum_size.y = 34
+	spacer.custom_minimum_size.y = room
 	card.add_child(spacer)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER

@@ -7,7 +7,7 @@ class_name UiKit
 
 
 ## Wrapped text is never wider than this (design pixels): the cards stay compact.
-const MAX_TEXT_WIDTH := 640.0
+const MAX_TEXT_WIDTH := 780.0
 ## The smallest button (design pixels: 46 points on a 375-point-tall phone, Apple asks for 44).
 const TAP := 88.0
 ## Round buttons: their art is 96 x 104 (the face over its base).
@@ -123,20 +123,23 @@ static func stars(parent: Node, count: int, size := 40.0, total := 3) -> HBoxCon
 	return r
 
 
-## Turns a control a few degrees about its middle (and keeps it there as it resizes).
+## Turns a control a few degrees about its middle. Through its offset transform (drawing only, about its
+## centre), which containers don't reset when they lay it out (they do reset rotation and scale).
 static func tilt(c: Control, degrees: float) -> void:
-	c.rotation = deg_to_rad(degrees)
-	var centre := func(): c.pivot_offset = c.size / 2
-	c.resized.connect(centre)
-	centre.call()
+	c.offset_transform_enabled = true
+	c.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
+	c.offset_transform_rotation = deg_to_rad(degrees)
 
 
-## A short bounce in: from a little smaller and transparent to full size, after `delay` seconds.
+## A short bounce in: from a little smaller and transparent to full size, after `delay` seconds (through the
+## offset transform too, so it works inside containers).
 static func pop_in(c: Control, delay: float, from := 0.7) -> void:
-	c.scale = Vector2.ONE * from
+	c.offset_transform_enabled = true
+	c.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
+	c.offset_transform_scale = Vector2.ONE * from
 	c.modulate.a = 0.0
 	var tw := c.create_tween().set_parallel(true)
-	tw.tween_property(c, "scale", Vector2.ONE, 0.32).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(c, "offset_transform_scale", Vector2.ONE, 0.32).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(c, "modulate:a", 1.0, 0.12).set_delay(delay)
 
 

@@ -255,6 +255,9 @@ const BULLET_GAP := 12
 ## the trophy cabinet.
 const HUNT_POSTER := 168.0
 const TROPHY_FACE := 48.0
+## A boss's face on his intro card, and stamped CAPTURED on his capture card.
+const BOSS_FACE := 96.0
+const CAPTURE_FACE := 140.0
 
 
 ## The Bounty board: all five posters, open, captured, locked or coming soon.
@@ -397,8 +400,10 @@ func show_trophies() -> void:
 	UiKit.text(card, "Trophy cabinet", &"Heading")
 	var pg: Dictionary = GameState.progress
 	var got := range(GameState.chapters.size()).filter(func(i): return GameState.collected_in(pg, i))
-	if got.is_empty():
+	if got.is_empty() and GameState.keepsakes_earned(pg).is_empty():
 		UiKit.text(card, "The shelves are bare. Capture Iron Eli to win your first trophy.", &"", 840)
+	elif got.is_empty():
+		UiKit.text(card, "Capture Iron Eli to win the bounty's trophy.", &"Hint", 840)
 	else:
 		var shelf := UiKit.row(card)
 		for i in got:
@@ -412,7 +417,31 @@ func show_trophies() -> void:
 			UiKit.image(frame, "portrait/ch%d" % i, Vector2(TROPHY_FACE, TROPHY_FACE))
 			UiKit.text(label, GameState.chapters[i].who, &"Hint")
 		UiKit.text(card, "%d of %d outlaws captured" % [got.size(), GameState.chapters.size()], &"Tip")
+	var keeps: Array = GameState.keepsakes_earned(pg)
+	if not keeps.is_empty():  # the bosses' keepsakes, beside the bounties' trophies
+		var shelf := UiKit.row(card)
+		shelf.add_theme_constant_override("separation", 24)
+		for k in keeps:
+			var cell := VBoxContainer.new()
+			shelf.add_child(cell)
+			UiKit.image(cell, "keepsake/" + k.art, Vector2(48, 70))
+			UiKit.text(cell, k.name, &"Hint")
 	UiKit.button(UiKit.row(card), "Back", &"GhostButton").pressed.connect(show_home)
+
+
+## A boss's portrait in its frame; on his capture card, stamped CAPTURED.
+func _portrait(parent: Node, asset: String, size: float, captured: bool) -> void:
+	var frame := PanelContainer.new()
+	frame.theme_type_variation = &"PortraitFrame"
+	frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	parent.add_child(frame)
+	var pic := UiKit.image(frame, asset, Vector2(size, size))
+	if not captured:
+		return
+	var stamp := UiKit.image(pic, "ui/stamp_captured", Vector2(size * 0.9, size * 0.9 * 0.55))  # as on the posters (the art is tilted)
+	stamp.size = stamp.custom_minimum_size
+	stamp.position = Vector2(size * 0.05, size * 0.98 - stamp.size.y)  # low on his chest, clear of his eyes
+	stamp.modulate.a = 0.92
 
 
 ## The Gunsmith and Profile screens are not part of this build yet.
@@ -447,9 +476,22 @@ func show_intro(chapter: int, index: int) -> void:
 	_start_level()
 	var L := level.L
 	var card := _open_overlay()
-	UiKit.text(card, "%d. %s" % [li + 1, L.name], &"Heading")
-	var pills := UiKit.row(card)
-	if L.get("eli", false):
+	var title_box: Node = card
+	if L.has("portrait"):  # a boss: his face beside his name
+		var head := UiKit.row(card)
+		head.add_theme_constant_override("separation", 18)
+		_portrait(head, L.portrait, BOSS_FACE, false)
+		title_box = VBoxContainer.new()
+		title_box.alignment = BoxContainer.ALIGNMENT_CENTER
+		head.add_child(title_box)
+	UiKit.text(title_box, "%d. %s" % [li + 1, L.name], &"Heading")
+	var pills := UiKit.row(title_box)
+	if L.has("jack"):
+		UiKit.pill(pills, "Boss")
+		UiKit.pill(pills, "3 phases")
+		UiKit.pill(pills, "%d bullets" % int(L.bullets))
+		UiKit.pill(pills, "Par %d" % int(L.par))
+	elif L.get("eli", false):
 		UiKit.pill(pills, "Boss")
 		UiKit.pill(pills, "3 stages")
 	elif L.get("duel", false):
@@ -540,8 +582,19 @@ func _on_won(res: Dictionary) -> void:
 	if level == null or level.state != "won":
 		return
 	var card := _open_overlay()
-	UiKit.text(card, "Outlaw captured" if res.last else "Showdown won", &"Heading")
-	UiKit.stars(card, res.stars, 80)
+	var boss: bool = level.L.has("portrait")
+	if boss:  # the capture moment: his portrait stamped CAPTURED beside the stars
+		var head := UiKit.row(card)
+		head.add_theme_constant_override("separation", 22)
+		_portrait(head, level.L.portrait, CAPTURE_FACE, true)
+		var right := VBoxContainer.new()
+		right.alignment = BoxContainer.ALIGNMENT_CENTER
+		head.add_child(right)
+		UiKit.text(right, "%s captured" % level.L.name, &"Heading")
+		UiKit.stars(right, res.stars, 64)
+	else:
+		UiKit.text(card, "Outlaw captured" if res.last else "Showdown won", &"Heading")
+		UiKit.stars(card, res.stars, 80)
 	if res.assisted:
 		UiKit.text(card, "Assisted clear: two stars at most. Beat it on your own for the third.", &"Hint", 840)
 	var line: String
@@ -553,10 +606,18 @@ func _on_won(res: Dictionary) -> void:
 	UiKit.text(card, line, &"Tip")
 	if level.L.has("story"):  # brief v2: the next story beat on the result screen
 		UiKit.text(card, level.L.story.result, &"Hint", 840)
-	if res.pay:
+	var keep: Dictionary = GameState.keepsake_for(ci, li)
+	if not (keep.is_empty() or Assets.has("keepsake/" + keep.art)):
+		keep = {}  # its art arrives with its boss
+	if res.pay or not keep.is_empty():
 		var pay := UiKit.row(card)
-		UiKit.image(pay, "ui/coin", Vector2(40, 40))
-		UiKit.text(pay, "+%s" % _money(res.pay), &"Pay")
+		pay.add_theme_constant_override("separation", 14)
+		if res.pay:
+			UiKit.image(pay, "ui/coin", Vector2(40, 40))
+			UiKit.text(pay, "+%s" % _money(res.pay), &"Pay")
+		if not keep.is_empty() and Assets.has("keepsake/" + keep.art):  # his keepsake, for the trophy cabinet
+			UiKit.image(pay, "keepsake/" + keep.art, Vector2(30, 44))
+			UiKit.text(pay, "Keepsake: " + keep.name, &"Tip")
 	var buttons := UiKit.row(card)
 	if tutorial:  # the first launch's level: on to the office
 		UiKit.button(buttons, "On to the sheriff’s office").pressed.connect(show_home)

@@ -66,6 +66,12 @@ func _screens(tag: String) -> void:
 	main._on_won({"stars": 2, "pay": 40, "captured": false, "hearts": 3, "used": 1, "damaged": false, "assisted": true, "last": false})
 	await _wait(0.5)
 	await _check(tag, "won")
+	main.show_intro(0, 4)  # Black Jack captured: his portrait stamped, his parting line, his keepsake
+	main._go()
+	main.level.state = "won"
+	main._on_won({"stars": 3, "pay": 120, "captured": false, "hearts": 3, "used": 3, "damaged": false, "assisted": false, "last": false})
+	await _wait(0.5)
+	await _check(tag, "capture_black_jack")
 	main.level.state = "lost"
 	main._show_fail("Out of bullets.", "hint")
 	await _check(tag, "second_chance_hint")

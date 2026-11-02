@@ -12,7 +12,7 @@ extends Node2D
 ##
 ## Covers all of Main Street: cover, window, runner and hostage-taking
 ## outlaws, bottles and the tutorial, TNT chains, the hanging sign, puzzle
-## clues, duels, and Iron Eli's three stages (rules.md §8). The train's
+## clues, duels, Black Jack's three phases (brief v2 §6) and Iron Eli's three stages (rules.md §8). The train's
 ## coupling pin, flatcar and tunnels come with the train chapter.
 
 signal callout(msg: String, small: bool, ms: int)
@@ -85,6 +85,9 @@ var observing := false
 var clock := 0.0
 ## Target Practice's hanging bucket (v2), like hang_sign.
 var bucket: Variant = null
+## Black Jack's strongbox, hanging over his crate (v2), like the bucket; and Black Jack himself (also in enemies).
+var strongbox: Variant = null
+var _jack: Variant = null
 ## Tutorial prompts waiting to show: [{text, ms, t, if}].
 var _prompt_q: Array = []
 
@@ -199,6 +202,8 @@ func _setup_v2() -> void:
 	for d in L.enemies:
 		var e := {"id": d.get("id", ""), "state": "hidden", "t": 0.0, "wait": float(d.get("first", 0.0)), "exp": 0.0, "alive": true,
 			"fall": 0.0, "lean": 1, "aim_max": 0.0, "up": float(d.get("up", 2.0)), "down": float(d.get("down", 2.0)), "alert_t": 0.0}
+		if d.has("look"):  # a recoloured outlaw (Black Jack's henchmen), with his own hat to lose
+			e.merge({"art": d.look, "hat": "fx/hat_" + str(d.look).get_slice("_", 1)})
 		if d.has("c"):
 			e.merge({"kind": "cover", "c": int(d.c), "side": d.get("side", "up")}, true)
 		elif d.has("w"):
@@ -210,6 +215,16 @@ func _setup_v2() -> void:
 			e.merge({"kind": "walker", "route": route, "speed": float(d.speed), "leg": 0, "x": float(route[0].x), "dir": 1.0,
 				"state": "pause", "t": float(route[0].wait), "exp": 1.0, "aimed": false}, true)
 		enemies.append(e)
+	if L.has("strongbox"):
+		var SB: Dictionary = G.strongbox
+		strongbox = {"x": float(L.strongbox.x) - float(SB.size[0]) / 2, "y": float(L.strongbox.bottom) - float(SB.size[1]), "w": float(SB.size[0]),
+			"h": float(SB.size[1]), "rope_top": float(L.strongbox.rope_top), "state": "hang", "vy": 0.0}
+	if L.has("jack"):
+		var crate: Dictionary = covers[int(L.jack.crate)]
+		_jack = {"id": "jack", "kind": "jack", "art": "black_jack", "hat": "fx/jack_hat", "state": "crate", "t": 0.0, "alive": true, "fall": 0.0,
+			"exp": 1.0, "lean": 1, "aim_max": 0.0, "alert_t": 0.0, "x": crate.x + crate.w / 2.0, "c": int(L.jack.crate),
+			"barrel": int(L.jack.barrel), "card": "", "card_i": -1, "card_t": 0.0, "flip_t": 0.0}
+		enemies.append(_jack)
 
 
 ## A hanging sign, its board's left edge at x. scale makes the board and its chains bigger
@@ -280,7 +295,7 @@ func resume_from_stage(n: int) -> void:
 
 
 func level_cue() -> String:
-	return "boss" if L.get("duel", false) or L.get("eli", false) else ("train" if ci == 1 else "street")
+	return "boss" if L.get("duel", false) or L.get("eli", false) or L.has("jack") else ("train" if ci == 1 else "street")
 
 
 func pause() -> void:
@@ -383,6 +398,8 @@ func pad(d: Dictionary) -> float:
 ## An outlaw's hitbox position (top-left) and the clip that hides him.
 func geo(e: Dictionary) -> Dictionary:
 	var hw := _hitbox.x / 2.0
+	if e.kind == "jack":  # standing at his crate, then at his barrel (jack_rect() is what a tap can hit)
+		return {"x": e.x - hw, "y": GY - _hitbox.y, "clip": null}
 	if e.kind == "window":
 		var w: Dictionary = SC.windows[e.w]
 		var top_h: float = w.y + w.h + G.window_outlaw.hidden_below_sill
@@ -468,6 +485,32 @@ func bucket_rects() -> Array[Rect2]:
 		var rw: float = G.bucket.rope_width
 		out.append(Rect2(bucket.x + bucket.w / 2 - rw / 2, bucket.rope_top, rw, bucket.y - bucket.rope_top))
 	return out
+
+
+## The strongbox's chain (from the arm down to its ring) and the box itself.
+func strongbox_chain_rect() -> Rect2:
+	var cw: float = G.strongbox.chain_width
+	var ring_top: float = strongbox.y - float(G.strongbox.ring)
+	return Rect2(strongbox.x + strongbox.w / 2 - cw / 2, strongbox.rope_top, cw, ring_top - strongbox.rope_top)
+
+
+func strongbox_rect() -> Rect2:
+	return Rect2(strongbox.x, strongbox.y, strongbox.w, strongbox.h)
+
+
+## What of Black Jack a tap can reach: behind his crate only his hat and eyes over the rim; standing,
+## the outlaw's hit area.
+func jack_rect() -> Rect2:
+	if _jack.state == "crate":
+		var c: Dictionary = covers[_jack.c]
+		var J: Dictionary = G.jack
+		return Rect2(_jack.x - float(J.peek[0]) / 2, GY - c.h - float(J.peek[1]), float(J.peek[0]), float(J.peek[1]))
+	return rect_of(_jack)
+
+
+## The finale's window: the ace is showing on his barrel.
+func jack_ace() -> bool:
+	return _jack != null and _jack.alive and _jack.state == "cards" and _jack.card == "A"
 
 
 ## The bottles the bucket would land on.
@@ -640,7 +683,7 @@ func kill(e: Dictionary, how := "") -> void:
 	if e.get("eli", false):
 		eli_hit(e, how)
 		return
-	events.append("kill:" + (how if how != "" else "shot"))
+	events.append("kill:" + ("jack" if e.kind == "jack" else (how if how != "" else "shot")))
 	_stats().kills += 1
 	if how == "":
 		_stats().hits += 1
@@ -651,7 +694,9 @@ func kill(e: Dictionary, how := "") -> void:
 	hit_stop = 3
 	Haptics.hit()
 	var r := geo(e)
-	fx.particle("fx/hat", 0, r.x + 3, r.y, (randf() - 0.5) * 1.4, -2.6, 42)  # the hat flies off
+	fx.particle(e.get("hat", "fx/hat"), 0, r.x + 3, r.y, (randf() - 0.5) * 1.4, -2.6, 42)  # the hat flies off
+	if e.kind == "jack":
+		callout.emit("Black Jack’s down!", true, 1200)
 	fx.burst(r.x + _hitbox.x / 2, r.y + 8, 8, "fx/blood", 1.2)
 
 
@@ -708,7 +753,7 @@ func win() -> void:
 	var stars := GameState.stars_for(L, {"hearts": hearts, "used": used, "damaged": damaged, "assisted": assisted_win})
 	var lvls: Array = GameState.levels_for(ci)
 	var last := li == lvls.size() - 1
-	var res := GameState.apply_win(GameState.progress, ci, li, stars, {"boss": L.get("duel", false) or L.get("eli", false),
+	var res := GameState.apply_win(GameState.progress, ci, li, stars, {"boss": L.get("duel", false) or L.get("eli", false) or L.has("jack"),
 		"last": last, "bounty": GameState.chapters[ci].bounty, "count": lvls.size()})
 	GameState.save()
 	won.emit({"stars": stars, "pay": res.pay, "captured": res.capture_now, "hearts": hearts, "used": used, "damaged": damaged, "assisted": assisted_win, "last": last})
@@ -800,6 +845,9 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 		if e.alive and e.state == "run" and in_r(p, rect_of(e), pad(G.runner.hit_pad)):
 			kill(e)
 			return
+	if _jack != null and _jack.alive and in_r(p, jack_rect(), pad(G.outlaw.hit_pad)):
+		_shoot_jack(p)
+		return
 	for c in covers:
 		if c.alive and in_r(p, cover_rect(c)):
 			if c.type == "tnt":
@@ -821,6 +869,19 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 		if in_r(p, Rect2(hang_sign.x, hang_sign.y, hang_sign.w, hang_sign.h)):
 			hang_sign.swing = 1.0
 			AudioManager.sfx("thunk")
+			return
+	if strongbox != null and strongbox.state == "hang":
+		var ch := strongbox_chain_rect()
+		if in_r(p, ch, pad(G.strongbox.chain_pad)):  # the chain: the box drops
+			strongbox.state = "fall"
+			events.append("strongbox_drop")
+			AudioManager.sfx("clank")
+			fx.burst(ch.get_center().x, strongbox.rope_top + 3, 5, "fx/chain")
+			return
+		if in_r(p, strongbox_rect()):  # iron: the bullet rings off it
+			AudioManager.sfx("ping")
+			fx.burst(p.x, p.y, 6, "fx/ping", 1.2)
+			callout.emit("Clang! Try the chain.", true, 900)
 			return
 	if bucket != null and bucket.state == "hang":
 		for r in bucket_rects():  # the bucket or its rope: either drops it
@@ -850,6 +911,25 @@ func shoot(p: Vector2, from_touch: bool) -> void:
 	AudioManager.sfx("miss")
 	aim_pt.miss = true
 	fx.burst(p.x, p.y, 4, "fx/dust_ground" if p.y > 134 else "fx/dust_wall", 0.8)
+
+
+## A shot at Black Jack (brief v2 §6): behind his crate it only finds the wood; standing, it only counts
+## while the ace shows on his barrel. On any other card (or while he taunts) the bullet is wasted.
+func _shoot_jack(p: Vector2) -> void:
+	var e: Dictionary = _jack
+	if e.state == "cards" and e.card == "A":
+		kill(e)
+		return
+	events.append("jack_wasted")
+	if e.state == "crate":
+		covers[e.c].holes.append(Vector2(roundi(p.x) - 1, maxf(roundi(p.y), GY - covers[e.c].h + 1) - 1))
+		AudioManager.sfx("thunk")
+		fx.burst(p.x, GY - covers[e.c].h, 6, "fx/splinter", 1)
+		callout.emit("He ducks behind the crate. Wasted bullet.", true, 1100)
+		return
+	AudioManager.sfx("miss")
+	fx.burst(p.x, p.y, 4, "fx/dust_wall", 0.8)
+	callout.emit("Not the ace! Wasted bullet." if e.state == "cards" else "Wait for the ace. Wasted bullet.", true, 1200)
 
 
 func _break_bottle(b: Dictionary, how: String) -> void:
@@ -883,6 +963,9 @@ func _start_aim(e: Dictionary) -> void:
 ## he walks between points at `speed` and pauses `wait` at each. While the level is in observation
 ## he only looks; once alert, each time he shows (or pauses) he draws, and fires when his ring runs out.
 func _step_v2_enemy(e: Dictionary, dt: float) -> void:
+	if e.kind == "jack":
+		_step_jack(e, dt)
+		return
 	var O: Dictionary = G.outlaw
 	if e.alert_t > 0:
 		e.alert_t -= dt
@@ -952,6 +1035,64 @@ func _step_v2_enemy(e: Dictionary, dt: float) -> void:
 			else:
 				e.dir = signf(target - e.x)
 				e.x += stride * e.dir
+
+
+## Black Jack's phases (brief v2 §6): behind his crate until the strongbox smashes it; then he stands at
+## his barrel and tips his hat (taunt); then he flips cards onto the barrel, the deck in a fixed order,
+## each for card_time and the ace for ace_time.
+func _step_jack(e: Dictionary, dt: float) -> void:
+	var J: Dictionary = L.jack
+	match e.state:
+		"crate":
+			if not covers[e.c].alive:
+				e.state = "taunt"
+				e.t = float(J.taunt)
+				e.x = float(J.cards_x)
+				events.append("jack_exposed")
+				callout.emit("“Care for a hand, stranger?”", true, 1300)
+		"taunt":
+			e.t -= dt
+			if e.t <= 0:
+				e.state = "cards"
+				e.card_i = -1
+				e.card_t = 0.0
+				callout.emit("Only the ace. Wait for it.", true, 1800)
+		"cards":
+			e.flip_t = maxf(0.0, e.flip_t - dt)
+			e.card_t -= dt
+			if e.card_t <= 0:
+				var deck: Array = J.deck
+				e.card_i = (e.card_i + 1) % deck.size()
+				e.card = deck[e.card_i]
+				e.card_t = float(J.ace_time if e.card == "A" else J.card_time)
+				e.flip_t = float(G.jack.flip_time)
+				AudioManager.sfx("card")
+				if e.card == "A":
+					events.append("ace")
+
+
+## The strongbox falls, smashes the crate it lands on (Black Jack's cover), and comes to rest on the street.
+func _update_strongbox() -> void:
+	var b: Dictionary = strongbox
+	if b.state != "fall":
+		return
+	b.vy += G.strongbox.gravity
+	b.y += b.vy
+	for c in covers:
+		if c.alive and c.type == "crate" and b.x + b.w > c.x and b.x < c.x + c.w and b.y + b.h >= GY - c.h:
+			c.alive = false
+			c.smashed = true
+			events.append("crate_smashed")
+			AudioManager.sfx("crash")
+			Haptics.explosion()
+			shake = 10
+			fx.burst(c.x + c.w / 2.0, GY - c.h / 2.0, 18, "fx/debris", 2.4)
+			b.vy *= 0.4  # it slows as it breaks through
+	if b.y + b.h >= GY:
+		b.y = GY - b.h
+		b.state = "down"
+		AudioManager.sfx("thunk")
+		shake = maxi(shake, 4)
 
 
 func _objective_met() -> bool:
@@ -1219,12 +1360,14 @@ func _step_v2(dt: float) -> void:
 		_update_sign()
 	if bucket != null:
 		_update_bucket()
+	if strongbox != null:
+		_update_strongbox()
 	if _objective_met():
 		end_timer += dt
 		if end_timer > 0.7:
 			win()
 		return
-	var falling: bool = (hang_sign != null and hang_sign.state == "fall") or (bucket != null and bucket.state == "fall")
+	var falling: bool = (hang_sign != null and hang_sign.state == "fall") or (bucket != null and bucket.state == "fall") or (strongbox != null and strongbox.state == "fall")
 	if bullets <= 0 and not falling and fx.booms.is_empty() and pending_blasts.is_empty():
 		out_of_ammo_t += dt
 		if out_of_ammo_t > 0.9:
@@ -1309,7 +1452,7 @@ func _duel_update(dt: float) -> void:
 						d.card = "A"
 						_ring_bell()
 					else:
-						var deck := ["K", "Q", "J", "9", "7", "5", "3"].filter(func(c): return c != d.card)
+						var deck := ["K", "7", "3", "back"].filter(func(c): return c != d.card)
 						d.card = deck[randi() % deck.size()]
 						d.card_t = 0.55 + randf() * 0.5
 			elif last_stand and not d.bell1 and d.t >= d.wait:
@@ -1429,9 +1572,10 @@ func _cast(x: float, y: float, width: float) -> AssetSprite:
 
 ## What a hanging object hangs from (brief v2 §10): the painted signpost standing on the street beside
 ## it, scaled so the underside of its arm is at beam_y, placed so the arm reaches over every hang point
-## (xs). It stands on the left of what it holds, or mirrored on the right when that would leave the
-## screen or stand on a bench or another post. If no signpost fits, a wall bracket holds the first point.
-func _hanger(beam_y: float, xs: Array) -> void:
+## (xs). It stands on the left of what it holds (or on `first_side`: 1 for the right), or mirrored on the
+## other side when that would leave the screen or stand on a bench or another post. If no signpost fits,
+## a wall bracket holds the first point.
+func _hanger(beam_y: float, xs: Array, first_side := -1.0) -> void:
 	var H: Dictionary = G.hanging
 	var arm_from := Assets.point("prop/signpost", "arm_from")
 	var arm_to := Assets.point("prop/signpost", "arm_to")
@@ -1440,7 +1584,7 @@ func _hanger(beam_y: float, xs: Array) -> void:
 	var far_reach := arm_to.x * k / PPU
 	var lo: float = xs.min()
 	var hi: float = xs.max()
-	for side in [-1.0, 1.0]:
+	for side in [first_side, -first_side]:
 		for f in [0.95, 0.75, 0.55]:  # the furthest hang point this far along the arm
 			var reach: float = near_reach + (far_reach - near_reach) * f
 			var post_x: float = hi - reach if side < 0 else lo + reach
@@ -1567,14 +1711,24 @@ func _build_view() -> void:
 		_sign_nodes.hook.extra_scale = Vector2.ONE * hk
 		_place(_sign_nodes.hook, eye)
 		_sign_nodes.bucket = AssetSprite.make("prop/bucket", _back_props)
+	if strongbox != null:  # Black Jack's strongbox, on a chain from the arm to its ring
+		var sx: float = strongbox.x + strongbox.w / 2
+		_hanger(strongbox.rope_top, [sx], 1.0 if L.strongbox.get("post", "left") == "right" else -1.0)
+		_sign_nodes.strongbox_chain = _chain(sx, strongbox.rope_top, strongbox.y - float(G.strongbox.ring) + 0.5)
 	# Street outlaws are clipped at the ground line, so they sink behind cover as they drop.
 	_actors = _clip(Rect2(-1000, -1000, 3000, 1000 + GY))
 	_cover_layer = _layer()
 	for c in covers:
 		c.node = AssetSprite.make("prop/" + c.type, _cover_layer)
+		if c.type == "crate" and strongbox != null:  # what's left once the strongbox lands on it
+			c.smashed_node = AssetSprite.make("prop/crate_smashed", _cover_layer)
+			c.smashed_node.visible = false
+			_place(c.smashed_node, Vector2(c.x + c.w / 2.0, GY))
 		c.shadow = _cast(c.x + c.w / 2.0, GY, c.w * 1.15)
 		_place(c.node, Vector2(c.x + c.w / 2.0, GY))
 	_front = _layer()
+	if strongbox != null:
+		_sign_nodes.strongbox = AssetSprite.make("prop/strongbox", _front)
 	if L.get("puzzle", false) and L.has("hintTarget") and hint_lvl >= 2:
 		_hint_glow = NinePatchRect.new()
 		_hint_glow.texture = Assets.texture("fx/hint_glow")
@@ -1643,11 +1797,13 @@ func _sync_view() -> void:
 		_arrow.visible = tut.step == 0 and first != null
 		if first != null:
 			_place(_arrow, Vector2(first.x, first.y - 20 + roundf(absf(sin(frame * 0.12)) * -3)))
-	if hang_sign != null or bucket != null:
+	if hang_sign != null or bucket != null or strongbox != null:
 		_sync_sign()
 	for c in covers:
-		c.node.visible = c.alive
-		c.shadow.visible = c.alive
+		c.node.visible = c.alive and not _barrel_in_pose(c)
+		c.shadow.visible = c.alive or c.get("smashed", false)
+		if c.has("smashed_node"):
+			c.smashed_node.visible = c.get("smashed", false)
 		if c.node.get_child_count() > c.holes.size():  # a replaced TNT keg has no holes
 			for hole in c.node.get_children():
 				hole.queue_free()
@@ -1697,19 +1853,36 @@ func _sync_sign() -> void:
 			_set_chain(_sign_nodes.chains[i], x + (sway if s.state == "hang" else 0.0), s.beam_y, low)
 	if bucket != null:
 		_place(_sign_nodes.bucket, Vector2(bucket.x + bucket.w / 2, roundf(bucket.y)))
+	if strongbox != null:
+		_place(_sign_nodes.strongbox, Vector2(strongbox.x + strongbox.w / 2, roundf(strongbox.y + strongbox.h)))
+		var sx: float = strongbox.x + strongbox.w / 2
+		var low: float = strongbox.y - float(G.strongbox.ring) + 0.5 if strongbox.state == "hang" else strongbox.rope_top + float(G.strongbox.snapped_chain)
+		_set_chain(_sign_nodes.strongbox_chain, sx, strongbox.rope_top, low)
 
 
 ## The layer that holds (and clips) an enemy.
 func _enemy_parent(e: Dictionary) -> Node:
 	if e.kind == "window":
 		return _window_clips[e.w]
+	if e.kind == "jack":  # in front of his crate: his fingers grip its rim
+		return _front
 	if e.kind == "hostage":
 		return _hostage_layer
 	return _actors
 
 
+## Whose art an enemy is drawn with: the outlaw, a recoloured henchman, Black Jack or Iron Eli.
+func _art(e: Dictionary) -> String:
+	return e.get("art", "iron_eli" if e.get("eli", false) else "outlaw")
+
+
+## The flip pose has Black Jack's barrel painted in: the barrel prop steps aside while it shows.
+func _barrel_in_pose(c: Dictionary) -> bool:
+	return _jack != null and _jack.alive and _jack.state == "cards" and is_same(c, covers[_jack.barrel])
+
+
 func _ensure_enemy_nodes(e: Dictionary) -> void:
-	var who := "iron_eli" if e.get("eli", false) else "outlaw"
+	var who := _art(e)
 	if not e.has("node"):
 		e.node = AssetSprite.make(who + "/idle", _enemy_parent(e))
 		if e.kind != "window":
@@ -1720,6 +1893,8 @@ func _ensure_enemy_nodes(e: Dictionary) -> void:
 		if e.kind == "runner" or e.kind == "walker":  # in the open he is drawn in front of the cover
 			e.run_node = AssetSprite.make(who + "/run_right", _front)
 			e.run_shadow = _cast(0, GY, _hitbox.x * 1.1)
+		if e.kind == "jack":  # the card he has just flipped onto the barrel
+			e.card_node = AssetSprite.make("card/back", _front)
 		if e.get("eli", false):  # his breastplate rides on whichever sprite shows him
 			e.armour_node = AssetSprite.make("iron_eli_armour/intact", e.node)
 			e.run_armour_node = AssetSprite.make("iron_eli_armour/intact", e.run_node)
@@ -1732,6 +1907,11 @@ func _ensure_enemy_nodes(e: Dictionary) -> void:
 ## Over cover and in windows he aims, rising behind the cover or the sill (both drawn in
 ## front of him); he leans round a cover's side or a hostage; with his cover gone he stands and aims.
 func _pose(e: Dictionary) -> Array:
+	if e.kind == "jack":
+		var jp: String = {"crate": "crouch", "taunt": "idle", "cards": "flip"}.get(e.state, "flip")
+		if e.state == "dead":
+			jp = "hit" if e.fall < float(G.outlaw.hit_pose_time) else "fall"
+		return [jp, false, false]
 	var pose := "aim"
 	var flip := false
 	var by_top: bool = e.kind == "window"  # he shows from the top of the opening down, cropped at the sill
@@ -1764,7 +1944,7 @@ func _pose(e: Dictionary) -> Array:
 func _sync_enemy(e: Dictionary) -> void:
 	_ensure_enemy_nodes(e)
 	var O: Dictionary = G.outlaw
-	var who := "iron_eli/" if e.get("eli", false) else "outlaw/"
+	var who := _art(e) + "/"
 	var gm := geo(e)
 	var n: AssetSprite = e.node
 	var running: bool = gm.get("running", false)
@@ -1800,6 +1980,8 @@ func _sync_enemy(e: Dictionary) -> void:
 	var feet := Vector2(gm.x + _hitbox.x / 2, gm.y + _hitbox.y)
 	if p[2]:
 		feet.y = gm.y + Assets.anchor(who + p[0]).y * n.scale.y / PPU
+	if p[0] == "crouch":  # Black Jack's crouch is anchored at the crate's rim
+		feet.y = GY - float(G.jack.crouch_rim_above_ground)
 	if e.state == "dead":
 		if e.fall > O.fall_time:
 			n.visible = false
@@ -1813,6 +1995,8 @@ func _sync_enemy(e: Dictionary) -> void:
 		e.shadow.visible = n.visible and feet.y >= GY - 3 and not (e.kind == "cover" and covers[e.c].alive)
 		e.shadow.modulate.a = n.modulate.a
 		_place(e.shadow, Vector2(feet.x, GY))
+	if e.kind == "jack":
+		_sync_card(e, feet)
 	if e.get("eli", false):
 		var plate := "iron_eli_armour/" + ("cracked" if not e.cracks.is_empty() else "intact")
 		for a in [e.armour_node, e.run_armour_node]:
@@ -1821,6 +2005,18 @@ func _sync_enemy(e: Dictionary) -> void:
 	if e.has("hostage_node"):
 		var body := hostage_rect(e)
 		_place(e.hostage_node, Vector2(e.hx, body.end.y))
+
+
+## Black Jack's card on the barrel top (the flip pose's "card" point), turning over as he flips the next.
+func _sync_card(e: Dictionary, feet: Vector2) -> void:
+	var c: AssetSprite = e.card_node
+	c.visible = e.alive and e.state == "cards" and e.card != ""
+	if not c.visible:
+		return
+	c.show_asset("card/" + e.card)
+	var k: float = Assets.meta("black_jack/flip", "scale", 1.0)
+	_place(c, feet + Assets.point("black_jack/flip", "card") * k / PPU)
+	c.extra_scale = Vector2(maxf(0.08, absf(1.0 - 2.0 * e.flip_t / float(G.jack.flip_time))), 1)
 
 
 func _sync_rings() -> void:
@@ -1885,6 +2081,8 @@ func _sync_hint_glow() -> void:
 		r = Rect2(hang_sign.x - 2, hang_sign.chain_top, hang_sign.w + 4, hang_sign.y - hang_sign.chain_top + 3)  # both chains
 	if t.get("bucket", false) and bucket != null and bucket.state == "hang":
 		r = Rect2(bucket.x, bucket.rope_top, bucket.w, bucket.y + bucket.h - bucket.rope_top)
+	if t.get("strongbox", false) and strongbox != null and strongbox.state == "hang":
+		r = Rect2(strongbox.x, strongbox.rope_top, strongbox.w, strongbox.y + strongbox.h - strongbox.rope_top)
 	if t.has("spot"):  # where a walker stops
 		r = Rect2(float(t.spot) - _hitbox.x / 2, GY - _hitbox.y, _hitbox.x, _hitbox.y)
 	_hint_glow.visible = r != null

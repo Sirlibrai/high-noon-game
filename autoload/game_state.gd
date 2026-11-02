@@ -233,6 +233,21 @@ func current_hunt(pg: Dictionary, playtest: bool) -> int:
 	return h.next if h.next != null else chapters.size() - 1
 
 
+## A boss's keepsake (trophies.json: Black Jack's ace, Iron Eli's breastplate...), won by beating his
+## level; {} for a level without one.
+func keepsake_for(c: int, l: int) -> Dictionary:
+	for t in trophies:
+		if int(t.ch) == c and int(t.get("lv", -1)) == l and t.has("art"):
+			return t
+	return {}
+
+
+## The keepsakes won so far, for built levels whose keepsake has art in the manifest.
+func keepsakes_earned(pg: Dictionary) -> Array:
+	return trophies.filter(func(t): return (t.has("art") and Assets.has("keepsake/" + t.art) and int(t.ch) < chapters.size()
+		and stars_in(pg, int(t.ch), int(t.lv)) > 0))
+
+
 ## The first launch (or the first after a reset): the splash leads straight into Main Street level 1, and
 ## the office opens after its result. Once the office has been reached, launches go splash, then office.
 func first_launch(pg: Dictionary) -> bool:

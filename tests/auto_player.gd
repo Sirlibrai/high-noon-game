@@ -12,7 +12,8 @@ var _cooldown := 0
 var _key_done := false
 
 
-## Timed taps to play instead of choosing ([{at, tap}], from a v2 level's "solution" or "wrong").
+## Timed taps to play instead of choosing ([{at, tap}], from a v2 level's "solution" or "wrong"). Instead of
+## a time a tap can wait for a moment: "ace" (Black Jack's ace is showing) or "card" (another card is).
 var taps: Array = []
 var _next := 0
 
@@ -23,7 +24,7 @@ func decide(lv: Level) -> Variant:
 	if taps.is_empty() and lv.v2 and _next == 0:
 		taps = lv.L.get("solution", [])
 	if not taps.is_empty():
-		if _next < taps.size() and lv.clock >= float(taps[_next].at):
+		if _next < taps.size() and _due(lv, taps[_next]):
 			_next += 1
 			return target(lv, taps[_next - 1].tap)
 		return null
@@ -34,6 +35,15 @@ func decide(lv: Level) -> Variant:
 	if p != null:
 		_cooldown = 6
 	return p
+
+
+static func _due(lv: Level, tp: Dictionary) -> bool:
+	if tp.has("at"):
+		return lv.clock >= float(tp.at)
+	var j: Variant = lv._jack
+	if j == null or j.state != "cards" or j.card == "" or j.flip_t > 0:
+		return false
+	return (j.card == "A") == (tp.when == "ace")
 
 
 ## Runs a level headless at 60 steps a second until it is won or lost.
@@ -87,7 +97,8 @@ func _choose(lv: Level) -> Variant:
 	return null
 
 
-## Where a scripted tap lands: "bucket", "chain", "bottle:i", "cover:i" or "enemy:i" (the part of him showing).
+## Where a scripted tap lands: "bucket", "chain", "strongbox" (its chain), "jack" (what of him shows),
+## "bottle:i", "cover:i" or "enemy:i" (the part of him showing).
 static func target(lv: Level, tap: String) -> Vector2:
 	var i := int(tap.get_slice(":", 1))
 	match tap.get_slice(":", 0):
@@ -95,6 +106,10 @@ static func target(lv: Level, tap: String) -> Vector2:
 			return lv.bucket_rects()[0].get_center()
 		"chain":
 			return lv.chain_rects()[0].get_center()
+		"strongbox":
+			return lv.strongbox_chain_rect().get_center()
+		"jack":
+			return lv.jack_rect().get_center()
 		"bottle":
 			return lv.bottle_rect(lv.bottles[i]).get_center()
 		"cover":

@@ -128,18 +128,47 @@
       }
     },
     {
-      "boss" : "BOSS",
-      "cards" : true,
-      "duel" : true,
-      "fakes" : false,
-      "hp" : 3,
-      "name" : "Black Jack",
-      "react" : [
-        0.75,
-        0.65,
-        0.56
+      "v": 2,
+      "name": "Black Jack",
+      "puzzle": true,
+      "bullets": 3,
+      "par": 3,
+      "aim": 1.8,
+      "objective": "eliminate_all",
+      "observation": true,
+      "portrait": "portrait/black_jack",
+      "story": {
+        "intro": "Black Jack, Iron Eli's lieutenant, deals the gang's last hand: two henchmen on the powder, and himself behind a crate.",
+        "result": "“Eli's waiting at the bank. You won't get near him.”"
+      },
+      "covers": [{"type": "tnt", "x": 66}, {"type": "crate", "x": 176}, {"type": "barrel", "x": 197}],
+      "enemies": [
+        {"id": "grey", "stand": 40, "look": "henchman_grey"},
+        {"id": "black", "stand": 92, "look": "henchman_black"}
       ],
-      "tip" : "Draw only on the ace."
+      "strongbox": {"x": 176, "bottom": 100, "rope_top": 66, "post": "right"},
+      "jack": {
+        "_about": "Black Jack (brief v2 §6): crouched behind cover 1 under the strongbox; when the box smashes the crate he stands and taunts, then flips cards onto the barrel (cover 2) beside him, standing at cards_x. The deck repeats; he can only be hit while the ace shows (ace_time seconds), and a shot on any other card is a wasted bullet.",
+        "crate": 1,
+        "barrel": 2,
+        "cards_x": 186,
+        "taunt": 1.4,
+        "deck": ["back", "K", "7", "A", "3", "K", "back", "A", "7", "3", "A"],
+        "card_time": 1.1,
+        "ace_time": 2.0
+      },
+      "hint": "Drop the strongbox on his crate, then wait for the ace.",
+      "hintTarget": {"strongbox": true},
+      "solution": [
+        {"at": 1.0, "tap": "cover:0"},
+        {"at": 2.0, "tap": "strongbox"},
+        {"when": "ace", "tap": "jack"}
+      ],
+      "wrong": {
+        "about": "Shooting Black Jack on any card but the ace wastes the bullet, and with three bullets there's none left for the ace.",
+        "taps": [{"at": 1.0, "tap": "cover:0"}, {"at": 2.0, "tap": "strongbox"}, {"when": "card", "tap": "jack"}],
+        "expect": "lost"
+      }
     },
     {
       "aim" : 1.5,

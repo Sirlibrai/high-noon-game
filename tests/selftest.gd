@@ -327,6 +327,7 @@ func _ready() -> void:
 	SaveManager.data.progress = fresh()
 	_playthroughs()
 	_puzzle_first()
+	_black_jack()
 	_office()
 	_launch()
 	_batch1()
@@ -764,7 +765,7 @@ func _drop(lv: Level) -> void:
 ## shots, and the observation start holds until the first shot.
 func _puzzle_first() -> void:
 	var lvls: Array = GameState.levels_for(0)
-	for i in 4:
+	for i in 5:
 		var l: Dictionary = lvls[i]
 		var name := "%d. %s" % [i + 1, l.name]
 		var a := run_level(i, [], 1, Callable(), [], 60.0)
@@ -789,6 +790,11 @@ func _puzzle_first() -> void:
 				ok("Chain Reaction: the chain drops the sign onto the TNT; sign and blast clear all three",
 					a.events.has("sign_on_tnt") and count(a.events, "kill:sign") + count(a.events, "kill:tnt") == 3 and a.tnt_left == 0, str(a.events))
 				ok("Chain Reaction: the TNT shot directly clears only two, never all three", count(wr.events, "kill:tnt") == 2 and wr.state == "lost", str(wr.events))
+			4:
+				ok("Black Jack: TNT, then the strongbox's chain, then one shot on the ace: three phases, three bullets",
+					a.events == ["alert", "kill:tnt", "kill:tnt", "strongbox_drop", "crate_smashed", "jack_exposed", "ace", "kill:jack"], str(a.events))
+				ok("Black Jack: a shot on a card that isn't the ace wastes the bullet, and the ace then can't be answered",
+					wr.events.has("jack_wasted") and not wr.events.has("kill:jack") and wr.events.has("lost:ammo"), str(wr.events))
 	# The observation start: nobody draws or fires until the first shot, however long you watch.
 	for i in [1, 2, 3]:
 		var lv := _new_level(i)
@@ -830,7 +836,7 @@ func _puzzle_first() -> void:
 		lv.setup(0, i)
 		obs.append(lv.observing)
 		_drop(lv)
-	ok("Levels 1 to 4 start in observation; the prototype levels 5 to 10 keep their old timing", obs == [true, true, true, true, false, false, false, false, false, false], str(obs))
+	ok("Levels 1 to 5 start in observation; the prototype levels 6 to 10 keep their old timing", obs == [true, true, true, true, true, false, false, false, false, false], str(obs))
 
 
 ## The painted sheriff's office (the gunsmith painted in): its layers, hotspots over their painted objects, the bench spark.
@@ -1395,3 +1401,123 @@ func _button_named(root: Node, text: String) -> Button:
 		if (n as Button).text.begins_with(text):
 			return n
 	return null
+
+
+## A test hands back a bullet it spent on purpose (and its place in the cylinder), to play on.
+func _give_bullet(lv: Level) -> void:
+	lv.bullets += 1
+	lv.cyl += 1
+	lv.reload_t = 0.0
+
+## Black Jack (brief v2 §6, Milestone 2): his art, the henchmen, and the fight's three phases, played step
+## by step: the henchmen by the TNT, the strongbox dropped on his crate, and the ace.
+func _black_jack() -> void:
+	var G := GameState
+	var li := 4
+	var L: Dictionary = G.level(0, li)
+	var poses := ["idle", "crouch", "flip", "aim", "hit", "fall"]
+	ok("Black Jack's art: his six painted poses, his flying hat, five painted cards, the strongbox, the smashed crate, his portrait",
+		poses.all(func(p): return Assets.texture("black_jack/" + p).resource_path.contains("painted/black_jack_"))
+		and ["A", "K", "7", "3", "back"].all(func(c): return Assets.texture("card/" + c).resource_path.contains("painted/card_"))
+		and ["fx/jack_hat", "prop/strongbox", "prop/crate_smashed", "portrait/black_jack", "keepsake/ace"].all(func(n): return Assets.has(n)))
+	var crouch := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/black_jack_crouch.png"))
+	var crouch_units: float = crouch.get_height() * float(Assets.meta("black_jack/crouch", "scale", 1.0)) / G.geometry.pixels_per_unit
+	ok("The crouch keeps only what shows over the crate's rim (hat, eyes, fingertips), anchored at the rim",
+		crouch_units < 13 and Assets.anchor("black_jack/crouch").y >= crouch.get_height() - 8, "%.1f units tall" % crouch_units)
+	var flip := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/black_jack_flip.png"))
+	var at := Assets.anchor("black_jack/flip") + Assets.point("black_jack/flip", "card")
+	var red := 0  # anything left where the ace fell: between his pointing hand and the barrel top
+	for y in range(int(at.y) - 60, int(at.y) - 8):
+		for x in range(int(at.x) - 4, mini(flip.get_width(), int(at.x) + 25)):
+			red += int(flip.get_pixel(x, y).a > 0.3)
+	var barrel_w: float = float(Assets.meta("black_jack/flip", "barrel_width", 0)) * float(Assets.meta("black_jack/flip", "scale", 1.0)) / G.geometry.pixels_per_unit
+	ok("The card flip keeps his barrel (as wide as the game's) with the drawn falling ace erased above it",
+		red < 4 and absf(barrel_w - G.cover_sizes.barrel[0]) < 1.5 and flip.get_pixelv(Vector2i(at) + Vector2i(0, 12)).a > 0.5, "%d red pixels, barrel %.1f units" % [red, barrel_w])
+	var hue_count := func(file: String, lo: float, hi: float) -> int:
+		var im := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/" + file))
+		var n := 0
+		for y in im.get_height() / 2:
+			for x in im.get_width():
+				var c := im.get_pixel(x, y)
+				n += int(c.a > 0.5 and c.s > 0.4 and c.h >= lo and c.h <= hi)
+		return n
+	var grey_hat := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/henchman_grey_idle.png")).get_pixel(41, 12)
+	var black_hat := Image.load_from_file(ProjectSettings.globalize_path("res://assets/painted/henchman_black_idle.png")).get_pixel(41, 12)
+	ok("The henchmen are the outlaw recoloured: one grey hat and blue bandana, one black hat and yellow bandana",
+		grey_hat.s < 0.15 and grey_hat.v > 0.4 and black_hat.v < 0.3 and hue_count.call("henchman_grey_idle.png", 0.55, 0.66) > 80
+		and hue_count.call("henchman_black_idle.png", 0.1, 0.18) > 80 and hue_count.call("outlaw_idle.png", 0.55, 0.66) < 10
+		and L.enemies.map(func(d): return d.look) == ["henchman_grey", "henchman_black"], "grey hat %s, black hat %s" % [grey_hat, black_hat])
+
+	# Phase 1: the henchmen by the TNT. One shot clears both; Black Jack, far from the powder, waits behind his crate.
+	var lv := _new_level(li)
+	var jack: Dictionary = lv._jack
+	var crate: Dictionary = lv.covers[jack.c]
+	ok("Phase 1: two henchmen by the TNT, Black Jack crouched behind his crate under the hanging strongbox",
+		lv.enemies.filter(func(e): return e.kind == "stand").size() == 2 and jack.state == "crate" and crate.alive
+		and lv.strongbox.state == "hang" and absf(lv.strongbox.x + lv.strongbox.w / 2 - (crate.x + crate.w / 2)) < 1)
+	var barrel: Dictionary = lv.covers[jack.barrel]
+	var pose_barrel: float = float(L.jack.cards_x) + Assets.point("black_jack/flip", "barrel").x * float(Assets.meta("black_jack/flip", "scale", 1.0)) / lv.PPU
+	ok("The barrel he flips cards onto stands beside his crate, where the flip pose paints its barrel",
+		absf(pose_barrel - (barrel.x + barrel.w / 2)) < 1 and barrel.x >= crate.x + crate.w, "pose barrel at %.1f, prop at %.1f" % [pose_barrel, barrel.x + barrel.w / 2])
+	lv.shoot(lv.cover_rect(lv.covers[0]).get_center(), true)
+	for f in 60:
+		lv._step(1.0 / 60.0)
+	ok("Phase 1: one shot at the TNT clears both henchmen; Black Jack and his crate are untouched",
+		count(lv.events, "kill:tnt") == 2 and jack.alive and crate.alive and jack.state == "crate" and lv.bullets == 2, str(lv.events))
+	# Phase 2: break the cover.
+	lv.shoot(lv.jack_rect().get_center(), true)
+	ok("Phase 2: behind his crate he can't be hit; a shot at him finds the wood and is wasted",
+		jack.alive and jack.state == "crate" and crate.alive and lv.events.has("jack_wasted") and lv.bullets == 1)
+	_give_bullet(lv)  # (given back, to play on)
+	lv.shoot(lv.strongbox_rect().get_center(), true)
+	ok("Phase 2: the strongbox itself is iron: a bullet rings off and it stays up", lv.strongbox.state == "hang" and lv.bullets == 1)
+	_give_bullet(lv)
+	lv.shoot(lv.strongbox_chain_rect().get_center(), true)
+	var smashed_at := -1.0
+	for f in 120:
+		lv._step(1.0 / 60.0)
+		if smashed_at < 0 and lv.events.has("crate_smashed"):
+			smashed_at = f / 60.0
+	ok("Phase 2: shooting the chain drops the strongbox, which smashes the crate; Black Jack stands, exposed",
+		lv.events.has("strongbox_drop") and not crate.alive and crate.get("smashed", false) and lv.strongbox.state == "down"
+		and jack.state in ["taunt", "cards"] and jack.alive and smashed_at >= 0 and smashed_at < 1.0, "%s, smashed after %.2f s" % [jack.state, smashed_at])
+	# Phase 3: the ace. While he taunts, or on any other card, a shot is a wasted bullet.
+	for f in 600:
+		if jack.state != "taunt":
+			break
+		lv._step(1.0 / 60.0)
+	ok("Phase 3: he flips cards onto his barrel, the first not the ace", jack.state == "cards" and jack.card != "" and jack.card != "A", jack.card)
+	lv.shoot(lv.jack_rect().get_center(), true)
+	ok("Phase 3: a shot on a card that isn't the ace wastes the bullet: he stays standing", jack.alive and count(lv.events, "jack_wasted") == 2 and lv.bullets == 0)
+	_give_bullet(lv)
+	var shown := 0
+	var cards: Array = [jack.card]  # each card as it is flipped
+	for f in 60 * 30:
+		lv._step(1.0 / 60.0)
+		if jack.flip_t == float(G.geometry.jack.flip_time):
+			cards.append(jack.card)
+		if lv.jack_ace():
+			shown += 1
+		elif shown > 0:
+			break
+	ok("Phase 3: the ace shows for a generous two seconds (the other cards about one)",
+		absf(shown / 60.0 - float(L.jack.ace_time)) < 0.05 and float(L.jack.ace_time) >= 1.8 and float(L.jack.ace_time) <= 2.2 and float(L.jack.card_time) < float(L.jack.ace_time),
+		"%.2f s, cards %s" % [shown / 60.0, cards])
+	for f in 60 * 30:
+		if lv.jack_ace() or lv.state != "play":
+			break
+		lv._step(1.0 / 60.0)
+	lv.shoot(lv.jack_rect().get_center(), true)
+	for f in 60:
+		lv._step(1.0 / 60.0)
+	ok("Phase 3: a shot while the ace shows takes him down, and the fight is won", not jack.alive and lv.events.has("kill:jack") and lv.state == "won", lv.state)
+	ok("The ace window is the same every time: the deck runs in a fixed order", cards == L.jack.deck.slice(0, cards.size()), str(cards))
+	_drop(lv)
+	# The capture: his portrait, his parting line, his ace keepsake, a boss's pay.
+	var pg := fresh()
+	var r: Dictionary = G.apply_win(pg, 0, li, 3, o10(1000, true))
+	ok("Beating Black Jack wins his ace keepsake (and pays as a boss)",
+		G.keepsake_for(0, li).name == "Black Jack’s ace" and G.keepsakes_earned(pg).map(func(t): return t.art) == ["ace"]
+		and G.keepsakes_earned(fresh()).is_empty() and r.pay == 120, str(r))
+	ok("His parting line closes the fight: “Eli's waiting at the bank. You won't get near him.”",
+		L.story.result.contains("Eli's waiting at the bank. You won't get near him.") and L.portrait == "portrait/black_jack")

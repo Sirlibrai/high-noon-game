@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dg6sw81lw7m56"
-path="res://.godot/imported/wall_planks.png-705647a209105638a10191ea7abed532.ctex"
+uid="uid://lt37pxeijtgo"
+path="res://.godot/imported/wall_cork.png-2baf17efe895e8c69fbd243af012a0ac.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/painted/wall_planks.png"
-dest_files=["res://.godot/imported/wall_planks.png-705647a209105638a10191ea7abed532.ctex"]
+source_file="res://assets/painted/wall_cork.png"
+dest_files=["res://.godot/imported/wall_cork.png-2baf17efe895e8c69fbd243af012a0ac.ctex"]
 
 [params]
 

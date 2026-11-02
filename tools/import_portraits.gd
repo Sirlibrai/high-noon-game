@@ -12,6 +12,8 @@ const OUT := "res://assets/painted/"
 const SIZE := 256  # output pixels, square
 const SILHOUETTE := [4]  # chapters whose locked poster shows a silhouette
 const INSET := 10  # sheet pixels trimmed inside each panel's rough edge
+## The Bounty board wall's posters show a wide portrait: almost the poster's full width, about half its height.
+const WIDE := Vector2i(400, 312)
 
 
 func _init() -> void:
@@ -29,6 +31,14 @@ func _init() -> void:
 		if i in SILHOUETTE:
 			_silhouette(out).save_png(ProjectSettings.globalize_path(OUT + "portrait_ch%d_locked.png" % i))
 			print('    "portrait/ch%d_locked": {"frames": ["painted/portrait_ch%d_locked.png"]},' % [i, i])
+		var ww := p.size.x - INSET * 2
+		var wh := roundi(ww * float(WIDE.y) / WIDE.x)
+		var wide := Cut.scale(sheet.get_region(Rect2i(p.position.x + INSET, p.position.y + INSET, ww, wh)), float(WIDE.x) / ww, false)
+		wide.save_png(ProjectSettings.globalize_path(OUT + "portrait_wide_ch%d.png" % i))
+		print('    "portrait_wide/ch%d": "painted/portrait_wide_ch%d.png",' % [i, i])
+		if i in SILHOUETTE:
+			_silhouette(wide).save_png(ProjectSettings.globalize_path(OUT + "portrait_wide_ch%d_locked.png" % i))
+			print('    "portrait_wide/ch%d_locked": "painted/portrait_wide_ch%d_locked.png",' % [i, i])
 	quit()
 
 

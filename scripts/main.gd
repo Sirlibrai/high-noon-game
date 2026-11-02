@@ -256,6 +256,7 @@ func show_board(focus := -1) -> void:
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay_layer.add_child(_overlay)
 	board = BountyWall.new()
+	board.safe_lrb = _safe_lrb
 	_overlay.add_child(board)
 	board.chosen.connect(show_chapter)
 	if focus >= 0:
